@@ -31,7 +31,6 @@ use Symfony\WebpackEncoreBundle\WebpackEncoreBundle;
 
 class PimcoreAdminBundle extends AbstractPimcoreBundle implements DependentBundleInterface
 {
-
     use PackageVersionTrait;
 
     public function getComposerPackageName(): string
