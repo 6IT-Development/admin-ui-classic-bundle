@@ -137,6 +137,7 @@ abstract class ElementControllerBase extends AdminAbstractController
                         'allowed' => false,
                     ];
                     $errors |= true;
+
                     continue;
                 }
 
