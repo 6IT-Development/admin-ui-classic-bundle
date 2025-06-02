@@ -368,7 +368,7 @@ class ElementService implements ElementServiceInterface
         $workflowPermission = [
             'settings' => !$workflowManager->isDeniedInWorkflow($element, 'settings'),
             'rename' => !$workflowManager->isDeniedInWorkflow($element, 'rename'),
-            'publish' => !$workflowManager->isDeniedInWorkflow($element, 'publish')
+            'publish' => !$workflowManager->isDeniedInWorkflow($element, 'publish'),
         ];
 
         if ($element instanceof Asset) {
