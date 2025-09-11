@@ -69,7 +69,7 @@ final class PimcoreAdminExtension extends Extension implements PrependExtensionI
                     Yaml::dump(['services' => $yaml['services']])
                 );
 
-                $loader = new YamlFileLoader($container,new FileLocator(dirname($tmpFile)));
+                $loader = new YamlFileLoader($container, new FileLocator(dirname($tmpFile)));
 
                 $loader->load(basename($configFile));
             } finally {
