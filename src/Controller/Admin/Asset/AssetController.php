@@ -15,6 +15,7 @@
 
 namespace Pimcore\Bundle\AdminBundle\Controller\Admin\Asset;
 
+use function is_callable;
 use Pimcore\Bundle\AdminBundle\Controller\Admin\ElementControllerBase;
 use Pimcore\Bundle\AdminBundle\Controller\Traits\AdminStyleTrait;
 use Pimcore\Bundle\AdminBundle\Controller\Traits\ApplySchedulerDataTrait;
@@ -64,7 +65,6 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
 use Twig\Extension\CoreExtension;
-use function is_callable;
 
 /**
  * @Route("/asset")
@@ -1501,7 +1501,7 @@ class AssetController extends ElementControllerBase implements KernelControllerE
         if ($scanStatus === null) {
             $scanStatus = Asset\Enum\PdfScanStatus::IN_PROGRESS;
             if ($processBackground) {
-                if(is_callable([$asset, 'addToUpdateTaskQueue'])) {
+                if (is_callable([$asset, 'addToUpdateTaskQueue'])) {
                     $asset->addToUpdateTaskQueue();
                 } else {
                     // Todo: BC layer, remove with 3.0 release
