@@ -1,6 +1,7 @@
 {
   "name": "six-it/admin-ui-classic-bundle",
-  "license": "GPL-3.0+",
+  "description": "6IT AdminBundle UI Classic Bundle",
+  "license": "GPL-3.0-or-later",
   "type": "pimcore-bundle",
   "config": {
     "sort-packages": true,
