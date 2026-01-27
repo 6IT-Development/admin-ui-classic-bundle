@@ -22,7 +22,7 @@
     "cbschuld/browser.php": "^1.9.6",
     "endroid/qr-code": "^4 || ^5.1",
     "phpoffice/phpspreadsheet": "^2.2 || ^3.3",
-    "six-it/pimcore": "^1.0",
+    "six-it/pimcore-source": "^1.0",
     "symfony/webpack-encore-bundle": "^1.17 || ^2.0"
   },
   "require-dev": {
