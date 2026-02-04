@@ -521,7 +521,7 @@ Ext.onReady(function () {
 
         // use vanilla javascript instead of ExtJS to bypass default error handling
         var request = new XMLHttpRequest();
-        request.open('POST', "https://liveupdate.pimcore.org/update-check");
+        request.open('GET', "https://raw.githubusercontent.com/6IT-Development/pimcore-source/refs/heads/master/version.json");
 
         request.onload = function() {
             if (this.status >= 200 && this.status < 400) {
