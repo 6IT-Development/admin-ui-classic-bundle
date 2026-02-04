@@ -582,7 +582,7 @@ Ext.onReady(function () {
             }
         };
 
-        var data = new FormData();
+        /*var data = new FormData();
         data.append('id', pimcore.settings.instanceId);
         data.append('revision', pimcore.settings.build);
         data.append('version', pimcore.settings.version);
@@ -594,9 +594,9 @@ Ext.onReady(function () {
         data.append("main_domain", pimcore.settings.main_domain);
         data.append("domains", domains);
         data.append("timezone", pimcore.settings.timezone);
-        data.append("websiteLanguages", pimcore.settings.websiteLanguages.join(','));
+        data.append("websiteLanguages", pimcore.settings.websiteLanguages.join(','));*/
 
-        request.send(data);
+        request.send();
 
     }, 5000);
 
