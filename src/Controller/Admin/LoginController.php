@@ -426,6 +426,10 @@ class LoginController extends AdminAbstractController implements KernelControlle
         $browser = new \Browser();
         $browserVersion = (int)$browser->getVersion();
 
+        if ($browser->getBrowser() == \Browser::BROWSER_OPERA && $browserVersion >= 100) {
+            $supported = true;
+        }
+
         if ($browser->getBrowser() == \Browser::BROWSER_FIREFOX && $browserVersion >= 72) {
             $supported = true;
         }
