@@ -21,20 +21,20 @@ use Pimcore\Model\Element;
 use Pimcore\Model\Schedule\Task;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 
-/**
- * @Route("/snippet", name="pimcore_admin_document_snippet_")
+    /**
  *
  * @internal
- */
+     */
+    #[Route('/snippet', name: 'pimcore_admin_document_snippet_')]
 class SnippetController extends DocumentControllerBase
 {
-    /**
-     * @Route("/get-data-by-id", name="getdatabyid", methods={"GET"})
+        /**
      *
      * @throws \Exception
-     */
+         */
+        #[Route('/get-data-by-id', name: 'getdatabyid', methods: ['GET'])]
     public function getDataByIdAction(Request $request): JsonResponse
     {
         $snippet = Document\Snippet::getById((int)$request->get('id'));
@@ -80,11 +80,11 @@ class SnippetController extends DocumentControllerBase
         return $this->preSendDataActions($data, $snippet, $draftVersion);
     }
 
-    /**
-     * @Route("/save", name="save", methods={"POST","PUT"})
+        /**
      *
      * @throws \Exception
-     */
+         */
+        #[Route('/save', name: 'save', methods: ['POST','PUT'])]
     public function saveAction(Request $request): JsonResponse
     {
         $snippet = Document\Snippet::getById((int) $request->get('id'));
