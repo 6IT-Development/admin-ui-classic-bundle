@@ -10,8 +10,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license     GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\Controller\Admin;
@@ -293,7 +293,7 @@ class UserController extends AdminAbstractController implements KernelController
             }
 
             if ($user instanceof User && isset($values['2fa_required'])) {
-                $user->setTwoFactorAuthentication('required', (bool) $values['2fa_required']);
+                $user->setTwoFactorAuthentication('required', (bool)$values['2fa_required']);
             }
 
             $user->setValues($values);
@@ -310,7 +310,7 @@ class UserController extends AdminAbstractController implements KernelController
 
             foreach ($availableUserPermissions as $permission) {
                 if (isset($values['permission_' . $permission->getKey()])) {
-                    $user->setPermission($permission->getKey(), (bool) $values['permission_' . $permission->getKey()]);
+                    $user->setPermission($permission->getKey(), (bool)$values['permission_' . $permission->getKey()]);
                 }
             }
 
@@ -322,7 +322,7 @@ class UserController extends AdminAbstractController implements KernelController
                     $newWorkspaces = [];
                     foreach ($spaces as $space) {
                         if (in_array($space['path'], $processedPaths[$type])) {
-                            throw new \Exception('Error saving workspaces as multiple entries found for path "' . $space['path'] .'" in '.$translator->trans((string)$type, [], 'admin') . 's');
+                            throw new \Exception('Error saving workspaces as multiple entries found for path "' . $space['path'] . '" in ' . $translator->trans((string)$type, [], 'admin') . 's');
                         }
 
                         $element = Element\Service::getElementByPath($type, $space['path']);
@@ -441,8 +441,8 @@ class UserController extends AdminAbstractController implements KernelController
 
         // unset confidential informations
         $userData = $user->getObjectVars();
-        $userData['roles'] =  $user->getRoles();
-        $userData['docTypes'] =  $user->getDocTypes();
+        $userData['roles'] = $user->getRoles();
+        $userData['docTypes'] = $user->getDocTypes();
         $contentLanguages = Tool\Admin::reorderWebsiteLanguages($user, Tool::getValidLanguages());
         $userData['contentLanguages'] = $contentLanguages;
         $userData['twoFactorAuthentication']['isActive'] = ($user->getTwoFactorAuthentication('enabled') || $user->getTwoFactorAuthentication('secret'));
@@ -863,7 +863,7 @@ class UserController extends AdminAbstractController implements KernelController
     #[Route('/user/get-token-login-link', name: 'pimcore_admin_user_gettokenloginlink', methods: ['GET'])]
     public function getTokenLoginLinkAction(Request $request, TranslatorInterface $translator): JsonResponse
     {
-        $user = User::getById((int) $request->get('id'));
+        $user = User::getById((int)$request->get('id'));
 
         if (!$user) {
             return $this->adminJson([
@@ -953,7 +953,7 @@ class UserController extends AdminAbstractController implements KernelController
         return $this->getUsersAction($request);
     }
 
-        #[Route('/user/get-roles-for-sharing', name: 'pimcore_admin_user_getrolesforsharing', methods: ['GET']))]
+    #[Route('/user/get-roles-for-sharing', name: 'pimcore_admin_user_getrolesforsharing', methods: ['GET'])]
     public function getRolesForSharingAction(Request $request): JsonResponse
     {
         $this->checkPermission('share_configurations');
@@ -961,7 +961,7 @@ class UserController extends AdminAbstractController implements KernelController
         return $this->getRolesAction($request);
     }
 
-        #[Route('/user/get-users', name: 'pimcore_admin_user_getusers', methods: ['GET'])]
+    #[Route('/user/get-users', name: 'pimcore_admin_user_getusers', methods: ['GET'])]
     public function getUsersAction(Request $request): JsonResponse
     {
         $users = [];
@@ -969,7 +969,7 @@ class UserController extends AdminAbstractController implements KernelController
         // get available user
         $list = new User\Listing();
 
-        $conditions = [ 'type = "user"' ];
+        $conditions = ['type = "user"'];
 
         if (!$request->get('include_current_user')) {
             $conditions[] = 'id != ' . $this->getAdminUser()->getId();
@@ -992,7 +992,7 @@ class UserController extends AdminAbstractController implements KernelController
         return $this->adminJson(['success' => true, 'total' => count($users), 'data' => $users]);
     }
 
-        #[Route('/user/get-roles', name: 'pimcore_admin_user_getroles', methods: ['GET'])]
+    #[Route('/user/get-roles', name: 'pimcore_admin_user_getroles', methods: ['GET'])]
     public function getRolesAction(Request $request): JsonResponse
     {
         $roles = [];
@@ -1014,17 +1014,17 @@ class UserController extends AdminAbstractController implements KernelController
         return $this->adminJson(['success' => true, 'total' => count($roles), 'data' => $roles]);
     }
 
-        #[Route('/user/get-default-key-bindings', name: 'pimcore_admin_user_getdefaultkeybindings', methods: ['GET'])]
+    #[Route('/user/get-default-key-bindings', name: 'pimcore_admin_user_getdefaultkeybindings', methods: ['GET'])]
     public function getDefaultKeyBindingsAction(Request $request): JsonResponse
     {
         return $this->adminJson(['success' => true, 'data' => UserHelper::getDefaultKeyBindings()]);
     }
 
-        /**
+    /**
      *
      * @throws \Exception
-         */
-        #[Route('/user/invitationlink', name: 'pimcore_admin_user_invitationlink', methods: ['POST'])]
+     */
+    #[Route('/user/invitationlink', name: 'pimcore_admin_user_invitationlink', methods: ['POST'])]
     public function invitationLinkAction(Request $request, TranslatorInterface $translator, RouterInterface $router): JsonResponse
     {
         $success = false;
@@ -1093,7 +1093,7 @@ class UserController extends AdminAbstractController implements KernelController
                 $this->checkPermission('users');
             }
 
-            return (int) $request->get('id');
+            return (int)$request->get('id');
         }
 
         return $this->getAdminUser()->getId();
