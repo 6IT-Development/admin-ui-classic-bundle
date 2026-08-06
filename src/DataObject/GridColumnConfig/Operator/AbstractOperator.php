@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -10,14 +11,15 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\DataObject\GridColumnConfig\Operator;
 
 use Pimcore\Bundle\AdminBundle\DataObject\GridColumnConfig\ConfigElementInterface;
 use Pimcore\Tool;
+use stdClass;
 
 abstract class AbstractOperator implements OperatorInterface
 {
@@ -30,7 +32,7 @@ abstract class AbstractOperator implements OperatorInterface
      */
     protected array $children;
 
-    public function __construct(\stdClass $config, array $context = [])
+    public function __construct(stdClass $config, array $context = [])
     {
         $this->label = $config->label;
         $this->children = $config->children;

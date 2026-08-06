@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -10,12 +11,13 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\Command;
 
+use Exception;
 use MatthiasMullie\Minify\JS;
 use Pimcore\Console\AbstractCommand;
 use Pimcore\Logger;
@@ -34,7 +36,7 @@ class ExtJSCommand extends AbstractCommand
     protected function configure(): void
     {
         $this
-            ->setHidden(true)
+            ->setHidden()
             ->setDescription('Regenerate minified ext-js file')
             ->addArgument(
                 'src',
@@ -45,8 +47,7 @@ class ExtJSCommand extends AbstractCommand
                 'dest',
                 InputOption::VALUE_REQUIRED,
                 'destination file'
-            )
-        ;
+            );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -70,7 +71,7 @@ class ExtJSCommand extends AbstractCommand
         $bootstrapFile = getcwd() . '/dev/pimcore/admin-ui-classic-bundle/public/extjs/js/bootstrap-ext-all.js';
         $bootstrap = file_get_contents($bootstrapFile);
         if (!$bootstrap) {
-            throw new \Exception('bootstrap file not found');
+            throw new Exception('bootstrap file not found');
         }
 
         $scriptContents = $bootstrap . "\n\n";
@@ -82,8 +83,6 @@ class ExtJSCommand extends AbstractCommand
 
             $loadOrder = $manifestContents['loadOrder'];
 
-            $count = 0;
-
             // build dependencies
             $main = $loadOrder[count($loadOrder) - 1];
             $list = [
@@ -94,8 +93,7 @@ class ExtJSCommand extends AbstractCommand
             ksort($list);
 
             // replace this with loadOrder if we want to load the entire list
-            foreach ($loadOrder as $loadOrderIdx => $loadOrderItem) {
-                $count++;
+            foreach ($loadOrder as $loadOrderItem) {
                 $relativePath = $loadOrderItem['path'];
 
                 $fullPath = PIMCORE_WEB_ROOT . $relativePath;
@@ -111,11 +109,11 @@ class ExtJSCommand extends AbstractCommand
                     $includeContents .= "\r\n;\r\n";
                     $scriptContents .= $includeContents;
                 } else {
-                    throw new \Exception('file does not exist: ' . $fullPath);
+                    throw new Exception('file does not exist: ' . $fullPath);
                 }
             }
         } else {
-            throw new \Exception('manifest does not exist: ' . $absoluteManifest);
+            throw new Exception('manifest does not exist: ' . $absoluteManifest);
         }
 
         $scriptPath = getcwd() . '/' . $dest;

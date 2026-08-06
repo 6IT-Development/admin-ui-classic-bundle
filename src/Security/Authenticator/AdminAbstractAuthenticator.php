@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -10,12 +11,13 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\Security\Authenticator;
 
+use Exception;
 use Pimcore\Bundle\AdminBundle\Security\Authentication\Token\TwoFactorRequiredToken;
 use Pimcore\Cache\RuntimeCache;
 use Pimcore\Model\User as UserModel;
@@ -46,9 +48,9 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  */
 abstract class AdminAbstractAuthenticator extends AbstractAuthenticator implements LoggerAwareInterface
 {
-    public const PIMCORE_ADMIN_LOGIN = 'pimcore_admin_login';
+    public const string PIMCORE_ADMIN_LOGIN = 'pimcore_admin_login';
 
-    public const PIMCORE_ADMIN_LOGIN_CHECK = 'pimcore_admin_login_check';
+    public const string PIMCORE_ADMIN_LOGIN_CHECK = 'pimcore_admin_login_check';
 
     use LoggerAwareTrait;
 
@@ -56,9 +58,10 @@ abstract class AdminAbstractAuthenticator extends AbstractAuthenticator implemen
 
     public function __construct(
         protected EventDispatcherInterface $dispatcher,
-        protected RouterInterface $router,
-        protected TranslatorInterface $translator
-    ) {
+        protected RouterInterface          $router,
+        protected TranslatorInterface      $translator
+    )
+    {
     }
 
     public function onAuthenticationFailure(Request $request, AuthenticationException $exception): ?Response
@@ -81,7 +84,7 @@ abstract class AdminAbstractAuthenticator extends AbstractAuthenticator implemen
     {
         $securityUser = $token->getUser();
         if (!$securityUser instanceof User) {
-            throw new \Exception('Invalid user object. User has to be instance of ' . User::class);
+            throw new Exception('Invalid user object. User has to be instance of ' . User::class);
         }
 
         /** @var UserModel $user */

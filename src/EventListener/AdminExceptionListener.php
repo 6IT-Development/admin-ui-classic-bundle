@@ -11,13 +11,15 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\EventListener;
 
 use Doctrine\DBAL\Exception as DBALException;
+use Exception;
+use Pimcore;
 use Pimcore\Bundle\CoreBundle\EventListener\Traits\PimcoreContextAwareTrait;
 use Pimcore\Http\Request\Resolver\PimcoreContextResolver;
 use Pimcore\Model\Element\ValidationException;
@@ -28,6 +30,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\ExceptionEvent;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\HttpKernel\KernelEvents;
+use Throwable;
 
 /**
  * @internal
@@ -61,14 +64,14 @@ class AdminExceptionListener implements EventSubscriberInterface
                 'traceString' => '',
             ];
 
-            if (!\Pimcore::inDebugMode()) {
+            if (!Pimcore::inDebugMode()) {
                 // DBAL exceptions do include SQL statements, we don't want to expose them
                 if ($ex instanceof DBALException) {
                     $message = 'Database error, see logs for details';
                 }
             }
 
-            if (\Pimcore::inDebugMode()) {
+            if (Pimcore::inDebugMode()) {
                 $data['trace'] = $ex->getTrace();
                 $data['traceString'] = 'in ' . $ex->getFile() . ':' . $ex->getLine() . "\n" . $ex->getTraceAsString();
             }
@@ -92,7 +95,7 @@ class AdminExceptionListener implements EventSubscriberInterface
         }
     }
 
-    private function getResponseData(\Throwable $ex, int $defaultStatusCode = 500): array
+    private function getResponseData(Throwable $ex, int $defaultStatusCode = 500): array
     {
         $code = $defaultStatusCode;
         $headers = [];
@@ -112,7 +115,7 @@ class AdminExceptionListener implements EventSubscriberInterface
     }
 
     /**
-     * @param \Exception[] $items
+     * @param Exception[] $items
      */
     protected function recursiveAddValidationExceptionSubItems(array $items, string &$message, string &$detailedInfo): void
     {
@@ -148,7 +151,7 @@ class AdminExceptionListener implements EventSubscriberInterface
         }
     }
 
-    protected function getInnerStack(\Throwable $e): \Throwable
+    protected function getInnerStack(Throwable $e): Throwable
     {
         while ($e->getPrevious()) {
             $e = $e->getPrevious();

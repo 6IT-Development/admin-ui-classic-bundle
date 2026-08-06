@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -10,12 +11,13 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\Service\GridData;
 
+use Pimcore;
 use Pimcore\Localization\LocaleServiceInterface;
 use Pimcore\Model;
 use Pimcore\Model\DataObject\AbstractObject;
@@ -26,7 +28,9 @@ use Pimcore\Model\DataObject\Objectbrick;
 use Pimcore\Model\DataObject\Service;
 use Pimcore\Tool\Admin as AdminTool;
 use Pimcore\Tool\Session;
+use stdClass;
 use Symfony\Component\HttpFoundation\Session\Attribute\AttributeBagInterface;
+use Throwable;
 
 /**
  *
@@ -37,7 +41,7 @@ class DataObject extends Element
     /**
      * Language only user for classification store !!!
      */
-    public static function getData(AbstractObject $object, array $fields = null, string $requestedLanguage = null, array $params = []): array
+    public static function getData(AbstractObject $object, ?array $fields = null, ?string $requestedLanguage = null, array $params = []): array
     {
         $data = self::gridElementData($object);
         $csvMode = $params['csvMode'] ?? false;
@@ -48,7 +52,7 @@ class DataObject extends Element
 
             $context = ['object' => $object,
                 'purpose' => 'gridview',
-                'language' => $requestedLanguage, ];
+                'language' => $requestedLanguage,];
             $data['classname'] = $object->getClassName();
             $data['idPath'] = Service::getIdPath($object);
             $data['inheritedFields'] = [];
@@ -65,7 +69,6 @@ class DataObject extends Element
                 $brickDescriptor = null;
                 $brickKey = null;
                 $brickType = null;
-                $brickGetter = null;
                 $dataKey = $key;
                 $keyParts = explode('~', $key);
 
@@ -78,7 +81,7 @@ class DataObject extends Element
                     }
                     if (!empty($helperDefinitions[$key])) {
                         $context['fieldname'] = $key;
-                        $data[$key] = \Pimcore\Model\DataObject\Service::calculateCellValue($object, $helperDefinitions, $key, $context);
+                        $data[$key] = Service::calculateCellValue($object, $helperDefinitions, $key, $context);
                     }
                 } elseif (str_starts_with($key, '~')) {
                     $type = $keyParts[1];
@@ -202,7 +205,7 @@ class DataObject extends Element
                     }
                     if ($needLocalizedPermissions) {
                         if (!$user->isAdmin()) {
-                            $locale = \Pimcore::getContainer()->get(LocaleServiceInterface::class)->findLocale();
+                            $locale = Pimcore::getContainer()->get(LocaleServiceInterface::class)->findLocale();
 
                             $permissionTypes = ['View', 'Edit'];
                             foreach ($permissionTypes as $permissionType) {
@@ -231,7 +234,7 @@ class DataObject extends Element
 
     public static function getHelperDefinitions(): array
     {
-        $stack = \Pimcore::getContainer()->get('request_stack');
+        $stack = Pimcore::getContainer()->get('request_stack');
         if ($stack->getMainRequest()?->hasSession()) {
             $session = $stack->getSession();
 
@@ -246,16 +249,16 @@ class DataObject extends Element
     /**
      * gets value for given object and getter, including inherited values
      *
-     * @return \stdClass value and objectid where the value comes from
+     * @return stdClass value and objectid where the value comes from
      */
-    private static function getValueForObject(Concrete $object, string $key, string $brickType = null, string $brickKey = null, ClassDefinition\Data $fieldDefinition = null, array $context = [], array $brickDescriptor = null, string $requestedLanguage = null): \stdClass
+    private static function getValueForObject(Concrete $object, string $key, ?string $brickType = null, ?string $brickKey = null, ?ClassDefinition\Data $fieldDefinition = null, array $context = [], ?array $brickDescriptor = null, ?string $requestedLanguage = null): stdClass
     {
         $getter = 'get' . ucfirst($key);
         $value = null;
 
         try {
             $value = $object->$getter($requestedLanguage ?? AdminTool::getCurrentUser()?->getLanguage());
-        } catch (\Throwable) {
+        } catch (Throwable) {
         }
 
         if (empty($value)) {
@@ -297,7 +300,7 @@ class DataObject extends Element
             }
         }
 
-        $result = new \stdClass();
+        $result = new stdClass();
         $result->value = $value;
         $result->objectid = $object->getId();
 
@@ -317,8 +320,8 @@ class DataObject extends Element
                 $field = $keyParts[2];
                 $groupKeyId = explode('-', $keyParts[3]);
 
-                $groupId = (int) $groupKeyId[0];
-                $keyid = (int) $groupKeyId[1];
+                $groupId = (int)$groupKeyId[0];
+                $keyid = (int)$groupKeyId[1];
                 $getter = 'get' . ucfirst($field);
 
                 if (method_exists($object, $getter)) {
@@ -338,7 +341,7 @@ class DataObject extends Element
                     $keyConfig = Model\DataObject\Classificationstore\KeyConfig::getById($keyid);
                     $type = $keyConfig->getType();
                     $definition = json_decode($keyConfig->getDefinition(), true);
-                    $definition = \Pimcore\Model\DataObject\Classificationstore\Service::getFieldDefinitionFromJson($definition, $type);
+                    $definition = Classificationstore\Service::getFieldDefinitionFromJson($definition, $type);
 
                     if (method_exists($definition, 'getDataForGrid')) {
                         $fielddata = $definition->getDataForGrid($fielddata, $object);

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -10,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\Security;
@@ -30,27 +31,27 @@ class ContentSecurityPolicyHandler implements LoggerAwareInterface
 
     private ?string $nonce = null;
 
-    private const SELF = "'self'";
+    private const string SELF = "'self'";
 
-    public const DEFAULT_OPT = 'default-src';
+    public const string DEFAULT_OPT = 'default-src';
 
-    public const IMG_OPT = 'img-src';
+    public const string IMG_OPT = 'img-src';
 
-    public const SCRIPT_OPT = 'script-src';
+    public const string SCRIPT_OPT = 'script-src';
 
-    public const STYLE_OPT = 'style-src';
+    public const string STYLE_OPT = 'style-src';
 
-    public const CONNECT_OPT = 'connect-src';
+    public const string CONNECT_OPT = 'connect-src';
 
-    public const FONT_OPT = 'font-src';
+    public const string FONT_OPT = 'font-src';
 
-    public const MEDIA_OPT = 'media-src';
+    public const string MEDIA_OPT = 'media-src';
 
-    public const FRAME_OPT = 'frame-src';
+    public const string FRAME_OPT = 'frame-src';
 
-    public const FRAME_ANCHESTORS = 'frame-ancestors';
+    public const string FRAME_ANCHESTORS = 'frame-ancestors';
 
-    public const WORKER_OPT = 'worker-src';
+    public const string WORKER_OPT = 'worker-src';
 
     private array $allowedUrls = [
         self::CONNECT_OPT => [

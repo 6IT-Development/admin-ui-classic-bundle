@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -10,12 +11,13 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\DataObject\GridColumnConfig\Value;
 
+use Exception;
 use Pimcore\Bundle\AdminBundle\DataObject\GridColumnConfig\ResultContainer;
 use Pimcore\Localization\LocaleServiceInterface;
 use Pimcore\Model\DataObject\ClassDefinition\Data;
@@ -24,6 +26,7 @@ use Pimcore\Model\DataObject\Concrete;
 use Pimcore\Model\DataObject\Objectbrick;
 use Pimcore\Model\DataObject\Service;
 use Pimcore\Model\Element\ElementInterface;
+use stdClass;
 
 /**
  * @internal
@@ -38,12 +41,12 @@ final class DefaultValue extends AbstractValue
     }
 
     /**
-     * @throws \Exception
+     * @throws Exception
      */
-    private function getValueForObject(Concrete $object, string $key, string $brickType = null, string $brickKey = null): \stdClass
+    private function getValueForObject(Concrete $object, string $key, ?string $brickType = null, ?string $brickKey = null): stdClass
     {
         if (!$key) {
-            throw new \Exception('Empty key');
+            throw new Exception('Empty key');
         }
 
         $fieldDefinition = null;
@@ -87,7 +90,7 @@ final class DefaultValue extends AbstractValue
             }
         }
 
-        $result = new \stdClass();
+        $result = new stdClass();
         $result->value = $value;
         $result->label = $fieldDefinition->getTitle();
         $result->def = $fieldDefinition;
@@ -97,18 +100,18 @@ final class DefaultValue extends AbstractValue
         return $result;
     }
 
-    private function getClassificationStoreValueForObject(Concrete $object, string $key): ?\stdClass
+    private function getClassificationStoreValueForObject(Concrete $object, string $key): ?stdClass
     {
         $keyParts = explode('~', $key);
 
-        if (strpos($key, '~') === 0) {
+        if (str_starts_with($key, '~')) {
             $type = $keyParts[1];
             if ($type === 'classificationstore') {
                 $field = $keyParts[2];
                 $groupKeyId = explode('-', $keyParts[3]);
 
-                $groupId = (int) $groupKeyId[0];
-                $keyid = (int) $groupKeyId[1];
+                $groupId = (int)$groupKeyId[0];
+                $keyid = (int)$groupKeyId[1];
                 $getter = 'get' . ucfirst($field);
 
                 if (method_exists($object, $getter)) {
@@ -130,7 +133,7 @@ final class DefaultValue extends AbstractValue
                     $definition = json_decode($keyConfig->getDefinition(), true);
                     $definition = Classificationstore\Service::getFieldDefinitionFromJson($definition, $type);
 
-                    $result = new \stdClass();
+                    $result = new stdClass();
                     $result->value = $fielddata;
                     $result->label = $definition->getTitle();
                     $result->def = $definition;
@@ -145,9 +148,9 @@ final class DefaultValue extends AbstractValue
         return null;
     }
 
-    private function getDefaultValue(mixed $value): \stdClass
+    private function getDefaultValue(mixed $value): stdClass
     {
-        $result = new \stdClass();
+        $result = new stdClass();
         $result->value = $value;
         $result->label = $this->label;
         $result->def = null;
@@ -161,7 +164,7 @@ final class DefaultValue extends AbstractValue
         return $result;
     }
 
-    public function getLabeledValue(array|ElementInterface $element): ResultContainer|\stdClass|null
+    public function getLabeledValue(array|ElementInterface $element): ResultContainer|stdClass|null
     {
         $attributeParts = explode('~', $this->attribute);
 
@@ -188,7 +191,7 @@ final class DefaultValue extends AbstractValue
             if ($element instanceof Concrete) {
                 try {
                     $result = $this->getValueForObject($element, $this->attribute, $brickType, $brickKey);
-                } catch (\Exception $e) {
+                } catch (Exception) {
                     $result = $this->getDefaultValue($element->$getter());
                 }
             } else {

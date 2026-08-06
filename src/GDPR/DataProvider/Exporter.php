@@ -11,12 +11,13 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\GDPR\DataProvider;
 
+use Exception;
 use Pimcore\Model\Asset;
 use Pimcore\Model\DataObject;
 use Pimcore\Model\DataObject\AbstractObject;
@@ -79,7 +80,7 @@ class Exporter
     }
 
     /**
-     * @throws \Exception
+     * @throws Exception
      */
     public static function doExportFieldcollection(Concrete $object, array &$result, Fieldcollection $container, Data\Fieldcollections $containerDef): void
     {
@@ -117,7 +118,7 @@ class Exporter
     }
 
     /**
-     * @throws \Exception
+     * @throws Exception
      */
     public static function doExportObject(Concrete $object, array &$result = []): void
     {

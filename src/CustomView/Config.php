@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -10,12 +11,14 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\CustomView;
 
+use Exception;
+use Pimcore;
 use Pimcore\Config\LocationAwareConfigRepository;
 
 /**
@@ -23,14 +26,14 @@ use Pimcore\Config\LocationAwareConfigRepository;
  */
 final class Config
 {
-    private const CONFIG_ID = 'custom_views';
+    private const string CONFIG_ID = 'custom_views';
 
     private static ?LocationAwareConfigRepository $locationAwareConfigRepository = null;
 
     private static function getRepository(): LocationAwareConfigRepository
     {
         if (!self::$locationAwareConfigRepository) {
-            $containerConfig = \Pimcore::getContainer()->getParameter('pimcore.config');
+            $containerConfig = Pimcore::getContainer()->getParameter('pimcore.config');
             $config = $containerConfig[self::CONFIG_ID]['definitions'];
 
             $storageConfig = $containerConfig['config_location'][self::CONFIG_ID];
@@ -79,14 +82,14 @@ final class Config
     }
 
     /**
-     * @throws \Exception
+     * @throws Exception
      */
     public static function save(array $data, ?array $deletedRecords): void
     {
         $repository = self::getRepository();
 
         foreach ($data as $key => $value) {
-            $key = (string) $key;
+            $key = (string)$key;
             [$configKey, $dataSource] = $repository->loadConfigByKey($key);
             if ($repository->isWriteable($key, $dataSource) === true) {
                 unset($value['writeable']);

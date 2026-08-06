@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\GDPR\DataProvider;
@@ -20,9 +20,11 @@ namespace Pimcore\Bundle\AdminBundle\GDPR\DataProvider;
 use Doctrine\DBAL\Exception;
 use Pimcore\Bundle\AdminBundle\Helper\QueryParams;
 use Pimcore\Bundle\AdminBundle\Service\GridData;
+use Pimcore\Db;
 use Pimcore\Model\Asset;
 use Pimcore\Model\Element;
 use Symfony\Component\HttpFoundation\Response;
+use ZipArchive;
 
 /**
  * @internal
@@ -36,7 +38,7 @@ class Assets extends Elements implements DataProviderInterface
 
     protected ?array $config = [];
 
-    public function __construct(array $config = null)
+    public function __construct(?array $config = null)
     {
         $this->config = $config;
     }
@@ -61,8 +63,8 @@ class Assets extends Elements implements DataProviderInterface
 
         // Prepare File
         $file = tempnam('/tmp', 'zip');
-        $zip = new \ZipArchive();
-        $zip->open($file, \ZipArchive::OVERWRITE);
+        $zip = new ZipArchive();
+        $zip->open($file, ZipArchive::OVERWRITE);
 
         foreach (array_keys($this->exportIds) as $id) {
             $theAsset = Asset::getById($id);
@@ -85,7 +87,7 @@ class Assets extends Elements implements DataProviderInterface
 
         $response = new Response($content);
         $response->headers->set('Content-Type', 'application/zip');
-        $response->headers->set('Content-Length', (string) $size);
+        $response->headers->set('Content-Length', (string)$size);
         $response->headers->set('Content-Disposition', 'attachment; filename="' . $asset->getFilename() . '.zip"');
 
         return $response;
@@ -94,14 +96,14 @@ class Assets extends Elements implements DataProviderInterface
     /**
      * @throws Exception
      */
-    public function searchData(int $id, string $firstname, string $lastname, string $email, int $start, int $limit, string $sort = null): array
+    public function searchData(int $id, string $firstname, string $lastname, string $email, int $start, int $limit, ?string $sort = null): array
     {
         if (empty($id) && empty($firstname) && empty($lastname) && empty($email)) {
             return ['data' => [], 'success' => true, 'total' => 0];
         }
 
         //TODO: add orWhere only if field if set!
-        $db = \Pimcore\Db::get();
+        $db = Db::get();
         $queryBuilder = $db->createQueryBuilder();
         $query = $queryBuilder
             ->select('assets.id')
@@ -117,7 +119,7 @@ class Assets extends Elements implements DataProviderInterface
                 ->orWhere(
                     $queryBuilder->expr()->like('metadata.data', ':firstname')
                 )
-                ->setParameter('firstname', ('%'.$firstname.'%'));
+                ->setParameter('firstname', ('%' . $firstname . '%'));
         }
 
         if (!empty($lastname)) {
@@ -125,7 +127,7 @@ class Assets extends Elements implements DataProviderInterface
                 ->orWhere(
                     $queryBuilder->expr()->like('metadata.data', ':lastname')
                 )
-                ->setParameter('lastname', ('%'.$lastname.'%'));
+                ->setParameter('lastname', ('%' . $lastname . '%'));
         }
 
         if (!empty($email)) {
@@ -133,7 +135,7 @@ class Assets extends Elements implements DataProviderInterface
                 ->orWhere(
                     $queryBuilder->expr()->like('metadata.data', ':email')
                 )
-                ->setParameter('email', ('%'.$email.'%'));
+                ->setParameter('email', ('%' . $email . '%'));
         }
 
         $sortingSettings = QueryParams::extractSortingSettings(['sort' => $sort]);

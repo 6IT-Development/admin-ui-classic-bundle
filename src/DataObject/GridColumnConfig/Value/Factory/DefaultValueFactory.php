@@ -11,14 +11,15 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\DataObject\GridColumnConfig\Value\Factory;
 
 use Pimcore\Bundle\AdminBundle\DataObject\GridColumnConfig\Value\ValueInterface;
 use Pimcore\Localization\LocaleServiceInterface;
+use stdClass;
 
 final class DefaultValueFactory implements ValueFactoryInterface
 {
@@ -32,7 +33,7 @@ final class DefaultValueFactory implements ValueFactoryInterface
         $this->localeService = $localeService;
     }
 
-    public function build(\stdClass $configElement, mixed $context = null): ValueInterface
+    public function build(stdClass $configElement, mixed $context = null): ValueInterface
     {
         $value = new $this->className($configElement, $context);
 

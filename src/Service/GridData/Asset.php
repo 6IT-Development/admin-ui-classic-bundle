@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -10,16 +11,18 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\Service\GridData;
 
+use Pimcore;
 use Pimcore\Model;
 use Pimcore\Model\Asset\MetaData\ClassDefinition\Data\Data;
 use Pimcore\Model\Element\Service;
 use Pimcore\Model\Exception\UnsupportedException;
+use Pimcore\Video;
 
 /**
  *
@@ -27,7 +30,7 @@ use Pimcore\Model\Exception\UnsupportedException;
  */
 class Asset extends Element
 {
-    public static function getData(Model\Asset $asset, array $fields = null, string $requestedLanguage = null, array $params = []): array
+    public static function getData(Model\Asset $asset, ?array $fields = null, ?string $requestedLanguage = null, array $params = []): array
     {
         $data = self::gridElementData($asset);
         $loader = null;
@@ -68,7 +71,7 @@ class Asset extends Element
                     if ($rawMetaData) {
                         $type = $rawMetaData['type'];
                         if (!$loader) {
-                            $loader = \Pimcore::getContainer()->get('pimcore.implementation_loader.asset.metadata.data');
+                            $loader = Pimcore::getContainer()->get('pimcore.implementation_loader.asset.metadata.data');
                         }
 
                         $metaData = $rawMetaData['data'] ?? null;
@@ -77,7 +80,7 @@ class Asset extends Element
                             /** @var Data $instance */
                             $instance = $loader->build($type);
                             $metaData = $instance->getDataForListfolderGrid($rawMetaData['data'] ?? null, $rawMetaData);
-                        } catch (UnsupportedException $e) {
+                        } catch (UnsupportedException) {
                         }
                     }
 
@@ -96,7 +99,7 @@ class Asset extends Element
 
         if ($asset instanceof Model\Asset\Image) {
             $thumbnailMethod = 'getThumbnail';
-        } elseif ($asset instanceof Model\Asset\Video && \Pimcore\Video::isAvailable()) {
+        } elseif ($asset instanceof Model\Asset\Video && Video::isAvailable()) {
             $thumbnailMethod = 'getImageThumbnail';
         } elseif ($asset instanceof Model\Asset\Document && \Pimcore\Document::isAvailable()) {
             $thumbnailMethod = 'getImageThumbnail';

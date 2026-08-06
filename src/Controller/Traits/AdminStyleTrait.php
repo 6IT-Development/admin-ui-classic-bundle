@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -10,12 +11,14 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\Controller\Traits;
 
+use Exception;
+use Pimcore;
 use Pimcore\Bundle\AdminBundle\Event\AdminEvents;
 use Pimcore\Bundle\AdminBundle\Event\ElementAdminStyleEvent;
 use Pimcore\Model\Element\AdminStyle;
@@ -27,12 +30,12 @@ use Pimcore\Model\Element\ElementInterface;
 trait AdminStyleTrait
 {
     /**
-     * @throws \Exception
+     * @throws Exception
      */
-    protected function addAdminStyle(ElementInterface $element, int $context = null, array &$data = []): void
+    protected function addAdminStyle(ElementInterface $element, ?int $context = null, array &$data = []): void
     {
         $event = new ElementAdminStyleEvent($element, new AdminStyle($element), $context);
-        \Pimcore::getEventDispatcher()->dispatch($event, AdminEvents::RESOLVE_ELEMENT_ADMIN_STYLE);
+        Pimcore::getEventDispatcher()->dispatch($event, AdminEvents::RESOLVE_ELEMENT_ADMIN_STYLE);
         $adminStyle = $event->getAdminStyle();
 
         $data['iconCls'] = $adminStyle->getElementIconClass() !== false ? $adminStyle->getElementIconClass() : null;

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -10,12 +11,13 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\Model;
 
+use Exception;
 use Pimcore\Model\AbstractModel;
 use Pimcore\Model\Exception\NotFoundException;
 
@@ -41,20 +43,20 @@ class GridConfigFavourite extends AbstractModel
      */
     protected string $type;
 
-    public static function getByOwnerAndClassAndObjectId(int $ownerId, string $classId, int $objectId = null, ?string $searchType = ''): ?GridConfigFavourite
+    public static function getByOwnerAndClassAndObjectId(int $ownerId, string $classId, ?int $objectId = null, ?string $searchType = ''): ?GridConfigFavourite
     {
         try {
             $favourite = new self();
             $favourite->getDao()->getByOwnerAndClassAndObjectId($ownerId, $classId, $objectId, $searchType);
 
             return $favourite;
-        } catch (NotFoundException $e) {
+        } catch (NotFoundException) {
             return null;
         }
     }
 
     /**
-     * @throws \Exception
+     * @throws Exception
      */
     public function save(): void
     {

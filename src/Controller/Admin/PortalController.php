@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -10,15 +11,17 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\Controller\Admin;
 
+use DateTime;
 use Pimcore\Bundle\AdminBundle\Controller\AdminAbstractController;
 use Pimcore\Bundle\AdminBundle\Helper\Dashboard;
 use Pimcore\Controller\KernelControllerEventInterface;
+use Pimcore\Db;
 use Pimcore\Model\Asset;
 use Pimcore\Model\DataObject;
 use Pimcore\Model\Document;
@@ -27,11 +30,11 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Event\ControllerEvent;
 use Symfony\Component\Routing\Attribute\Route;
 
-    /**
+/**
  *
  * @internal
-     */
-    #[Route('/portal')]
+ */
+#[Route('/portal')]
 class PortalController extends AdminAbstractController implements KernelControllerEventInterface
 {
     protected ?Dashboard $dashboardHelper = null;
@@ -46,7 +49,7 @@ class PortalController extends AdminAbstractController implements KernelControll
         $this->dashboardHelper->saveDashboard($request->get('key'), $config);
     }
 
-        #[Route('/dashboard-list', name: 'pimcore_admin_portal_dashboardlist', methods: ['GET'])]
+    #[Route('/dashboard-list', name: 'pimcore_admin_portal_dashboardlist', methods: [Request::METHOD_GET])]
     public function dashboardListAction(Request $request): JsonResponse
     {
         $dashboards = $this->dashboardHelper->getAllDashboards();
@@ -61,7 +64,7 @@ class PortalController extends AdminAbstractController implements KernelControll
         return $this->adminJson($data);
     }
 
-        #[Route('/create-dashboard', name: 'pimcore_admin_portal_createdashboard', methods: ['POST'])]
+    #[Route('/create-dashboard', name: 'pimcore_admin_portal_createdashboard', methods: [Request::METHOD_POST])]
     public function createDashboardAction(Request $request): JsonResponse
     {
         $dashboards = $this->dashboardHelper->getAllDashboards();
@@ -78,7 +81,7 @@ class PortalController extends AdminAbstractController implements KernelControll
         }
     }
 
-        #[Route('/delete-dashboard', name: 'pimcore_admin_portal_deletedashboard', methods: ['DELETE'])]
+    #[Route('/delete-dashboard', name: 'pimcore_admin_portal_deletedashboard', methods: [Request::METHOD_DELETE])]
     public function deleteDashboardAction(Request $request): JsonResponse
     {
         $key = $request->get('key');
@@ -87,13 +90,13 @@ class PortalController extends AdminAbstractController implements KernelControll
         return $this->adminJson(['success' => true]);
     }
 
-        #[Route('/get-configuration', name: 'pimcore_admin_portal_getconfiguration', methods: ['GET'])]
+    #[Route('/get-configuration', name: 'pimcore_admin_portal_getconfiguration', methods: [Request::METHOD_GET])]
     public function getConfigurationAction(Request $request): JsonResponse
     {
         return $this->adminJson($this->getCurrentConfiguration($request));
     }
 
-        #[Route('/remove-widget', name: 'pimcore_admin_portal_removewidget', methods: ['DELETE'])]
+    #[Route('/remove-widget', name: 'pimcore_admin_portal_removewidget', methods: [Request::METHOD_DELETE])]
     public function removeWidgetAction(Request $request): JsonResponse
     {
         $config = $this->getCurrentConfiguration($request);
@@ -115,7 +118,7 @@ class PortalController extends AdminAbstractController implements KernelControll
         return $this->adminJson(['success' => true]);
     }
 
-        #[Route('/add-widget', name: 'pimcore_admin_portal_addwidget', methods: ['POST'])]
+    #[Route('/add-widget', name: 'pimcore_admin_portal_addwidget', methods: [Request::METHOD_POST])]
     public function addWidgetAction(Request $request): JsonResponse
     {
         $config = $this->getCurrentConfiguration($request);
@@ -123,7 +126,7 @@ class PortalController extends AdminAbstractController implements KernelControll
         $nextId = 0;
         foreach ($config['positions'] as $col) {
             foreach ($col as $row) {
-                $nextId = ($row['id'] > $nextId ? $row['id'] : $nextId);
+                $nextId = (max($row['id'], $nextId));
             }
         }
 
@@ -135,7 +138,7 @@ class PortalController extends AdminAbstractController implements KernelControll
         return $this->adminJson(['success' => true, 'id' => $nextId]);
     }
 
-        #[Route('/reorder-widget', name: 'pimcore_admin_portal_reorderwidget', methods: ['PUT'])]
+    #[Route('/reorder-widget', name: 'pimcore_admin_portal_reorderwidget', methods: [Request::METHOD_PUT])]
     public function reorderWidgetAction(Request $request): JsonResponse
     {
         $config = $this->getCurrentConfiguration($request);
@@ -162,7 +165,7 @@ class PortalController extends AdminAbstractController implements KernelControll
         return $this->adminJson(['success' => true]);
     }
 
-        #[Route('/update-portlet-config', name: 'pimcore_admin_portal_updateportletconfig', methods: ['PUT'])]
+    #[Route('/update-portlet-config', name: 'pimcore_admin_portal_updateportletconfig', methods: [Request::METHOD_PUT])]
     public function updatePortletConfigAction(Request $request): JsonResponse
     {
         $key = $request->get('key');
@@ -184,14 +187,14 @@ class PortalController extends AdminAbstractController implements KernelControll
         return $this->adminJson(['success' => true]);
     }
 
-        #[Route('/portlet-modified-documents', name: 'pimcore_admin_portal_portletmodifieddocuments', methods: ['GET'])]
+    #[Route('/portlet-modified-documents', name: 'pimcore_admin_portal_portletmodifieddocuments', methods: [Request::METHOD_GET])]
     public function portletModifiedDocumentsAction(Request $request): JsonResponse
     {
         $list = Document::getList([
             'limit' => 10,
             'order' => 'DESC',
             'orderKey' => 'modificationDate',
-            'condition' => "userModification = '".$this->getAdminUser()->getId()."'",
+            'condition' => "userModification = '" . $this->getAdminUser()->getId() . "'",
         ]);
 
         $response = [];
@@ -211,14 +214,14 @@ class PortalController extends AdminAbstractController implements KernelControll
         return $this->adminJson($response);
     }
 
-        #[Route('/portlet-modified-assets', name: 'pimcore_admin_portal_portletmodifiedassets', methods: ['GET'])]
+    #[Route('/portlet-modified-assets', name: 'pimcore_admin_portal_portletmodifiedassets', methods: [Request::METHOD_GET])]
     public function portletModifiedAssetsAction(Request $request): JsonResponse
     {
         $list = Asset::getList([
             'limit' => 10,
             'order' => 'DESC',
             'orderKey' => 'modificationDate',
-            'condition' => "userModification = '".$this->getAdminUser()->getId()."'",
+            'condition' => "userModification = '" . $this->getAdminUser()->getId() . "'",
         ]);
 
         $response = [];
@@ -241,14 +244,14 @@ class PortalController extends AdminAbstractController implements KernelControll
         return $this->adminJson($response);
     }
 
-        #[Route('/portlet-modified-objects', name: 'pimcore_admin_portal_portletmodifiedobjects', methods: ['GET'])]
+    #[Route('/portlet-modified-objects', name: 'pimcore_admin_portal_portletmodifiedobjects', methods: [Request::METHOD_GET])]
     public function portletModifiedObjectsAction(Request $request): JsonResponse
     {
         $list = DataObject::getList([
             'limit' => 10,
             'order' => 'DESC',
             'orderKey' => 'modificationDate',
-            'condition' => "userModification = '".$this->getAdminUser()->getId()."'",
+            'condition' => "userModification = '" . $this->getAdminUser()->getId() . "'",
         ]);
 
         $response = [];
@@ -268,13 +271,13 @@ class PortalController extends AdminAbstractController implements KernelControll
         return $this->adminJson($response);
     }
 
-        #[Route('/portlet-modification-statistics', name: 'pimcore_admin_portal_portletmodificationstatistics', methods: ['GET'])]
+    #[Route('/portlet-modification-statistics', name: 'pimcore_admin_portal_portletmodificationstatistics', methods: [Request::METHOD_GET])]
     public function portletModificationStatisticsAction(Request $request): JsonResponse
     {
-        $db = \Pimcore\Db::get();
+        $db = Db::get();
 
         $days = 31;
-        $startDate = mktime(23, 59, 59, (int) date('m'), (int) date('d'), (int) date('Y'));
+        $startDate = mktime(23, 59, 59, (int)date('m'), (int)date('d'), (int)date('Y'));
 
         $data = [];
 
@@ -283,19 +286,19 @@ class PortalController extends AdminAbstractController implements KernelControll
             $end = $startDate - ($i * 86400);
             $start = $end - 86399;
 
-            $o = $db->fetchOne('SELECT COUNT(*) AS count FROM objects WHERE modificationDate > '.$start . ' AND modificationDate < '.$end);
-            $a = $db->fetchOne('SELECT COUNT(*) AS count FROM assets WHERE modificationDate > '.$start . ' AND modificationDate < '.$end);
-            $d = $db->fetchOne('SELECT COUNT(*) AS count FROM documents WHERE modificationDate > '.$start . ' AND modificationDate < '.$end);
+            $o = $db->fetchOne('SELECT COUNT(*) AS count FROM objects WHERE modificationDate > ' . $start . ' AND modificationDate < ' . $end);
+            $a = $db->fetchOne('SELECT COUNT(*) AS count FROM assets WHERE modificationDate > ' . $start . ' AND modificationDate < ' . $end);
+            $d = $db->fetchOne('SELECT COUNT(*) AS count FROM documents WHERE modificationDate > ' . $start . ' AND modificationDate < ' . $end);
 
-            $date = new \DateTime();
+            $date = new DateTime();
             $date->setTimestamp($start);
 
             $data[] = [
                 'timestamp' => $start,
                 'datetext' => $date->format('Y-m-d'),
-                'objects' => (int) $o,
-                'documents' => (int) $d,
-                'assets' => (int) $a,
+                'objects' => (int)$o,
+                'documents' => (int)$d,
+                'assets' => (int)$a,
             ];
         }
 

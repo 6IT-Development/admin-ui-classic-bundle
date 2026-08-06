@@ -11,12 +11,13 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\Service;
 
+use Exception;
 use Pimcore;
 use Pimcore\Bundle\AdminBundle\Controller\Traits\AdminStyleTrait;
 use Pimcore\Bundle\AdminBundle\CustomView;
@@ -31,7 +32,7 @@ use Pimcore\Model\Element\Service;
 use Pimcore\Model\Site;
 use Pimcore\Security\User\UserLoader;
 use Pimcore\Tool\Frontend;
-
+use Pimcore\Video;
 use Pimcore\Workflow\Manager;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
@@ -44,9 +45,10 @@ class ElementService implements ElementServiceInterface
 
     public function __construct(
         protected UrlGeneratorInterface $urlGenerator,
-        protected Config $config,
-        protected UserLoader $userLoader
-    ) {
+        protected Config                $config,
+        protected UserLoader            $userLoader
+    )
+    {
     }
 
     /**
@@ -67,7 +69,7 @@ class ElementService implements ElementServiceInterface
     }
 
     /**
-     * @throws \Exception
+     * @throws Exception
      */
     public function getElementTreeNodeConfig(ElementInterface $element): array
     {
@@ -116,49 +118,35 @@ class ElementService implements ElementServiceInterface
 
     public function getThumbnailUrl(Asset $asset, array $params = []): ?string
     {
-        $defaults = [
+        $params = array_merge([
             'id' => $asset->getId(),
             'treepreview' => true,
             '_dc' => $asset->getModificationDate(),
-        ];
+        ], $params);
 
-        $params = array_merge($defaults, $params);
-
-        switch ($asset) {
-            case $asset instanceof Asset\Image:
-                $thumbnailUrl = $this->urlGenerator->generate('pimcore_admin_asset_getimagethumbnail', $params);
-
-                break;
-            case $asset instanceof Asset\Folder:
-                $thumbnailUrl = $this->urlGenerator->generate('pimcore_admin_asset_getfolderthumbnail', $params);
-
-                break;
-            case $asset instanceof Asset\Video && \Pimcore\Video::isAvailable():
-                $thumbnailUrl = $this->urlGenerator->generate('pimcore_admin_asset_getvideothumbnail', $params);
-
-                break;
-            case $asset instanceof Asset\Document && \Pimcore\Document::isAvailable() && $asset->getPageCount():
-                $thumbnailUrl = $this->urlGenerator->generate('pimcore_admin_asset_getdocumentthumbnail', $params);
-
-                break;
-            case $asset instanceof Asset\Audio:
-                $thumbnailUrl = '/bundles/pimcoreadmin/img/flat-color-icons/speaker.svg';
-
-                break;
-            default:
-                $thumbnailUrl = '/bundles/pimcoreadmin/img/filetype-not-supported.svg';
+        if ($asset == $asset instanceof Asset\Image) {
+            return $this->urlGenerator->generate('pimcore_admin_asset_getimagethumbnail', $params);
+        } elseif ($asset == $asset instanceof Asset\Folder) {
+            return $this->urlGenerator->generate('pimcore_admin_asset_getfolderthumbnail', $params);
+        } elseif ($asset == $asset instanceof Asset\Video && Video::isAvailable()) {
+            return $this->urlGenerator->generate('pimcore_admin_asset_getvideothumbnail', $params);
+        } elseif ($asset == $asset instanceof Asset\Document && Pimcore\Document::isAvailable() && $asset->getPageCount()) {
+            return $this->urlGenerator->generate('pimcore_admin_asset_getdocumentthumbnail', $params);
+        } elseif ($asset == $asset instanceof Asset\Audio) {
+            return '/bundles/pimcoreadmin/img/flat-color-icons/speaker.svg';
         }
 
-        return $thumbnailUrl;
+        return '/bundles/pimcoreadmin/img/filetype-not-supported.svg';
     }
 
     /**
-     * @throws \Exception
+     * @throws Exception
      */
     private function assignAssetTreeConfig(
         Asset $element,
         array &$tmpNode
-    ): void {
+    ): void
+    {
         $user = $this->userLoader->getUser();
         $hasChildren = $element->getDao()->hasChildren($user);
         $permissions = $element->getUserPermissions($user);
@@ -188,7 +176,7 @@ class ElementService implements ElementServiceInterface
     }
 
     /**
-     * @throws \Exception
+     * @throws Exception
      */
     private function assignDataObjectTreeConfig(DataObject\AbstractObject $element, array &$tmpNode): void
     {
@@ -228,12 +216,13 @@ class ElementService implements ElementServiceInterface
     }
 
     /**
-     * @throws \Exception
+     * @throws Exception
      */
     private function assignDocumentTreeConfig(
         Document $element,
-        array &$tmpNode
-    ): void {
+        array    &$tmpNode
+    ): void
+    {
         $user = $this->userLoader->getUser();
         $hasChildren = $element->getDao()->hasChildren(null, $user);
 
@@ -297,7 +286,7 @@ class ElementService implements ElementServiceInterface
                     break;
 
                 case $asset instanceof Asset\Video:
-                    if (\Pimcore\Video::isAvailable()) {
+                    if (Video::isAvailable()) {
                         $tmpAsset['thumbnail'] = $this->getThumbnailUrl($asset, ['origin' => 'treeNode']);
                     }
 
@@ -306,15 +295,15 @@ class ElementService implements ElementServiceInterface
                 case $asset instanceof Asset\Document:
                     // add the PDF check here, otherwise the preview layer in admin is shown without content
                     if (
-                        \Pimcore\Document::isAvailable() &&
-                        \Pimcore\Document::isFileTypeSupported($asset->getFilename())
+                        Pimcore\Document::isAvailable() &&
+                        Pimcore\Document::isFileTypeSupported($asset->getFilename())
                     ) {
                         $tmpAsset['thumbnail'] = $this->getThumbnailUrl($asset, ['origin' => 'treeNode']);
                     }
 
                     break;
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Logger::error('Cannot get dimensions of asset, seems to be broken. Reason: ' . $e->getMessage());
         }
     }

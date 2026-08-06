@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -10,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\Controller\Admin;
@@ -19,6 +20,7 @@ namespace Pimcore\Bundle\AdminBundle\Controller\Admin;
 use Doctrine\DBAL\Connection;
 use Exception;
 use GuzzleHttp\ClientInterface;
+use Pimcore;
 use Pimcore\Bundle\AdminBundle\Controller\AdminAbstractController;
 use Pimcore\Bundle\AdminBundle\Event\AdminEvents;
 use Pimcore\Bundle\AdminBundle\Event\IndexActionSettingsEvent;
@@ -62,27 +64,25 @@ class IndexController extends AdminAbstractController implements KernelResponseE
 {
     public function __construct(
         protected EventDispatcherInterface $eventDispatcher,
-        protected TranslatorInterface $translator,
-        protected ClientInterface $httpClient
-    ) {
+        protected TranslatorInterface      $translator,
+        protected ClientInterface          $httpClient
+    )
+    {
     }
 
-        /**
-     *
-     * @throws \Exception
-         */
-        #[Route('/', name: 'pimcore_admin_index', methods: ['GET'])]
+    #[Route('/', name: 'pimcore_admin_index', methods: [Request::METHOD_GET])]
     public function indexAction(
-        Request $request,
-        KernelInterface $kernel,
-        Executor $maintenanceExecutor,
-        CsrfProtectionHandler $csrfProtection,
-        Config $config,
-        PimcoreBundleManager $bundleManager,
+        Request                             $request,
+        KernelInterface                     $kernel,
+        Executor                            $maintenanceExecutor,
+        CsrfProtectionHandler               $csrfProtection,
+        Config                              $config,
+        PimcoreBundleManager                $bundleManager,
         Tool\MaintenanceModeHelperInterface $maintenanceModeHelper
-    ): Response {
+    ): Response
+    {
         $user = $this->getAdminUser();
-        $perspectiveConfig = new \Pimcore\Bundle\AdminBundle\Perspective\Config();
+        $perspectiveConfig = new Pimcore\Bundle\AdminBundle\Perspective\Config();
         $templateParams = [
             'config' => $config,
             'systemSettings' => SystemSettingsConfig::get(),
@@ -117,12 +117,12 @@ class IndexController extends AdminAbstractController implements KernelResponseE
         return $this->render($settingsEvent->getTemplate() ?: '@PimcoreAdmin/admin/index/index.html.twig', $templateParams);
     }
 
-        /**
-     *
-     * @throws \Exception
-         */
-        #[Route('/index/statistics', name: 'pimcore_admin_index_statistics', methods: ['GET'])]
-    public function statisticsAction(Request $request, Connection $db, KernelInterface $kernel): JsonResponse
+    #[Route('/index/statistics', name: 'pimcore_admin_index_statistics', methods: [Request::METHOD_GET])]
+    public function statisticsAction(
+        Request         $request,
+        Connection      $db,
+        KernelInterface $kernel
+    ): JsonResponse
     {
         if (!$request->isXmlHttpRequest()) {
             throw $this->createAccessDeniedHttpException();
@@ -132,13 +132,13 @@ class IndexController extends AdminAbstractController implements KernelResponseE
         try {
             $tables = $db->fetchAllAssociative('SELECT TABLE_NAME as name,TABLE_ROWS as `rows` from information_schema.TABLES
                 WHERE TABLE_ROWS IS NOT NULL AND TABLE_SCHEMA = ?', [$db->getDatabase()]);
-        } catch (\Exception $e) {
+        } catch (Exception) {
             $tables = [];
         }
 
         try {
             $mysqlVersion = $db->fetchOne('SELECT VERSION()');
-        } catch (\Exception $e) {
+        } catch (Exception) {
             $mysqlVersion = null;
         }
 
@@ -154,7 +154,7 @@ class IndexController extends AdminAbstractController implements KernelResponseE
                 'bundles' => array_keys($kernel->getBundles()),
                 'tables' => $tables,
             ];
-        } catch (\Exception $e) {
+        } catch (Exception) {
             $data = [];
         }
 
@@ -177,7 +177,7 @@ class IndexController extends AdminAbstractController implements KernelResponseE
 
     protected function addRuntimePerspective(array &$templateParams, User $user): static
     {
-        $runtimePerspective = \Pimcore\Bundle\AdminBundle\Perspective\Config::getRuntimePerspective($user);
+        $runtimePerspective = Pimcore\Bundle\AdminBundle\Perspective\Config::getRuntimePerspective($user);
         $templateParams['runtimePerspective'] = $runtimePerspective;
 
         return $this;
@@ -203,13 +203,14 @@ class IndexController extends AdminAbstractController implements KernelResponseE
     }
 
     protected function buildPimcoreSettings(
-        Request $request,
-        array &$templateParams,
-        User $user, KernelInterface $kernel,
-        ExecutorInterface $maintenanceExecutor,
-        CsrfProtectionHandler $csrfProtection,
+        Request                             $request,
+        array                               &$templateParams,
+        User                                $user, KernelInterface $kernel,
+        ExecutorInterface                   $maintenanceExecutor,
+        CsrfProtectionHandler               $csrfProtection,
         Tool\MaintenanceModeHelperInterface $maintenanceModeHelper
-    ): static {
+    ): static
+    {
         $config = $templateParams['config'];
         $systemSettings = $templateParams['systemSettings'];
         $adminSettings = $templateParams['adminSettings'];
@@ -229,19 +230,19 @@ class IndexController extends AdminAbstractController implements KernelResponseE
         }
 
         $settings = [
-            'instanceId'          => $this->getInstanceId(),
-            'version'             => Version::getVersion(),
-            'build'               => Version::getRevision(),
-            'platform_version'    => Version::getPlatformVersion(),
-            'debug'               => \Pimcore::inDebugMode(),
-            'devmode'             => \Pimcore::inDevMode(),
-            'disableMinifyJs'     => \Pimcore::disableMinifyJs(),
-            'environment'         => $kernel->getEnvironment(),
+            'instanceId' => $this->getInstanceId(),
+            'version' => Version::getVersion(),
+            'build' => Version::getRevision(),
+            'platform_version' => Version::getPlatformVersion(),
+            'debug' => Pimcore::inDebugMode(),
+            'devmode' => Pimcore::inDevMode(),
+            'disableMinifyJs' => Pimcore::disableMinifyJs(),
+            'environment' => $kernel->getEnvironment(),
             'cached_environments' => Tool::getCachedSymfonyEnvironments(),
-            'sessionId'           => htmlentities($request->getSession()->getId(), ENT_QUOTES, 'UTF-8'),
+            'sessionId' => htmlentities($request->getSession()->getId(), ENT_QUOTES, 'UTF-8'),
 
             // languages
-            'language'         => $request->getLocale(),
+            'language' => $request->getLocale(),
             'websiteLanguages' => Admin::reorderWebsiteLanguages(
                 $this->getAdminUser(),
                 $systemSettings['general']['valid_languages'],
@@ -250,46 +251,46 @@ class IndexController extends AdminAbstractController implements KernelResponseE
             'requiredLanguages' => $requiredLanguages,
 
             // flags
-            'showCloseConfirmation'          => true,
-            'debug_admin_translations'       => (bool)$systemSettings['general']['debug_admin_translations'],
-            'document_generatepreviews'      => (bool)$config['documents']['generate_preview'],
-            'asset_disable_tree_preview'     => (bool)$adminSettings['assets']['disable_tree_preview'],
-            'asset_hide_edit'                => (bool)$adminSettings['assets']['hide_edit_image'],
-            'asset_tree_paging_limit'        => $config['assets']['tree_paging_limit'],
-            'asset_default_upload_path'      => $config['assets']['default_upload_path'],
-            'chromium'                       => HtmlToImage::isSupported(),
-            'videoconverter'                 => Video::isAvailable(),
-            'main_domain'                    => $systemSettings['general']['domain'],
-            'custom_admin_entrypoint_url'    => $adminEntrypointUrl,
-            'timezone'                       => $config['general']['timezone'] ?: date_default_timezone_get(),
-            'tile_layer_url_template'        => $config['maps']['tile_layer_url_template'],
-            'geocoding_url_template'         => $config['maps']['geocoding_url_template'],
+            'showCloseConfirmation' => true,
+            'debug_admin_translations' => (bool)$systemSettings['general']['debug_admin_translations'],
+            'document_generatepreviews' => (bool)$config['documents']['generate_preview'],
+            'asset_disable_tree_preview' => (bool)$adminSettings['assets']['disable_tree_preview'],
+            'asset_hide_edit' => (bool)$adminSettings['assets']['hide_edit_image'],
+            'asset_tree_paging_limit' => $config['assets']['tree_paging_limit'],
+            'asset_default_upload_path' => $config['assets']['default_upload_path'],
+            'chromium' => HtmlToImage::isSupported(),
+            'videoconverter' => Video::isAvailable(),
+            'main_domain' => $systemSettings['general']['domain'],
+            'custom_admin_entrypoint_url' => $adminEntrypointUrl,
+            'timezone' => $config['general']['timezone'] ?: date_default_timezone_get(),
+            'tile_layer_url_template' => $config['maps']['tile_layer_url_template'],
+            'geocoding_url_template' => $config['maps']['geocoding_url_template'],
             'reverse_geocoding_url_template' => $config['maps']['reverse_geocoding_url_template'],
-            'document_tree_paging_limit'     => $config['documents']['tree_paging_limit'],
-            'object_tree_paging_limit'       => $config['objects']['tree_paging_limit'],
-            'hostname'                       => htmlentities(\Pimcore\Tool::getHostname(), ENT_QUOTES, 'UTF-8'),
-            'dependency'                     => $config['dependency']['enabled'],
+            'document_tree_paging_limit' => $config['documents']['tree_paging_limit'],
+            'object_tree_paging_limit' => $config['objects']['tree_paging_limit'],
+            'hostname' => htmlentities(Tool::getHostname(), ENT_QUOTES, 'UTF-8'),
+            'dependency' => $config['dependency']['enabled'],
 
             'document_auto_save_interval' => $config['documents']['auto_save_interval'],
-            'object_auto_save_interval'   => $config['objects']['auto_save_interval'],
+            'object_auto_save_interval' => $config['objects']['auto_save_interval'],
 
             // perspective and portlets
-            'perspective'           => $templateParams['runtimePerspective'],
-            'availablePerspectives' => \Pimcore\Bundle\AdminBundle\Perspective\Config::getAvailablePerspectives($user),
-            'disabledPortlets'      => $dashboardHelper->getDisabledPortlets(),
+            'perspective' => $templateParams['runtimePerspective'],
+            'availablePerspectives' => Pimcore\Bundle\AdminBundle\Perspective\Config::getAvailablePerspectives($user),
+            'disabledPortlets' => $dashboardHelper->getDisabledPortlets(),
 
             // this stuff is used to decide whether the "add" button should be grayed out or not
-            'image-thumbnails-writeable'          => (new Asset\Image\Thumbnail\Config())->isWriteable(),
-            'video-thumbnails-writeable'          => (new Asset\Video\Thumbnail\Config())->isWriteable(),
-            'document-types-writeable'            => (new DocType())->isWriteable(),
-            'predefined-properties-writeable'     => (new Predefined())->isWriteable(),
-            'predefined-asset-metadata-writeable' => (new \Pimcore\Model\Metadata\Predefined())->isWriteable(),
-            'perspectives-writeable'              => \Pimcore\Bundle\AdminBundle\Perspective\Config::isWriteable(),
-            'custom-views-writeable'              => \Pimcore\Bundle\AdminBundle\CustomView\Config::isWriteable(),
-            'class-definition-writeable'          => !isset($_SERVER['PIMCORE_CLASS_DEFINITION_WRITABLE']) ||
-                (bool) $_SERVER['PIMCORE_CLASS_DEFINITION_WRITABLE'],
-            'object-custom-layout-writeable' => (new CustomLayout())->isWriteable(),
-            'select-options-writeable' => (new \Pimcore\Model\DataObject\SelectOptions\Config())->isWriteable(),
+            'image-thumbnails-writeable' => new Asset\Image\Thumbnail\Config()->isWriteable(),
+            'video-thumbnails-writeable' => new Asset\Video\Thumbnail\Config()->isWriteable(),
+            'document-types-writeable' => new DocType()->isWriteable(),
+            'predefined-properties-writeable' => new Predefined()->isWriteable(),
+            'predefined-asset-metadata-writeable' => new Pimcore\Model\Metadata\Predefined()->isWriteable(),
+            'perspectives-writeable' => Pimcore\Bundle\AdminBundle\Perspective\Config::isWriteable(),
+            'custom-views-writeable' => Pimcore\Bundle\AdminBundle\CustomView\Config::isWriteable(),
+            'class-definition-writeable' => !isset($_SERVER['PIMCORE_CLASS_DEFINITION_WRITABLE']) ||
+                $_SERVER['PIMCORE_CLASS_DEFINITION_WRITABLE'],
+            'object-custom-layout-writeable' => new CustomLayout()->isWriteable(),
+            'select-options-writeable' => new Pimcore\Model\DataObject\SelectOptions\Config()->isWriteable(),
 
             // search types
             'asset_search_types' => Asset::getTypes(),
@@ -326,7 +327,7 @@ class IndexController extends AdminAbstractController implements KernelResponseE
         try {
             $instanceId = $this->getParameter('secret');
             $instanceId = sha1(substr($instanceId, 3, -3));
-        } catch (\Exception $e) {
+        } catch (Exception) {
             // nothing to do
         }
 
@@ -340,7 +341,7 @@ class IndexController extends AdminAbstractController implements KernelResponseE
         $max_post = filesize2bytes(ini_get('post_max_size') . 'B');
         $upload_mb = min($max_upload, $max_post) ?: $max_upload;
 
-        $settings['upload_max_filesize'] = (int) $upload_mb;
+        $settings['upload_max_filesize'] = (int)$upload_mb;
 
         // session lifetime (gc)
         $session_gc_maxlifetime = ini_get('session.gc_maxlifetime');
@@ -354,10 +355,11 @@ class IndexController extends AdminAbstractController implements KernelResponseE
     }
 
     protected function addMaintenanceSettings(
-        array &$settings,
-        ExecutorInterface $maintenanceExecutor,
+        array                               &$settings,
+        ExecutorInterface                   $maintenanceExecutor,
         Tool\MaintenanceModeHelperInterface $maintenanceModeHelper
-    ): static {
+    ): static
+    {
         // check maintenance
         $maintenance_active = false;
         if ($lastExecution = $maintenanceExecutor->getLastExecution()) {
@@ -378,7 +380,7 @@ class IndexController extends AdminAbstractController implements KernelResponseE
         //mail settings
         $mailIncomplete = false;
         if (isset($config['email']) && $systemSettings['email']) {
-            if (\Pimcore::inDebugMode() && empty($systemSettings['email']['debug']['email_addresses'])) {
+            if (Pimcore::inDebugMode() && empty($systemSettings['email']['debug']['email_addresses'])) {
                 $mailIncomplete = true;
             }
             if (empty($config['email']['sender']['email'])) {
@@ -397,13 +399,13 @@ class IndexController extends AdminAbstractController implements KernelResponseE
         $cvData = [];
 
         // still needed when publishing objects
-        $cvConfig = \Pimcore\Bundle\AdminBundle\CustomView\Config::get();
+        $cvConfig = Pimcore\Bundle\AdminBundle\CustomView\Config::get();
 
         if ($cvConfig) {
             foreach ($cvConfig as $node) {
                 $tmpData = $node;
                 // backwards compatibility
-                $treeType = $tmpData['treetype'] ? $tmpData['treetype'] : 'object';
+                $treeType = $tmpData['treetype'] ?: 'object';
                 $rootNode = Service::getElementByPath($treeType, $tmpData['rootfolder']);
 
                 if ($rootNode) {
@@ -432,7 +434,7 @@ class IndexController extends AdminAbstractController implements KernelResponseE
         $enabled = (bool)$config['notifications']['enabled'];
 
         $settings['notifications_enabled'] = $enabled;
-        $settings['checknewnotification_enabled'] = $enabled && (bool) $config['notifications']['check_new_notification']['enabled'];
+        $settings['checknewnotification_enabled'] = $enabled && $config['notifications']['check_new_notification']['enabled'];
 
         // convert the config parameter interval (seconds) in milliseconds
         $settings['checknewnotification_interval'] = $config['notifications']['check_new_notification']['interval'] * 1000;
@@ -442,6 +444,6 @@ class IndexController extends AdminAbstractController implements KernelResponseE
 
     public function onKernelResponseEvent(ResponseEvent $event): void
     {
-        $event->getResponse()->headers->set('X-Frame-Options', 'deny', true);
+        $event->getResponse()->headers->set('X-Frame-Options', 'deny');
     }
 }

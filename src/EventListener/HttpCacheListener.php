@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -10,12 +11,13 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\EventListener;
 
+use Pimcore;
 use Pimcore\Bundle\CoreBundle\EventListener\Traits\PimcoreContextAwareTrait;
 use Pimcore\Http\Request\Resolver\PimcoreContextResolver;
 use Pimcore\Http\RequestHelper;
@@ -64,7 +66,7 @@ class HttpCacheListener implements EventSubscriberInterface
                 $disable = true;
             }
 
-            if (\Pimcore::inDebugMode()) {
+            if (Pimcore::inDebugMode()) {
                 $disable = true;
             }
         }
@@ -73,7 +75,7 @@ class HttpCacheListener implements EventSubscriberInterface
 
         if ($disable) {
             // set headers to avoid problems with proxies, ...
-            $this->responseHelper->disableCache($response, false);
+            $this->responseHelper->disableCache($response);
         }
     }
 }

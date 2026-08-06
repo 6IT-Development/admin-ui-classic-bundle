@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\Tests\Model\Controller;
@@ -105,14 +105,14 @@ class ModelAssetPermissionsTest extends AbstractPermissionTest
         $role = new User\Role();
         $role->setName('Testrole');
         $role->setWorkspacesAsset([
-            (new User\Workspace\Asset())->setValues(['cId' => $this->groupfolder->getId(), 'cPath' => $this->groupfolder->getFullpath(), 'list' => true, 'view' => true]),
+            new User\Workspace\Asset()->setValues(['cId' => $this->groupfolder->getId(), 'cPath' => $this->groupfolder->getFullpath(), 'list' => true, 'view' => true]),
         ]);
         $role->save();
 
         $role2 = new User\Role();
         $role2->setName('dummyRole');
         $role2->setWorkspacesAsset([
-            (new User\Workspace\Asset())->setValues(['cId' => $this->groupfolder->getId(), 'cPath' => $this->groupfolder->getFullpath(), 'list' => false, 'view' => false, 'delete'=>false, 'publish'=>false ]),
+            new User\Workspace\Asset()->setValues(['cId' => $this->groupfolder->getId(), 'cPath' => $this->groupfolder->getFullpath(), 'list' => false, 'view' => false, 'delete' => false, 'publish' => false]),
         ]);
         $role2->save();
 
@@ -122,11 +122,11 @@ class ModelAssetPermissionsTest extends AbstractPermissionTest
         $this->userPermissionTest1->setPermissions(['assets']);
         $this->userPermissionTest1->setRoles([$role->getId(), $role2->getId()]);
         $this->userPermissionTest1->setWorkspacesAsset([
-            (new User\Workspace\Asset())->setValues(['cId' => $this->permissionfoo->getId(), 'cPath' => $this->permissionfoo->getFullpath(), 'list' => true, 'view' => true]),
-            (new User\Workspace\Asset())->setValues(['cId' => $this->permissionbar->getId(), 'cPath' => $this->permissionbar->getFullpath(), 'list' => true, 'view' => true]),
-            (new User\Workspace\Asset())->setValues(['cId' => $this->foo->getId(), 'cPath' => $this->foo->getFullpath(), 'list' => false, 'view' => false]),
-            (new User\Workspace\Asset())->setValues(['cId' => $this->bars->getId(), 'cPath' => $this->bars->getFullpath(), 'list' => false, 'view' => false]),
-            (new User\Workspace\Asset())->setValues(['cId' => $this->userfolder->getId(), 'cPath' => $this->userfolder->getFullpath(), 'list' => true, 'view' => true, 'create'=> true, 'rename'=> true]),
+            new User\Workspace\Asset()->setValues(['cId' => $this->permissionfoo->getId(), 'cPath' => $this->permissionfoo->getFullpath(), 'list' => true, 'view' => true]),
+            new User\Workspace\Asset()->setValues(['cId' => $this->permissionbar->getId(), 'cPath' => $this->permissionbar->getFullpath(), 'list' => true, 'view' => true]),
+            new User\Workspace\Asset()->setValues(['cId' => $this->foo->getId(), 'cPath' => $this->foo->getFullpath(), 'list' => false, 'view' => false]),
+            new User\Workspace\Asset()->setValues(['cId' => $this->bars->getId(), 'cPath' => $this->bars->getFullpath(), 'list' => false, 'view' => false]),
+            new User\Workspace\Asset()->setValues(['cId' => $this->userfolder->getId(), 'cPath' => $this->userfolder->getFullpath(), 'list' => true, 'view' => true, 'create' => true, 'rename' => true]),
         ]);
         $this->userPermissionTest1->save();
 
@@ -136,12 +136,12 @@ class ModelAssetPermissionsTest extends AbstractPermissionTest
         $this->userPermissionTest2->setPermissions(['assets']);
         $this->userPermissionTest2->setRoles([$role->getId(), $role2->getId()]);
         $this->userPermissionTest2->setWorkspacesAsset([
-            (new User\Workspace\Asset())->setValues(['cId' => $this->permissionfoo->getId(), 'cPath' => $this->permissionfoo->getFullpath(), 'list' => true, 'view' => true]),
-            (new User\Workspace\Asset())->setValues(['cId' => $this->permissionbar->getId(), 'cPath' => $this->permissionbar->getFullpath(), 'list' => true, 'view' => true]),
-            (new User\Workspace\Asset())->setValues(['cId' => $this->foo->getId(), 'cPath' => $this->foo->getFullpath(), 'list' => false, 'view' => false]),
-            (new User\Workspace\Asset())->setValues(['cId' => $this->bars->getId(), 'cPath' => $this->bars->getFullpath(), 'list' => false, 'view' => false]),
-            (new User\Workspace\Asset())->setValues(['cId' => $this->userfolder->getId(), 'cPath' => $this->userfolder->getFullpath(), 'list' => true, 'view' => true]),
-            (new User\Workspace\Asset())->setValues(['cId' => $this->groupfolder->getId(), 'cPath' => $this->groupfolder->getFullpath(), 'list' => false, 'view' => false, 'delete'=>true, 'publish'=>true]),
+            new User\Workspace\Asset()->setValues(['cId' => $this->permissionfoo->getId(), 'cPath' => $this->permissionfoo->getFullpath(), 'list' => true, 'view' => true]),
+            new User\Workspace\Asset()->setValues(['cId' => $this->permissionbar->getId(), 'cPath' => $this->permissionbar->getFullpath(), 'list' => true, 'view' => true]),
+            new User\Workspace\Asset()->setValues(['cId' => $this->foo->getId(), 'cPath' => $this->foo->getFullpath(), 'list' => false, 'view' => false]),
+            new User\Workspace\Asset()->setValues(['cId' => $this->bars->getId(), 'cPath' => $this->bars->getFullpath(), 'list' => false, 'view' => false]),
+            new User\Workspace\Asset()->setValues(['cId' => $this->userfolder->getId(), 'cPath' => $this->userfolder->getFullpath(), 'list' => true, 'view' => true]),
+            new User\Workspace\Asset()->setValues(['cId' => $this->groupfolder->getId(), 'cPath' => $this->groupfolder->getFullpath(), 'list' => false, 'view' => false, 'delete' => true, 'publish' => true]),
         ]);
         $this->userPermissionTest2->save();
     }

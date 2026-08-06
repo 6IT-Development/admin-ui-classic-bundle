@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -10,14 +11,15 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\DataObject\GridColumnConfig\Operator;
 
 use Pimcore\Bundle\AdminBundle\DataObject\GridColumnConfig\ResultContainer;
 use Pimcore\Model\Element\ElementInterface;
+use stdClass;
 use Symfony\Contracts\Translation\LocaleAwareInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -26,7 +28,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  */
 final class TranslateValue extends AbstractOperator
 {
-    private LocaleAwareInterface|\stdClass|TranslatorInterface $translator;
+    private LocaleAwareInterface|stdClass|TranslatorInterface $translator;
 
     private string $prefix;
 
@@ -35,7 +37,7 @@ final class TranslateValue extends AbstractOperator
      */
     private mixed $locale = null;
 
-    public function __construct(TranslatorInterface $translator, \stdClass $config, array $context = [])
+    public function __construct(TranslatorInterface $translator, stdClass $config, array $context = [])
     {
         parent::__construct($config, $context);
 
@@ -46,7 +48,7 @@ final class TranslateValue extends AbstractOperator
         }
     }
 
-    public function getLabeledValue(array|ElementInterface $element): ResultContainer|\stdClass|null
+    public function getLabeledValue(array|ElementInterface $element): ResultContainer|stdClass|null
     {
         $children = $this->getChildren();
         if (isset($children[0])) {
@@ -57,7 +59,7 @@ final class TranslateValue extends AbstractOperator
                     $this->translator->setLocale($this->locale);
                 }
 
-                $value->value = $this->translator->trans($this->prefix .(string)$value->value, []);
+                $value->value = $this->translator->trans($this->prefix . $value->value);
 
                 $this->translator->setLocale($currentLocale);
             }

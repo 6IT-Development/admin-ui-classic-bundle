@@ -11,14 +11,17 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\Controller\Admin;
 
+use Browser;
 use Endroid\QrCode\Builder\Builder;
 use Endroid\QrCode\Writer\PngWriter;
+use Exception;
+use Pimcore;
 use Pimcore\Bundle\AdminBundle\Controller\AdminAbstractController;
 use Pimcore\Bundle\AdminBundle\Event\AdminEvents;
 use Pimcore\Bundle\AdminBundle\Event\Login\LoginRedirectEvent;
@@ -38,6 +41,7 @@ use Pimcore\Tool;
 use Pimcore\Tool\Authentication;
 use Scheb\TwoFactorBundle\Security\TwoFactor\Provider\Google\GoogleAuthenticatorInterface;
 use Symfony\Component\EventDispatcher\GenericEvent;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -61,11 +65,12 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 class LoginController extends AdminAbstractController implements KernelControllerEventInterface, KernelResponseEventInterface
 {
     public function __construct(
-        protected ResponseHelper $responseHelper,
-        protected TranslatorInterface $translator,
-        protected PimcoreBundleManager $bundleManager,
+        protected ResponseHelper           $responseHelper,
+        protected TranslatorInterface      $translator,
+        protected PimcoreBundleManager     $bundleManager,
         protected EventDispatcherInterface $eventDispatcher
-    ) {
+    )
+    {
     }
 
     public function onKernelControllerEvent(ControllerEvent $event): void
@@ -90,18 +95,19 @@ class LoginController extends AdminAbstractController implements KernelControlle
     public function onKernelResponseEvent(ResponseEvent $event): void
     {
         $response = $event->getResponse();
-        $response->headers->set('X-Frame-Options', 'deny', true);
+        $response->headers->set('X-Frame-Options', 'deny');
         $this->responseHelper->disableCache($response, true);
     }
 
-        #[Route('/login', name: 'pimcore_admin_login')]
-        #[Route('/login/', name: 'pimcore_admin_login_fallback')]
+    #[Route('/login', name: 'pimcore_admin_login')]
+    #[Route('/login/', name: 'pimcore_admin_login_fallback')]
     public function loginAction(
-        Request $request,
-        AuthenticationUtils $authenticationUtils,
+        Request               $request,
+        AuthenticationUtils   $authenticationUtils,
         CsrfProtectionHandler $csrfProtection,
-        Config $config
-    ): RedirectResponse|Response {
+        Config                $config
+    ): RedirectResponse|Response
+    {
         $queryParams = $request->query->all();
         if ($request->get('_route') === 'pimcore_admin_login_fallback') {
             return $this->redirectToRoute('pimcore_admin_login', $queryParams, Response::HTTP_MOVED_PERMANENTLY);
@@ -145,7 +151,7 @@ class LoginController extends AdminAbstractController implements KernelControlle
         }
 
         $params['browserSupported'] = $this->detectBrowser();
-        $params['debug'] = \Pimcore::inDebugMode();
+        $params['debug'] = Pimcore::inDebugMode();
 
         $params['includeTemplates'] = [];
         $event = new GenericEvent($this, [
@@ -162,8 +168,11 @@ class LoginController extends AdminAbstractController implements KernelControlle
         return $this->render('@PimcoreAdmin/admin/login/login.html.twig', $params);
     }
 
-        #[Route('/login/csrf-token', name: 'pimcore_admin_login_csrf_token')]
-    public function csrfTokenAction(Request $request, CsrfProtectionHandler $csrfProtection): \Symfony\Component\HttpFoundation\JsonResponse
+    #[Route('/login/csrf-token', name: 'pimcore_admin_login_csrf_token')]
+    public function csrfTokenAction(
+        Request               $request,
+        CsrfProtectionHandler $csrfProtection
+    ): JsonResponse
     {
         if (!$this->getAdminUser()) {
             $csrfProtection->regenerateCsrfToken($request->getSession());
@@ -174,31 +183,32 @@ class LoginController extends AdminAbstractController implements KernelControlle
         ]);
     }
 
-        #[Route('/logout', name: 'pimcore_admin_logout' , methods: ['POST'])]
+    #[Route('/logout', name: 'pimcore_admin_logout', methods: [Request::METHOD_POST])]
     public function logoutAction(): void
     {
         // this route will never be matched, but will be handled by the logout handler
     }
 
-        /**
+    /**
      * Dummy route used to check authentication
      *
-         */
-        #[Route('/login/login', name: 'pimcore_admin_login_check')]
+     */
+    #[Route('/login/login', name: 'pimcore_admin_login_check')]
     public function loginCheckAction(Request $request): RedirectResponse
     {
         // just in case the authenticator didn't redirect
         return new RedirectResponse($this->generateUrl('pimcore_admin_login', ['perspective' => strip_tags($request->get('perspective', ''))]));
     }
 
-        #[Route('/login/lostpassword', name: 'pimcore_admin_login_lostpassword')]
+    #[Route('/login/lostpassword', name: 'pimcore_admin_login_lostpassword')]
     public function lostpasswordAction(
-        Request $request,
+        Request               $request,
         CsrfProtectionHandler $csrfProtection,
-        Config $config,
-        RateLimiterFactory $resetPasswordLimiter,
-        RouterInterface $router
-    ): Response {
+        Config                $config,
+        RateLimiterFactory    $resetPasswordLimiter,
+        RouterInterface       $router
+    ): Response
+    {
         $params = $this->buildLoginPageViewParams($config);
         $error = null;
 
@@ -210,7 +220,7 @@ class LoginController extends AdminAbstractController implements KernelControlle
 
             $limiter = $resetPasswordLimiter->create($request->getClientIp());
 
-            if (false === $limiter->consume(1)->isAccepted()) {
+            if (false === $limiter->consume()->isAccepted()) {
                 $error = 'user_reset_password_too_many_attempts';
             }
 
@@ -232,7 +242,7 @@ class LoginController extends AdminAbstractController implements KernelControlle
                 try {
                     $domain = SystemSettingsConfig::get()['general']['domain'];
                     if (!$domain) {
-                        throw new \Exception('No main domain set in system settings, unable to generate reset password link');
+                        throw new Exception('No main domain set in system settings, unable to generate reset password link');
                     }
 
                     $context = $router->getContext();
@@ -258,7 +268,7 @@ class LoginController extends AdminAbstractController implements KernelControlle
                     if ($event->hasResponse()) {
                         return $event->getResponse();
                     }
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     Logger::error('Error sending password recovery email: ' . $e->getMessage());
                     $error = 'lost_password_email_error';
                 }
@@ -276,7 +286,7 @@ class LoginController extends AdminAbstractController implements KernelControlle
         return $this->render('@PimcoreAdmin/admin/login/lost_password.html.twig', $params);
     }
 
-        #[Route('/login/deeplink', name: 'pimcore_admin_login_deeplink')]
+    #[Route('/login/deeplink', name: 'pimcore_admin_login_deeplink')]
     public function deeplinkAction(Request $request): Response
     {
         // check for deeplink
@@ -322,8 +332,11 @@ class LoginController extends AdminAbstractController implements KernelControlle
         ];
     }
 
-        #[Route('/login/2fa', name: 'pimcore_admin_2fa')]
-    public function twoFactorAuthenticationAction(Request $request, Config $config): Response
+    #[Route('/login/2fa', name: 'pimcore_admin_2fa')]
+    public function twoFactorAuthenticationAction(
+        Request $request,
+        Config  $config
+    ): Response
     {
         $params = $this->buildLoginPageViewParams($config);
 
@@ -342,12 +355,13 @@ class LoginController extends AdminAbstractController implements KernelControlle
         return $this->render('@PimcoreAdmin/admin/login/two_factor_authentication.html.twig', $params);
     }
 
-        #[Route('/login/2fa-setup', name: 'pimcore_admin_2fa_setup')]
+    #[Route('/login/2fa-setup', name: 'pimcore_admin_2fa_setup')]
     public function twoFactorSetupAuthenticationAction(
-        Request $request,
-        Config $config,
+        Request                      $request,
+        Config                       $config,
         GoogleAuthenticatorInterface $twoFactor
-    ): Response {
+    ): Response
+    {
         $params = $this->buildLoginPageViewParams($config);
         $params['setup'] = true;
 
@@ -362,7 +376,7 @@ class LoginController extends AdminAbstractController implements KernelControlle
             $secret = $request->getSession()->get('2fa_secret');
 
             if (!$secret) {
-                throw new \Exception('2fa secret not found');
+                throw new Exception('2fa secret not found');
             }
 
             $user->setTwoFactorAuthentication('enabled', true);
@@ -399,7 +413,7 @@ class LoginController extends AdminAbstractController implements KernelControlle
         return $this->render('@PimcoreAdmin/admin/login/two_factor_setup.html.twig', $params);
     }
 
-        #[Route('/login/2fa-verify', name: 'pimcore_admin_2fa-verify')]
+    #[Route('/login/2fa-verify', name: 'pimcore_admin_2fa-verify')]
     public function twoFactorAuthenticationVerifyAction(Request $request): void
     {
     }
@@ -407,23 +421,23 @@ class LoginController extends AdminAbstractController implements KernelControlle
     public function detectBrowser(): bool
     {
         $supported = false;
-        $browser = new \Browser();
+        $browser = new Browser();
         $browserVersion = (int)$browser->getVersion();
 
-        if ($browser->getBrowser() == \Browser::BROWSER_OPERA && $browserVersion >= 100) {
+        if ($browser->getBrowser() == Browser::BROWSER_OPERA && $browserVersion >= 100) {
             $supported = true;
         }
 
-        if ($browser->getBrowser() == \Browser::BROWSER_FIREFOX && $browserVersion >= 72) {
+        if ($browser->getBrowser() == Browser::BROWSER_FIREFOX && $browserVersion >= 72) {
             $supported = true;
         }
-        if ($browser->getBrowser() == \Browser::BROWSER_CHROME && $browserVersion >= 84) {
+        if ($browser->getBrowser() == Browser::BROWSER_CHROME && $browserVersion >= 84) {
             $supported = true;
         }
-        if ($browser->getBrowser() == \Browser::BROWSER_SAFARI && $browserVersion >= 13.1) {
+        if ($browser->getBrowser() == Browser::BROWSER_SAFARI && $browserVersion >= 13.1) {
             $supported = true;
         }
-        if ($browser->getBrowser() == \Browser::BROWSER_EDGE && $browserVersion >= 90) {
+        if ($browser->getBrowser() == Browser::BROWSER_EDGE && $browserVersion >= 90) {
             $supported = true;
         }
 

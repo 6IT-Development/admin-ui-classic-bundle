@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -10,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\Helper;
@@ -45,12 +46,12 @@ final class Dashboard
 
     protected function getConfigDir(): string
     {
-        return PIMCORE_CONFIGURATION_DIRECTORY.'/portal';
+        return PIMCORE_CONFIGURATION_DIRECTORY . '/portal';
     }
 
     protected function getConfigFile(): string
     {
-        return $this->getConfigDir().'/dashboards_'.$this->getUser()->getId().'.psf';
+        return $this->getConfigDir() . '/dashboards_' . $this->getUser()->getId() . '.psf';
     }
 
     protected function loadFile(): ?array
@@ -112,10 +113,10 @@ final class Dashboard
             }
         }
 
-        return $dashboard ? $dashboard : ['positions' => [[], []]];
+        return $dashboard ?: ['positions' => [[], []]];
     }
 
-    public function saveDashboard(string $key, array $configuration = null): void
+    public function saveDashboard(string $key, ?array $configuration = null): void
     {
         $this->loadFile();
 

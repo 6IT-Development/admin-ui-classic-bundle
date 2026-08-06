@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\DependencyInjection\Compiler;
@@ -58,11 +58,12 @@ final class ImportExportLocatorsPass implements CompilerPassInterface
 
     private function createLocatorForTaggedServices(
         ContainerBuilder $container,
-        Definition $definition,
-        string $type,
-        string $tag,
-        string $argument
-    ): void {
+        Definition       $definition,
+        string           $type,
+        string           $tag,
+        string           $argument
+    ): void
+    {
         $resolvers = $container->findTaggedServiceIds($tag);
         $mapping = [];
 

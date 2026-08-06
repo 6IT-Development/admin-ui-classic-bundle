@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -10,12 +11,13 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\System;
 
+use Pimcore;
 use Pimcore\Cache\RuntimeCache;
 use Pimcore\Config\LocationAwareConfigRepository;
 use Pimcore\Helper\SystemConfig;
@@ -25,20 +27,20 @@ use Pimcore\Helper\SystemConfig;
  */
 final class AdminConfig
 {
-    private const CONFIG_ID = 'admin_system_settings';
+    private const string CONFIG_ID = 'admin_system_settings';
 
-    private const BRANDING = 'branding';
+    private const string BRANDING = 'branding';
 
-    private const ASSETS = 'assets';
+    private const string ASSETS = 'assets';
 
-    private const SCOPE = 'pimcore_admin_system_settings';
+    private const string SCOPE = 'pimcore_admin_system_settings';
 
     private static ?LocationAwareConfigRepository $locationAwareConfigRepository = null;
 
     private static function getRepository(): LocationAwareConfigRepository
     {
         if (!self::$locationAwareConfigRepository) {
-            $containerConfig = \Pimcore::getContainer()->getParameter('pimcore_admin.config');
+            $containerConfig = Pimcore::getContainer()->getParameter('pimcore_admin.config');
             $config[self::CONFIG_ID][self::BRANDING] = $containerConfig[self::BRANDING];
             $config[self::CONFIG_ID][self::ASSETS] = $containerConfig[self::ASSETS];
             $storageConfig = $containerConfig['config_location'][self::CONFIG_ID];
@@ -63,7 +65,7 @@ final class AdminConfig
         // If the read target is settings-store and no data is found there,
         // load the data from the container config
         if (!$data && $loadType === $repository::LOCATION_SETTINGS_STORE) {
-            $containerConfig = \Pimcore::getContainer()->getParameter('pimcore_admin.config');
+            $containerConfig = Pimcore::getContainer()->getParameter('pimcore_admin.config');
             $data[self::BRANDING] = $containerConfig[self::BRANDING];
             $data[self::ASSETS] = $containerConfig[self::ASSETS];
             $data['writeable'] = $repository->isWriteable();
@@ -104,7 +106,7 @@ final class AdminConfig
         if (RuntimeCache::isRegistered('pimcore_admin_system_settings_config')) {
             $config = RuntimeCache::get('pimcore_admin_system_settings_config');
         } else {
-            $config = $this->get();
+            $config = static::get();
             $this->setAdminSystemSettingsConfig($config);
         }
 

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -10,13 +11,16 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\Controller\Admin\DataObject;
 
+use Exception;
 use Pimcore\Bundle\AdminBundle\Controller\AdminAbstractController;
+use Pimcore\Bundle\AdminBundle\Helper\QueryParams;
+use Pimcore\Db;
 use Pimcore\Model\DataObject\Data\QuantityValue;
 use Pimcore\Model\DataObject\QuantityValue\Service as QuantityValueService;
 use Pimcore\Model\DataObject\QuantityValue\Unit;
@@ -27,18 +31,18 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
-    /**
+/**
  *
  * @internal
-     */
-    #[Route('/quantity-value', name: 'pimcore_admin_dataobject_quantityvalue_')]
+ */
+#[Route('/quantity-value', name: 'pimcore_admin_dataobject_quantityvalue_')]
 class QuantityValueController extends AdminAbstractController
 {
     public function __construct(protected QuantityValueService $service)
     {
     }
 
-        #[Route('/unit-import',name: 'unitimport', methods: ['POST','PUT'])]
+    #[Route('/unit-import', name: 'unitimport', methods: [Request::METHOD_POST, Request::METHOD_PUT])]
     public function unitImportAction(Request $request): JsonResponse
     {
         $json = file_get_contents($_FILES['Filedata']['tmp_name']);
@@ -49,7 +53,7 @@ class QuantityValueController extends AdminAbstractController
         return $response;
     }
 
-        #[Route('/unit-export', name: 'unitexport', methods: ['GET'])]
+    #[Route('/unit-export', name: 'unitexport', methods: [Request::METHOD_GET])]
     public function unitExportAction(Request $request): Response
     {
         $result = $this->service->generateDefinitionJson();
@@ -60,11 +64,7 @@ class QuantityValueController extends AdminAbstractController
         return $response;
     }
 
-        /**
-     *
-     * @throws \Exception
-         */
-        #[Route('/unit-proxy', name: 'unitproxyget', methods: ['GET'])]
+    #[Route('/unit-proxy', name: 'unitproxyget', methods: [Request::METHOD_GET])]
     public function unitProxyGetAction(Request $request): JsonResponse
     {
         $this->checkPermission('quantityValueUnits');
@@ -75,7 +75,7 @@ class QuantityValueController extends AdminAbstractController
         $orderKey = ['baseunit', 'factor', 'abbreviation'];
 
         $allParams = array_merge($request->request->all(), $request->query->all());
-        $sortingSettings = \Pimcore\Bundle\AdminBundle\Helper\QueryParams::extractSortingSettings($allParams);
+        $sortingSettings = QueryParams::extractSortingSettings($allParams);
 
         // Prepend user-requested sorting settings but keep the others to keep secondary order of quantity values in respective order
         if ($sortingSettings['orderKey']) {
@@ -95,7 +95,7 @@ class QuantityValueController extends AdminAbstractController
         if ($request->get('filter')) {
             $filterString = $request->get('filter');
             $filters = json_decode($filterString);
-            $db = \Pimcore\Db::get();
+            $db = Db::get();
             foreach ($filters as $f) {
                 if ($f->type == 'string') {
                     $condition .= ' AND ' . $db->quoteIdentifier($f->property) . ' LIKE ' . $db->quote('%' . $f->value . '%');
@@ -115,11 +115,7 @@ class QuantityValueController extends AdminAbstractController
         return $this->adminJson(['data' => $units, 'success' => true, 'total' => $list->getTotalCount()]);
     }
 
-        /**
-     *
-     * @throws \Exception
-         */
-        #[Route('/unit-proxy', name: 'unitproxy', methods: ['POST', 'PUT'])]
+    #[Route('/unit-proxy', name: 'unitproxy', methods: [Request::METHOD_POST, Request::METHOD_PUT])]
     public function unitProxyAction(Request $request): JsonResponse
     {
         $this->checkPermission('quantityValueUnits');
@@ -128,13 +124,13 @@ class QuantityValueController extends AdminAbstractController
             if ($request->get('xaction') == 'destroy') {
                 $data = json_decode($request->get('data'), true);
                 $id = $data['id'];
-                $unit = \Pimcore\Model\DataObject\QuantityValue\Unit::getById($id);
+                $unit = Unit::getById($id);
                 if (!empty($unit)) {
                     $unit->delete();
 
                     return $this->adminJson(['data' => [], 'success' => true]);
                 } else {
-                    throw new \Exception('Unit with id ' . $id . ' not found.');
+                    throw new Exception('Unit with id ' . $id . ' not found.');
                 }
             } elseif ($request->get('xaction') == 'update') {
                 $data = json_decode($request->get('data'), true);
@@ -148,7 +144,7 @@ class QuantityValueController extends AdminAbstractController
 
                     return $this->adminJson(['data' => $unit->getObjectVars(), 'success' => true]);
                 } else {
-                    throw new \Exception('Unit with id ' . $data['id'] . ' not found.');
+                    throw new Exception('Unit with id ' . $data['id'] . ' not found.');
                 }
             } elseif ($request->get('xaction') == 'create') {
                 $data = json_decode($request->get('data'), true);
@@ -158,11 +154,11 @@ class QuantityValueController extends AdminAbstractController
 
                 $id = $data['id'];
                 if (Unit::getById($id)) {
-                    throw new \Exception('unit with ID [' . $id . '] already exists');
+                    throw new Exception('unit with ID [' . $id . '] already exists');
                 }
 
                 if (mb_strlen($id) > 50) {
-                    throw new \Exception('The maximal character length for the unit ID is 50 characters, the provided ID has ' . mb_strlen($id) . ' characters.');
+                    throw new Exception('The maximal character length for the unit ID is 50 characters, the provided ID has ' . mb_strlen($id) . ' characters.');
                 }
 
                 $unit = new Unit();
@@ -187,7 +183,7 @@ class QuantityValueController extends AdminAbstractController
         return $mapper[$comparison];
     }
 
-        #[Route('/unit-list', name: 'unitlist', methods: ['GET'])]
+    #[Route('/unit-list', name: 'unitlist', methods: [Request::METHOD_GET])]
     public function unitListAction(Request $request): JsonResponse
     {
         $list = new Unit\Listing();
@@ -196,7 +192,7 @@ class QuantityValueController extends AdminAbstractController
         if ($request->get('filter')) {
             $array = explode(',', $request->get('filter'));
             $quotedArray = [];
-            $db = \Pimcore\Db::get();
+            $db = Db::get();
             foreach ($array as $a) {
                 $quotedArray[] = $db->quote($a);
             }
@@ -217,7 +213,7 @@ class QuantityValueController extends AdminAbstractController
                         true));
                 }
                 $result[] = $unit->getObjectVars();
-            } catch (\Exception $e) {
+            } catch (Exception) {
                 // nothing to do ...
             }
         }
@@ -225,8 +221,11 @@ class QuantityValueController extends AdminAbstractController
         return $this->adminJson(['data' => $result, 'success' => true, 'total' => $list->getTotalCount()]);
     }
 
-        #[Route('/convert', name: 'convert', methods: ['GET'])]
-    public function convertAction(Request $request, UnitConversionService $conversionService): JsonResponse
+    #[Route('/convert', name: 'convert', methods: [Request::METHOD_GET])]
+    public function convertAction(
+        Request               $request,
+        UnitConversionService $conversionService
+    ): JsonResponse
     {
         $this->checkPermission('objects');
 
@@ -241,15 +240,18 @@ class QuantityValueController extends AdminAbstractController
 
         try {
             $convertedValue = $conversionService->convert(new QuantityValue($request->get('value'), $fromUnit), $toUnit);
-        } catch (\Exception $e) {
+        } catch (Exception) {
             return $this->adminJson(['success' => false]);
         }
 
         return $this->adminJson(['value' => $convertedValue->getValue(), 'success' => true]);
     }
 
-        #[Route('/convert-all', name: 'convertall', methods: ['GET'])]
-    public function convertAllAction(Request $request, UnitConversionService $conversionService): JsonResponse
+    #[Route('/convert-all', name: 'convertall', methods: [Request::METHOD_GET])]
+    public function convertAllAction(
+        Request               $request,
+        UnitConversionService $conversionService
+    ): JsonResponse
     {
         $this->checkPermission('objects');
 
@@ -262,7 +264,7 @@ class QuantityValueController extends AdminAbstractController
         $baseUnit = $fromUnit->getBaseunit() ?? $fromUnit;
 
         $units = new Unit\Listing();
-        $units->setCondition('baseunit = '.$units->quote($baseUnit->getId()).' AND id != '.$units->quote($fromUnit->getId()));
+        $units->setCondition('baseunit = ' . $units->quote($baseUnit->getId()) . ' AND id != ' . $units->quote($fromUnit->getId()));
 
         $convertedValues = [];
         foreach ($units->getUnits() as $targetUnit) {
@@ -270,7 +272,7 @@ class QuantityValueController extends AdminAbstractController
                 $convertedValue = $conversionService->convert(new QuantityValue($request->get('value'), $fromUnit), $targetUnit);
 
                 $convertedValues[] = ['unit' => $targetUnit->getAbbreviation(), 'unitName' => $targetUnit->getLongname(), 'value' => round($convertedValue->getValue(), 4)];
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 return $this->adminJson(['success' => false, 'message' => $e->getMessage()]);
             }
         }

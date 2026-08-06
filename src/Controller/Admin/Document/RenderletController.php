@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\Controller\Admin\Document;
@@ -37,18 +37,19 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
  */
 class RenderletController extends AdminAbstractController
 {
-        /**
+    /**
      * Handles editmode preview for renderlets
      *
-         */
-        #[Route('/document_tag/renderlet', name: 'pimcore_admin_document_renderlet_renderlet')]
+     */
+    #[Route('/document_tag/renderlet', name: 'pimcore_admin_document_renderlet_renderlet')]
     public function renderletAction(
-        Request $request,
-        ActionRenderer $actionRenderer,
-        EditableHandler $editableHandler,
-        LocaleServiceInterface $localeService,
+        Request                  $request,
+        ActionRenderer           $actionRenderer,
+        EditableHandler          $editableHandler,
+        LocaleServiceInterface   $localeService,
         EventDispatcherInterface $eventDispatcher
-    ): Response {
+    ): Response
+    {
         $query = $request->query->all();
         $attributes = [];
 
@@ -62,18 +63,10 @@ class RenderletController extends AdminAbstractController
         $eventDispatcher->dispatch($event, DocumentEvents::EDITABLE_RENDERLET_PRE_RENDER);
 
         $controller = $request->get('controller');
-        $action = $request->get('action');
-
-        $moduleOrBundle = null;
-        if ($request->get('bundle')) {
-            $moduleOrBundle = $request->get('bundle');
-        } elseif ($request->get('module')) {
-            $moduleOrBundle = $request->get('bundle');
-        }
 
         // set document if set in request
         if ($documentId = $request->get('pimcore_parentDocument')) {
-            $document = Document\PageSnippet::getById((int) $documentId);
+            $document = Document\PageSnippet::getById((int)$documentId);
             if ($document) {
                 $attributes = $actionRenderer->addDocumentAttributes($document, $attributes);
                 unset($attributes[DynamicRouter::CONTENT_TEMPLATE]);

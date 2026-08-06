@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\Twig\Extension;
@@ -35,10 +35,11 @@ use Twig\TwigFunction;
 class AdminExtension extends AbstractExtension
 {
     public function __construct(
-        private UrlGeneratorInterface $generator,
-        private EditmodeResolver $editmodeResolver,
-        private UserLoader $userLoader
-    ) {
+        private readonly UrlGeneratorInterface $generator,
+        private readonly EditmodeResolver      $editmodeResolver,
+        private readonly UserLoader            $userLoader
+    )
+    {
     }
 
     public function getFunctions(): array
@@ -77,9 +78,9 @@ class AdminExtension extends AbstractExtension
         foreach ($paths as $path) {
             $found = false;
             foreach ([
-                PIMCORE_WEB_ROOT . '/bundles/pimcoreadmin/js/' . $path,
-                PIMCORE_WEB_ROOT . $path,
-            ] as $fullPath) {
+                         PIMCORE_WEB_ROOT . '/bundles/pimcoreadmin/js/' . $path,
+                         PIMCORE_WEB_ROOT . $path,
+                     ] as $fullPath) {
                 if (is_file($fullPath)) {
                     $scriptContents .= file_get_contents($fullPath) . "\n\n\n";
                     $found = true;
@@ -92,7 +93,7 @@ class AdminExtension extends AbstractExtension
         }
 
         $parameters = Admin::getMinimizedScriptPath($scriptContents);
-        $url = $this->generator->generate('pimcore_admin_misc_scriptproxy', $parameters, UrlGeneratorInterface::ABSOLUTE_PATH);
+        $url = $this->generator->generate('pimcore_admin_misc_scriptproxy', $parameters);
 
         $returnHtml .= $this->getScriptTag($url);
 

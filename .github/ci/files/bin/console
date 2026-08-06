@@ -10,8 +10,13 @@
  * LICENSE.md which is distributed with this source code.
  *
  * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     GPLv3 and PEL
+ * @license    http://www.pimcore.org/license GPLv3 and PEL
  */
+
+use Pimcore\Bootstrap;
+use Pimcore\Console\Application;
+use Pimcore\Kernel;
+use Symfony\Component\Console\Input\ArgvInput;
 
 ob_get_clean();
 
@@ -26,12 +31,12 @@ if (file_exists($a = getcwd() . '/vendor/autoload.php')) {
     exit(1);
 }
 
-\Pimcore\Bootstrap::setProjectRoot();
+Bootstrap::setProjectRoot();
 
 define('PIMCORE_CONSOLE', true);
 
 
-$input = new \Symfony\Component\Console\Input\ArgvInput();
+$input = new ArgvInput();
 if (null !== $env = $input->getParameterOption(['--env', '-e'], null, true)) {
     putenv('APP_ENV='.$_SERVER['APP_ENV'] = $_ENV['APP_ENV'] = $env);
 }
@@ -40,7 +45,7 @@ if ($input->hasParameterOption('--no-debug', true)) {
     putenv('APP_DEBUG='.$_SERVER['APP_DEBUG'] = $_ENV['APP_DEBUG'] = '0');
 }
 
-/** @var \Pimcore\Kernel $kernel */
-$kernel = \Pimcore\Bootstrap::startupCli();
-$application = new \Pimcore\Console\Application($kernel);
+/** @var Kernel $kernel */
+$kernel = Bootstrap::startupCli();
+$application = new Application($kernel);
 $application->run();

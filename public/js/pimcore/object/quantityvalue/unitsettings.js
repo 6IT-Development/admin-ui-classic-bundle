@@ -8,8 +8,8 @@
  * LICENSE.md which is distributed with this source code.
  *
  * @category   Pimcore
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 pimcore.registerNS("pimcore.object.quantityValue.unitsettings");

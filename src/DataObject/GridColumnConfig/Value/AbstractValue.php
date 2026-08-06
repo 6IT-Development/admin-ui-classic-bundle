@@ -11,11 +11,13 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\DataObject\GridColumnConfig\Value;
+
+use stdClass;
 
 abstract class AbstractValue implements ValueInterface
 {
@@ -25,7 +27,7 @@ abstract class AbstractValue implements ValueInterface
 
     protected mixed $context;
 
-    public function __construct(\stdClass $config, mixed $context = null)
+    public function __construct(stdClass $config, mixed $context = null)
     {
         $this->attribute = $config->attribute;
         $this->label = $config->label;

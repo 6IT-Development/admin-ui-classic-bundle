@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -10,25 +11,27 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\DataObject\GridColumnConfig\Operator;
 
 use Pimcore\Bundle\AdminBundle\DataObject\GridColumnConfig\ResultContainer;
 use Pimcore\Model\Element\ElementInterface;
+use stdClass;
 
 /**
  * @internal
  */
 final class Iterator extends AbstractOperator
 {
-    public function getLabeledValue(array|ElementInterface $element): ResultContainer|\stdClass|null
+    public function getLabeledValue(array|ElementInterface $element): ResultContainer|stdClass|null
     {
-        $result = new \stdClass();
+        $result = new stdClass();
         $result->label = $this->label;
         $result->value = [];
+
         if (!is_array($element)) {
             return $result;
         }
@@ -40,15 +43,11 @@ final class Iterator extends AbstractOperator
         } else {
             $c = $children[0];
 
-            $valueArray = [];
+            $result->value = array_reduce($element, static function (array $carry, ElementInterface $element) use ($c): array {
+                $carry[] = $c->getLabeledValue($element)->value ?: null;
 
-            foreach ($element as $element) {
-                $childResult = $c->getLabeledValue($element);
-
-                $valueArray[] = $childResult->value ? $childResult->value : null;
-            }
-
-            $result->value = $valueArray;
+                return $carry;
+            }, []);
         }
 
         return $result;

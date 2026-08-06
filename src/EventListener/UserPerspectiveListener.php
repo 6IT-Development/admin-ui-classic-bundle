@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -10,12 +11,13 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\EventListener;
 
+use Pimcore\Bundle\AdminBundle\Perspective\Config;
 use Pimcore\Bundle\CoreBundle\EventListener\Traits\PimcoreContextAwareTrait;
 use Pimcore\Http\Request\Resolver\PimcoreContextResolver;
 use Pimcore\Model\User;
@@ -73,7 +75,7 @@ class UserPerspectiveListener implements EventSubscriberInterface, LoggerAwareIn
 
         if ($requestedPerspective) {
             if ($requestedPerspective !== $user->getActivePerspective()) {
-                $existingPerspectives = array_keys(\Pimcore\Bundle\AdminBundle\Perspective\Config::get());
+                $existingPerspectives = array_keys(Config::get());
                 if (!in_array($requestedPerspective, $existingPerspectives)) {
                     $this->logger->warning('Requested perspective {perspective} for {user} does not exist.', [
                         'user' => $user->getName(),

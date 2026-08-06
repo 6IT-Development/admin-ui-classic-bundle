@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -10,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\Controller\GDPR;
@@ -25,13 +26,13 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Event\ControllerEvent;
 use Symfony\Component\Routing\Attribute\Route;
 
-    /**
+/**
  * Class DataObjectController
  *
  *
  * @internal
-     */
-    #[Route('/data-object')]
+ */
+#[Route('/data-object')]
 class DataObjectController extends AdminAbstractController implements KernelControllerEventInterface
 {
     public function onKernelControllerEvent(ControllerEvent $event): void
@@ -43,8 +44,11 @@ class DataObjectController extends AdminAbstractController implements KernelCont
         $this->checkActionPermission($event, 'gdpr_data_extractor');
     }
 
-        #[Route('/search-data-objects', name: 'pimcore_admin_gdpr_dataobject_searchdataobjects', methods: ['GET'])]
-    public function searchDataObjectsAction(Request $request, DataObjects $service): JsonResponse
+    #[Route('/search-data-objects', name: 'pimcore_admin_gdpr_dataobject_searchdataobjects', methods: [Request::METHOD_GET])]
+    public function searchDataObjectsAction(
+        Request     $request,
+        DataObjects $service
+    ): JsonResponse
     {
         $allParams = array_merge($request->request->all(), $request->query->all());
 
@@ -61,14 +65,13 @@ class DataObjectController extends AdminAbstractController implements KernelCont
         return $this->adminJson($result);
     }
 
-        /**
-     *
-     * @throws \Exception
-         */
-        #[Route('/export', name: 'pimcore_admin_gdpr_dataobject_exportdataobject', methods: ['GET'])]
-    public function exportDataObjectAction(Request $request, DataObjects $service): JsonResponse
+    #[Route('/export', name: 'pimcore_admin_gdpr_dataobject_exportdataobject', methods: [Request::METHOD_GET])]
+    public function exportDataObjectAction(
+        Request     $request,
+        DataObjects $service
+    ): JsonResponse
     {
-        $object = DataObject::getById((int) $request->get('id'));
+        $object = DataObject::getById((int)$request->get('id'));
         if (!$object) {
             throw $this->createNotFoundException('Object not found');
         }
@@ -79,10 +82,8 @@ class DataObjectController extends AdminAbstractController implements KernelCont
         $exportResult = $service->doExportData($object);
 
         $json = $this->encodeJson($exportResult, [], JsonResponse::DEFAULT_ENCODING_OPTIONS | JSON_PRETTY_PRINT);
-        $jsonResponse = new JsonResponse($json, 200, [
+        return new JsonResponse($json, 200, [
             'Content-Disposition' => 'attachment; filename="export-data-object-' . $object->getId() . '.json"',
         ], true);
-
-        return $jsonResponse;
     }
 }

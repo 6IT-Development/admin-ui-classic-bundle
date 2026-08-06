@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\Event;
@@ -26,17 +26,17 @@ class ElementAdminStyleEvent extends Event
     /**
      * Style needed for tree
      */
-    const CONTEXT_TREE = 1;
+    public const int CONTEXT_TREE = 1;
 
     /**
      * Style needed for element editor
      */
-    const CONTEXT_EDITOR = 2;
+    public const int CONTEXT_EDITOR = 2;
 
     /**
      * Style needed for quicksearch
      */
-    const CONTEXT_SEARCH = 3;
+    public const int CONTEXT_SEARCH = 3;
 
     protected ?int $context = null;
 
@@ -47,7 +47,7 @@ class ElementAdminStyleEvent extends Event
     /**
      * ElementAdminStyleEvent constructor.
      */
-    public function __construct(ElementInterface $element, AdminStyle $adminStyle, int $context = null)
+    public function __construct(ElementInterface $element, AdminStyle $adminStyle, ?int $context = null)
     {
         $this->element = $element;
         $this->adminStyle = $adminStyle;

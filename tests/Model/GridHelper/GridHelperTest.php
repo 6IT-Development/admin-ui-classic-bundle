@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\Tests\Model\GridHelper;
@@ -20,7 +20,10 @@ namespace Pimcore\Bundle\AdminBundle\Tests\Model\GridHelper;
 use Pimcore\Bundle\AdminBundle\Helper\GridHelperService;
 use Pimcore\Db;
 use Pimcore\Model\DataObject\ClassDefinition;
+use Pimcore\Model\DataObject\Inheritance\Listing;
 use Pimcore\Tests\Support\Test\ModelTestCase;
+use ReflectionClass;
+use ReflectionMethod;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 
 class GridHelperTest extends ModelTestCase
@@ -30,7 +33,7 @@ class GridHelperTest extends ModelTestCase
         $name = 'inheritance';
         $class = ClassDefinition::getByName($name);
 
-        $list = new \Pimcore\Model\DataObject\Inheritance\Listing();
+        $list = new Listing();
 
         $list->setCondition("(`path` = '/tmp' OR `path` like '/tmp/%') AND 1 = 1");
         $list->setLimit(25);
@@ -101,9 +104,9 @@ class GridHelperTest extends ModelTestCase
         $this->assertEquals("`cskey_teststore_1_1` LIKE '%t%' AND `cskey_teststore_1_2` LIKE '%t77%'", $queryBuilder->getQueryPart('having')->__toString());
     }
 
-    public function getPrivateMethod(mixed $className, string $methodName): \ReflectionMethod
+    public function getPrivateMethod(mixed $className, string $methodName): ReflectionMethod
     {
-        $reflector = new \ReflectionClass($className);
+        $reflector = new ReflectionClass($className);
         $method = $reflector->getMethod($methodName);
         $method->setAccessible(true);
 

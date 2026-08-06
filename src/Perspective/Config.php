@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -10,15 +11,18 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\Perspective;
 
+use Exception;
+use Pimcore;
 use Pimcore\Bundle\AdminBundle\Event\AdminEvents;
 use Pimcore\Config\LocationAwareConfigRepository;
 use Pimcore\Logger;
+use Pimcore\Model\Element\Service;
 use Pimcore\Model\User;
 use Pimcore\Model\User\Role;
 use Pimcore\Model\User\UserRole;
@@ -30,14 +34,14 @@ use Symfony\Component\EventDispatcher\GenericEvent;
  */
 final class Config
 {
-    private const CONFIG_ID = 'perspectives';
+    private const string CONFIG_ID = 'perspectives';
 
     private static ?LocationAwareConfigRepository $locationAwareConfigRepository = null;
 
     private static function getRepository(): LocationAwareConfigRepository
     {
         if (!self::$locationAwareConfigRepository) {
-            $containerConfig = \Pimcore::getContainer()->getParameter('pimcore.config');
+            $containerConfig = Pimcore::getContainer()->getParameter('pimcore.config');
             $config = $containerConfig[self::CONFIG_ID]['definitions'];
             $storageConfig = $containerConfig['config_location'][self::CONFIG_ID];
 
@@ -78,14 +82,14 @@ final class Config
     }
 
     /**
-     * @throws \Exception
+     * @throws Exception
      */
     public static function save(array $data, ?array $deletedRecords): void
     {
         $repository = self::getRepository();
 
         foreach ($data as $key => $value) {
-            $key = (string) $key;
+            $key = (string)$key;
             [$configKey, $dataSource] = $repository->loadConfigByKey($key);
             if ($repository->isWriteable($key, $dataSource) === true) {
                 unset($value['writeable']);
@@ -142,7 +146,7 @@ final class Config
             ],
         ];
 
-        $cvConfigs = \Pimcore\Bundle\AdminBundle\CustomView\Config::get();
+        $cvConfigs = Pimcore\Bundle\AdminBundle\CustomView\Config::get();
         if ($cvConfigs) {
             foreach ($cvConfigs as $cvConfig) {
                 if (isset($cvConfig['id'])) {
@@ -198,7 +202,7 @@ final class Config
         ];
     }
 
-    public static function getRuntimePerspective(User $currentUser = null): mixed
+    public static function getRuntimePerspective(?User $currentUser = null): mixed
     {
         if (null === $currentUser) {
             $currentUser = Tool\Admin::getCurrentUser();
@@ -233,7 +237,7 @@ final class Config
             'result' => $result,
             'configName' => $currentConfigName,
         ]);
-        \Pimcore::getEventDispatcher()->dispatch($event, AdminEvents::PERSPECTIVE_POST_GET_RUNTIME);
+        Pimcore::getEventDispatcher()->dispatch($event, AdminEvents::PERSPECTIVE_POST_GET_RUNTIME);
 
         return $event->getArgument('result');
     }
@@ -253,7 +257,7 @@ final class Config
 
         $cfConfigMapping = [];
 
-        $cvConfigs = \Pimcore\Bundle\AdminBundle\CustomView\Config::get();
+        $cvConfigs = Pimcore\Bundle\AdminBundle\CustomView\Config::get();
 
         if ($cvConfigs) {
             foreach ($cvConfigs as $node) {
@@ -269,8 +273,8 @@ final class Config
                 }
 
                 // backwards compatibility
-                $treeType = $tmpData['treetype'] ? $tmpData['treetype'] : 'object';
-                $rootNode = \Pimcore\Model\Element\Service::getElementByPath($treeType, $tmpData['rootfolder']);
+                $treeType = $tmpData['treetype'] ?: 'object';
+                $rootNode = Service::getElementByPath($treeType, $tmpData['rootfolder']);
 
                 if ($rootNode) {
                     $tmpData['type'] = 'customview';
@@ -295,7 +299,7 @@ final class Config
 
                     continue;
                 }
-                $customViewCfg = isset($cfConfigMapping[$customViewId]) ? $cfConfigMapping[$customViewId] : null;
+                $customViewCfg = $cfConfigMapping[$customViewId] ?? null;
                 if (!$customViewCfg) {
                     Logger::error('no custom view config for id  ' . $customViewId);
 

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -10,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\Controller\GDPR;
@@ -24,13 +25,13 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Event\ControllerEvent;
 use Symfony\Component\Routing\Attribute\Route;
 
-    /**
+/**
  * Class SentMailController
  *
  *
  * @internal
-     */
-    #[Route('/sent-mail')]
+ */
+#[Route('/sent-mail')]
 class SentMailController extends AdminAbstractController implements KernelControllerEventInterface
 {
     public function onKernelControllerEvent(ControllerEvent $event): void
@@ -42,12 +43,12 @@ class SentMailController extends AdminAbstractController implements KernelContro
         $this->checkActionPermission($event, 'gdpr_data_extractor');
     }
 
-        #[Route('/export', name: 'pimcore_admin_gdpr_sentmail_exportdataobject', methods: ['GET'])]
+    #[Route('/export', name: 'pimcore_admin_gdpr_sentmail_exportdataobject', methods: [Request::METHOD_GET])]
     public function exportDataObjectAction(Request $request): JsonResponse
     {
         $this->checkPermission('emails');
 
-        $sentMail = Log::getById((int) $request->get('id'));
+        $sentMail = Log::getById((int)$request->get('id'));
         if (!$sentMail) {
             throw $this->createNotFoundException();
         }
@@ -57,10 +58,8 @@ class SentMailController extends AdminAbstractController implements KernelContro
         $sentMailArray['textBody'] = $sentMail->getTextLog();
 
         $json = $this->encodeJson($sentMailArray, [], JsonResponse::DEFAULT_ENCODING_OPTIONS | JSON_PRETTY_PRINT);
-        $jsonResponse = new JsonResponse($json, 200, [
+        return new JsonResponse($json, 200, [
             'Content-Disposition' => 'attachment; filename="export-mail-' . $sentMail->getId() . '.json"',
         ], true);
-
-        return $jsonResponse;
     }
 }

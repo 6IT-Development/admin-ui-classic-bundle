@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -10,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\Controller\GDPR;
@@ -24,13 +25,13 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Event\ControllerEvent;
 use Symfony\Component\Routing\Attribute\Route;
 
-    /**
+/**
  * Class PimcoreUsersController
  *
  *
  * @internal
-     */
-    #[Route('/pimcore-users')]
+ */
+#[Route('/pimcore-users')]
 class PimcoreUsersController extends AdminAbstractController implements KernelControllerEventInterface
 {
     public function onKernelControllerEvent(ControllerEvent $event): void
@@ -42,8 +43,11 @@ class PimcoreUsersController extends AdminAbstractController implements KernelCo
         $this->checkActionPermission($event, 'gdpr_data_extractor');
     }
 
-        #[Route('/search-users', name: 'pimcore_admin_gdpr_pimcoreusers_searchusers', methods: ['GET'])]
-    public function searchUsersAction(Request $request, PimcoreUsers $pimcoreUsers): JsonResponse
+    #[Route('/search-users', name: 'pimcore_admin_gdpr_pimcoreusers_searchusers', methods: [Request::METHOD_GET])]
+    public function searchUsersAction(
+        Request      $request,
+        PimcoreUsers $pimcoreUsers
+    ): JsonResponse
     {
         $allParams = array_merge($request->request->all(), $request->query->all());
 
@@ -60,17 +64,18 @@ class PimcoreUsersController extends AdminAbstractController implements KernelCo
         return $this->adminJson($result);
     }
 
-        #[Route('/export-user-data', name: 'pimcore_admin_gdpr_pimcoreusers_exportuserdata', methods: ['GET'])]
-    public function exportUserDataAction(Request $request, PimcoreUsers $pimcoreUsers): JsonResponse
+    #[Route('/export-user-data', name: 'pimcore_admin_gdpr_pimcoreusers_exportuserdata', methods: [Request::METHOD_GET])]
+    public function exportUserDataAction(
+        Request      $request,
+        PimcoreUsers $pimcoreUsers
+    ): JsonResponse
     {
         $this->checkPermission('users');
         $userData = $pimcoreUsers->getExportData((int)$request->get('id'));
 
         $json = $this->encodeJson($userData, [], JsonResponse::DEFAULT_ENCODING_OPTIONS | JSON_PRETTY_PRINT);
-        $jsonResponse = new JsonResponse($json, 200, [
+        return new JsonResponse($json, 200, [
             'Content-Disposition' => 'attachment; filename="export-userdata-' . $userData['id'] . '.json"',
         ], true);
-
-        return $jsonResponse;
     }
 }

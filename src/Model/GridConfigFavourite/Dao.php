@@ -9,8 +9,8 @@
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\Model\GridConfigFavourite;
@@ -29,7 +29,7 @@ class Dao extends Model\Dao\AbstractDao
     /**
      * @throws Model\Exception\NotFoundException
      */
-    public function getByOwnerAndClassAndObjectId(int $ownerId, string $classId, int $objectId = null, string $searchType = null): void
+    public function getByOwnerAndClassAndObjectId(int $ownerId, string $classId, ?int $objectId = null, ?string $searchType = null): void
     {
         $query = 'SELECT * FROM gridconfig_favourites WHERE ownerId = ? AND classId = ? AND searchType = ?';
         $params = [$ownerId, $classId, $searchType];
@@ -58,7 +58,7 @@ class Dao extends Model\Dao\AbstractDao
         foreach ($gridConfigFavourite as $key => $value) {
             if (in_array($key, $this->getValidTableColumns('gridconfig_favourites'))) {
                 if (is_bool($value)) {
-                    $value = (int) $value;
+                    $value = (int)$value;
                 }
 
                 $data[$key] = $value;

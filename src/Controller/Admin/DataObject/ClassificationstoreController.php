@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -10,36 +11,40 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\Controller\Admin\DataObject;
 
+use Exception;
 use Pimcore\Bundle\AdminBundle\Controller\AdminAbstractController;
+use Pimcore\Bundle\AdminBundle\Helper\QueryParams;
 use Pimcore\Controller\KernelControllerEventInterface;
 use Pimcore\Db;
 use Pimcore\Model\DataObject;
 use Pimcore\Model\DataObject\ClassDefinition\Data\LayoutDefinitionEnrichmentInterface;
 use Pimcore\Model\DataObject\Classificationstore;
+use Pimcore\Model\DataObject\Classificationstore\Service;
 use Pimcore\Model\Translation;
 use Pimcore\Model\Translation\Listing;
 use Pimcore\Model\User;
 use Pimcore\Security\SecurityHelper;
 use Pimcore\Tool\Admin;
+use stdClass;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Event\ControllerEvent;
 use Symfony\Component\Routing\Attribute\Route;
 
-    /**
+/**
  *
  * @internal
-     */
-    #[Route('/classificationstore', name: 'pimcore_admin_dataobject_classificationstore_')]
+ */
+#[Route('/classificationstore', name: 'pimcore_admin_dataobject_classificationstore_')]
 class ClassificationstoreController extends AdminAbstractController implements KernelControllerEventInterface
 {
-        #[Route('/delete-collection', name: 'deletecollection', methods: ['DELETE'])]
+    #[Route('/delete-collection', name: 'deletecollection', methods: [Request::METHOD_DELETE])]
     public function deleteCollectionAction(Request $request): JsonResponse
     {
         $this->checkPermission('classificationstore');
@@ -59,7 +64,7 @@ class ClassificationstoreController extends AdminAbstractController implements K
         return $this->adminJson(['success' => true]);
     }
 
-        #[Route('/delete-collection-relation', name: 'deletecollectionrelation', methods: ['DELETE'])]
+    #[Route('/delete-collection-relation', name: 'deletecollectionrelation', methods: [Request::METHOD_DELETE])]
     public function deleteCollectionRelationAction(Request $request): JsonResponse
     {
         $this->checkPermission('classificationstore');
@@ -76,13 +81,13 @@ class ClassificationstoreController extends AdminAbstractController implements K
         return $this->adminJson(['success' => true]);
     }
 
-        #[Route('/delete-relation', name: 'deleterelation', methods: ['DELETE'])]
+    #[Route('/delete-relation', name: 'deleterelation', methods: [Request::METHOD_DELETE])]
     public function deleteRelationAction(Request $request): JsonResponse
     {
         $this->checkPermission('classificationstore');
 
-        $keyId = (int) $request->get('keyId');
-        $groupId = (int) $request->get('groupId');
+        $keyId = (int)$request->get('keyId');
+        $groupId = (int)$request->get('groupId');
 
         $config = new Classificationstore\KeyGroupRelation();
         $config->setKeyId($keyId);
@@ -93,7 +98,7 @@ class ClassificationstoreController extends AdminAbstractController implements K
         return $this->adminJson(['success' => true]);
     }
 
-        #[Route('/delete-group', name: 'deletegroup', methods: ['DELETE'])]
+    #[Route('/delete-group', name: 'deletegroup', methods: [Request::METHOD_DELETE])]
     public function deleteGroupAction(Request $request): JsonResponse
     {
         $this->checkPermission('classificationstore');
@@ -106,17 +111,13 @@ class ClassificationstoreController extends AdminAbstractController implements K
         return $this->adminJson(['success' => true]);
     }
 
-        /**
-     *
-     * @throws \Exception
-         */
-        #[Route('/create-group', name: 'creategroup', methods: ['POST'])]
+    #[Route('/create-group', name: 'creategroup', methods: [Request::METHOD_POST])]
     public function createGroupAction(Request $request): JsonResponse
     {
         $this->checkPermission('classificationstore');
 
         $name = SecurityHelper::convertHtmlSpecialChars($request->get('name'));
-        $storeId = (int) $request->get('storeId');
+        $storeId = (int)$request->get('storeId');
         $config = Classificationstore\GroupConfig::getByName($name, $storeId);
 
         if (!$config) {
@@ -131,11 +132,7 @@ class ClassificationstoreController extends AdminAbstractController implements K
         }
     }
 
-        /**
-     *
-     * @throws \Exception
-         */
-        #[Route('/create-store', name: 'createstore', methods: ['POST'])]
+    #[Route('/create-store', name: 'createstore', methods: [Request::METHOD_POST])]
     public function createStoreAction(Request $request): JsonResponse
     {
         $this->checkPermission('classificationstore');
@@ -149,23 +146,19 @@ class ClassificationstoreController extends AdminAbstractController implements K
             $config->setName($name);
             $config->save();
         } else {
-            throw new \Exception('Store with the given name exists');
+            throw new Exception('Store with the given name exists');
         }
 
         return $this->adminJson(['success' => true, 'storeId' => $config->getId()]);
     }
 
-        /**
-     *
-     * @throws \Exception
-         */
-        #[Route('/create-collection', name: 'createcollection', methods: ['POST'])]
+    #[Route('/create-collection', name: 'createcollection', methods: [Request::METHOD_POST])]
     public function createCollectionAction(Request $request): JsonResponse
     {
         $this->checkPermission('classificationstore');
 
         $name = SecurityHelper::convertHtmlSpecialChars($request->get('name'));
-        $storeId = (int) $request->get('storeId');
+        $storeId = (int)$request->get('storeId');
         $config = Classificationstore\CollectionConfig::getByName($name, $storeId);
 
         if (!$config) {
@@ -178,13 +171,13 @@ class ClassificationstoreController extends AdminAbstractController implements K
         return $this->adminJson(['success' => true, 'id' => $config->getName()]);
     }
 
-        #[Route('/collections', name: 'collectionsactionget', methods: ['GET'])]
+    #[Route('/collections', name: 'collectionsactionget', methods: [Request::METHOD_GET])]
     public function collectionsActionGet(Request $request): JsonResponse
     {
         $this->checkPermission('objects');
 
         $start = 0;
-        $limit = $request->get('limit') ? (int) $request->get('limit') : 15;
+        $limit = $request->get('limit') ? (int)$request->get('limit') : 15;
 
         $orderKey = 'name';
         $order = 'ASC';
@@ -194,11 +187,11 @@ class ClassificationstoreController extends AdminAbstractController implements K
         }
 
         if ($request->get('start')) {
-            $start = (int) $request->get('start');
+            $start = (int)$request->get('start');
         }
 
         $allParams = array_merge($request->request->all(), $request->query->all());
-        $sortingSettings = \Pimcore\Bundle\AdminBundle\Helper\QueryParams::extractSortingSettings($allParams);
+        $sortingSettings = QueryParams::extractSortingSettings($allParams);
         if ($sortingSettings['orderKey'] && $sortingSettings['order']) {
             $orderKey = $sortingSettings['orderKey'];
             $order = $sortingSettings['order'];
@@ -212,15 +205,15 @@ class ClassificationstoreController extends AdminAbstractController implements K
         $storeIdFromDefinition = 0;
         $allowedCollectionIds = [];
         if ($oid = $request->get('oid')) {
-            $object = DataObject\Concrete::getById((int) $oid);
+            $object = DataObject\Concrete::getById((int)$oid);
             $class = $object->getClass();
             /** @var DataObject\ClassDefinition\Data\Classificationstore $fd */
             $fd = $class->getFieldDefinition($request->get('fieldname'));
             $allowedGroupIds = $fd->getAllowedGroupIds();
 
             if ($allowedGroupIds) {
-                $db = \Pimcore\Db::get();
-                $query = 'select * from classificationstore_collectionrelations where groupId in (' . implode(',', $allowedGroupIds) .')';
+                $db = Db::get();
+                $query = 'select * from classificationstore_collectionrelations where groupId in (' . implode(',', $allowedGroupIds) . ')';
                 $relationList = $db->fetchAllAssociative($query);
 
                 if (is_array($relationList)) {
@@ -249,21 +242,21 @@ class ClassificationstoreController extends AdminAbstractController implements K
 
             $searchTerms = array_merge([$searchfilter], $this->getTranslatedSearchFilterTerms($searchfilter));
             foreach ($searchTerms as $searchFilterTerm) {
-                $searchFilterConditions[] = 'name LIKE '.$db->quote('%'.$searchFilterTerm.'%').' OR description LIKE '.$db->quote('%'.$searchFilterTerm.'%');
+                $searchFilterConditions[] = 'name LIKE ' . $db->quote('%' . $searchFilterTerm . '%') . ' OR description LIKE ' . $db->quote('%' . $searchFilterTerm . '%');
             }
 
-            $conditionParts[] = '('.implode(' OR ', $searchFilterConditions).')';
+            $conditionParts[] = '(' . implode(' OR ', $searchFilterConditions) . ')';
         }
 
         $storeId = $request->get('storeId');
-        $storeId = $storeId ? (int) $storeId : $storeIdFromDefinition;
+        $storeId = $storeId ? (int)$storeId : $storeIdFromDefinition;
 
         $conditionParts[] = ' (storeId = ' . $db->quote($storeId) . ')';
 
         if ($request->get('filter')) {
             $filterString = $request->get('filter');
             $filters = json_decode($filterString);
-            /** @var \stdClass $f */
+            /** @var stdClass $f */
             foreach ($filters as $f) {
                 if (!isset($f->value)) {
                     continue;
@@ -315,7 +308,7 @@ class ClassificationstoreController extends AdminAbstractController implements K
         return $this->adminJson($rootElement);
     }
 
-        #[Route('/collections', name: 'collections', methods: ['POST', 'PUT'])]
+    #[Route('/collections', name: 'collections', methods: [Request::METHOD_POST, Request::METHOD_PUT])]
     public function collectionsAction(Request $request): JsonResponse
     {
         if ($request->get('data')) {
@@ -340,7 +333,7 @@ class ClassificationstoreController extends AdminAbstractController implements K
         return $this->adminJson(['success' => false]);
     }
 
-        #[Route('/groups', name: 'groupsactionget', methods: ['GET'])]
+    #[Route('/groups', name: 'groupsactionget', methods: [Request::METHOD_GET])]
     public function groupsActionGet(Request $request): JsonResponse
     {
         $this->checkPermission('objects');
@@ -359,14 +352,14 @@ class ClassificationstoreController extends AdminAbstractController implements K
         }
 
         if ($request->get('limit')) {
-            $limit = (int) $request->get('limit');
+            $limit = (int)$request->get('limit');
         }
         if ($request->get('start')) {
-            $start = (int) $request->get('start');
+            $start = (int)$request->get('start');
         }
 
         $allParams = array_merge($request->request->all(), $request->query->all());
-        $sortingSettings = \Pimcore\Bundle\AdminBundle\Helper\QueryParams::extractSortingSettings($allParams);
+        $sortingSettings = QueryParams::extractSortingSettings($allParams);
         if ($sortingSettings['orderKey'] && $sortingSettings['order']) {
             $orderKey = $sortingSettings['orderKey'];
             $order = $sortingSettings['order'];
@@ -393,10 +386,10 @@ class ClassificationstoreController extends AdminAbstractController implements K
 
             $searchTerms = array_merge([$searchfilter], $this->getTranslatedSearchFilterTerms($searchfilter));
             foreach ($searchTerms as $searchFilterTerm) {
-                $searchFilterConditions[] = 'name LIKE '.$db->quote('%'.$searchFilterTerm.'%').' OR description LIKE '.$db->quote('%'.$searchFilterTerm.'%');
+                $searchFilterConditions[] = 'name LIKE ' . $db->quote('%' . $searchFilterTerm . '%') . ' OR description LIKE ' . $db->quote('%' . $searchFilterTerm . '%');
             }
 
-            $conditionParts[] = '('.implode(' OR ', $searchFilterConditions).')';
+            $conditionParts[] = '(' . implode(' OR ', $searchFilterConditions) . ')';
         }
 
         if ($storeId = $request->query->getInt('storeId')) {
@@ -406,7 +399,7 @@ class ClassificationstoreController extends AdminAbstractController implements K
         if ($request->get('filter')) {
             $filterString = $request->get('filter');
             $filters = json_decode($filterString);
-            /** @var \stdClass $f */
+            /** @var stdClass $f */
             foreach ($filters as $f) {
                 if (!isset($f->value)) {
                     continue;
@@ -417,7 +410,7 @@ class ClassificationstoreController extends AdminAbstractController implements K
         }
 
         if ($oid = $request->get('oid')) {
-            $object = DataObject\Concrete::getById((int) $oid);
+            $object = DataObject\Concrete::getById((int)$oid);
             $class = $object->getClass();
             /** @var DataObject\ClassDefinition\Data\Classificationstore $fd */
             $fd = $class->getFieldDefinition($request->get('fieldname'));
@@ -465,7 +458,7 @@ class ClassificationstoreController extends AdminAbstractController implements K
         return $this->adminJson($rootElement);
     }
 
-        #[Route('/groups', name: 'groupsaction', methods: ['POST', 'PUT'])]
+    #[Route('/groups', name: 'groupsaction', methods: [Request::METHOD_POST, Request::METHOD_PUT])]
     public function groupsAction(Request $request): JsonResponse
     {
         if ($request->get('data')) {
@@ -490,7 +483,7 @@ class ClassificationstoreController extends AdminAbstractController implements K
         return $this->adminJson(['success' => false]);
     }
 
-        #[Route('/collection-relations', name: 'collectionrelationsget', methods: ['GET'])]
+    #[Route('/collection-relations', name: 'collectionrelationsget', methods: [Request::METHOD_GET])]
     public function collectionRelationsGetAction(Request $request): JsonResponse
     {
         $mapping = ['groupName' => 'name', 'groupDescription' => 'description'];
@@ -505,7 +498,7 @@ class ClassificationstoreController extends AdminAbstractController implements K
         }
 
         $allParams = array_merge($request->request->all(), $request->query->all());
-        $sortingSettings = \Pimcore\Bundle\AdminBundle\Helper\QueryParams::extractSortingSettings($allParams);
+        $sortingSettings = QueryParams::extractSortingSettings($allParams);
         if ($sortingSettings['orderKey'] && $sortingSettings['order']) {
             $orderKey = $sortingSettings['orderKey'];
             $order = $sortingSettings['order'];
@@ -517,10 +510,10 @@ class ClassificationstoreController extends AdminAbstractController implements K
         }
 
         if ($request->get('limit')) {
-            $limit = (int) $request->get('limit');
+            $limit = (int)$request->get('limit');
         }
         if ($request->get('start')) {
-            $start = (int) $request->get('start');
+            $start = (int)$request->get('start');
         }
 
         $list = new Classificationstore\CollectionGroupRelation\Listing();
@@ -539,7 +532,7 @@ class ClassificationstoreController extends AdminAbstractController implements K
             $filters = json_decode($filterString);
 
             $count = 0;
-            /** @var \stdClass $f */
+            /** @var stdClass $f */
             foreach ($filters as $f) {
                 if (!isset($f->value)) {
                     continue;
@@ -585,7 +578,7 @@ class ClassificationstoreController extends AdminAbstractController implements K
         return $this->adminJson($rootElement);
     }
 
-        #[Route('/collection-relations', name: 'collectionrelations', methods: ['POST', 'PUT'])]
+    #[Route('/collection-relations', name: 'collectionrelations', methods: [Request::METHOD_POST, Request::METHOD_PUT])]
     public function collectionRelationsAction(Request $request): JsonResponse
     {
         if ($request->get('data')) {
@@ -604,7 +597,7 @@ class ClassificationstoreController extends AdminAbstractController implements K
                 $config = new Classificationstore\CollectionGroupRelation();
                 $config->setGroupId($groupId);
                 $config->setColId($colId);
-                $config->setSorter((int) $sorter);
+                $config->setSorter((int)$sorter);
 
                 $config->save();
 
@@ -617,7 +610,7 @@ class ClassificationstoreController extends AdminAbstractController implements K
         return $this->adminJson(['success' => false]);
     }
 
-        #[Route('/list-stores', name: 'liststores', methods: ['GET'])]
+    #[Route('/list-stores', name: 'liststores', methods: [Request::METHOD_GET])]
     public function listStoresAction(): JsonResponse
     {
         $storeConfigs = [];
@@ -631,7 +624,7 @@ class ClassificationstoreController extends AdminAbstractController implements K
         return $this->adminJson($storeConfigs);
     }
 
-        #[Route('/search-relations', name: 'searchrelations', methods: ['GET'])]
+    #[Route('/search-relations', name: 'searchrelations', methods: [Request::METHOD_GET])]
     public function searchRelationsAction(Request $request): JsonResponse
     {
         $db = Db::get();
@@ -639,9 +632,9 @@ class ClassificationstoreController extends AdminAbstractController implements K
         $storeId = $request->get('storeId');
 
         $mapping = [
-            'groupName' => DataObject\Classificationstore\GroupConfig\Dao::TABLE_NAME_GROUPS .'.name',
-            'keyName' => DataObject\Classificationstore\KeyConfig\Dao::TABLE_NAME_KEYS .'.name',
-            'keyDescription' => DataObject\Classificationstore\KeyConfig\Dao::TABLE_NAME_KEYS. '.description',
+            'groupName' => DataObject\Classificationstore\GroupConfig\Dao::TABLE_NAME_GROUPS . '.name',
+            'keyName' => DataObject\Classificationstore\KeyConfig\Dao::TABLE_NAME_KEYS . '.name',
+            'keyDescription' => DataObject\Classificationstore\KeyConfig\Dao::TABLE_NAME_KEYS . '.description',
         ];
 
         $start = 0;
@@ -654,7 +647,7 @@ class ClassificationstoreController extends AdminAbstractController implements K
         }
 
         $allParams = array_merge($request->request->all(), $request->query->all());
-        $sortingSettings = \Pimcore\Bundle\AdminBundle\Helper\QueryParams::extractSortingSettings($allParams);
+        $sortingSettings = QueryParams::extractSortingSettings($allParams);
         if ($sortingSettings['orderKey'] && $sortingSettings['order']) {
             $orderKey = $sortingSettings['orderKey'];
             if ($orderKey == 'keyName') {
@@ -669,10 +662,10 @@ class ClassificationstoreController extends AdminAbstractController implements K
         }
 
         if ($request->get('limit')) {
-            $limit = (int) $request->get('limit');
+            $limit = (int)$request->get('limit');
         }
         if ($request->get('start')) {
-            $start = (int) $request->get('start');
+            $start = (int)$request->get('start');
         }
 
         $list = new Classificationstore\KeyGroupRelation\Listing();
@@ -690,7 +683,7 @@ class ClassificationstoreController extends AdminAbstractController implements K
             $db = Db::get();
             $filterString = $request->get('filter');
             $filters = json_decode($filterString);
-            /** @var \stdClass $f */
+            /** @var stdClass $f */
             foreach ($filters as $f) {
                 if (!isset($f->value)) {
                     continue;
@@ -709,12 +702,12 @@ class ClassificationstoreController extends AdminAbstractController implements K
 
             $searchTerms = array_merge([$searchfilter], $this->getTranslatedSearchFilterTerms($searchfilter));
             foreach ($searchTerms as $searchFilterTerm) {
-                $searchFilterConditions[] = Classificationstore\KeyConfig\Dao::TABLE_NAME_KEYS.'.name LIKE '.$db->quote('%'.$searchFilterTerm.'%')
-                    .' OR '.Classificationstore\GroupConfig\Dao::TABLE_NAME_GROUPS.'.name LIKE '.$db->quote('%'.$searchFilterTerm.'%')
-                    .' OR '.Classificationstore\KeyConfig\Dao::TABLE_NAME_KEYS.'.description LIKE '.$db->quote('%'.$searchFilterTerm.'%');
+                $searchFilterConditions[] = Classificationstore\KeyConfig\Dao::TABLE_NAME_KEYS . '.name LIKE ' . $db->quote('%' . $searchFilterTerm . '%')
+                    . ' OR ' . Classificationstore\GroupConfig\Dao::TABLE_NAME_GROUPS . '.name LIKE ' . $db->quote('%' . $searchFilterTerm . '%')
+                    . ' OR ' . Classificationstore\KeyConfig\Dao::TABLE_NAME_KEYS . '.description LIKE ' . $db->quote('%' . $searchFilterTerm . '%');
             }
 
-            $conditionParts[] = '('.implode(' OR ', $searchFilterConditions).')';
+            $conditionParts[] = '(' . implode(' OR ', $searchFilterConditions) . ')';
         }
 
         $condition = implode(' AND ', $conditionParts);
@@ -748,7 +741,7 @@ class ClassificationstoreController extends AdminAbstractController implements K
         return $this->adminJson($rootElement);
     }
 
-        #[Route('/relations', name: 'relationsactionget', methods: ['GET'])]
+    #[Route('/relations', name: 'relationsactionget', methods: [Request::METHOD_GET])]
     public function relationsActionGet(Request $request): JsonResponse
     {
         $mapping = ['keyName' => 'name', 'keyDescription' => 'description'];
@@ -768,7 +761,7 @@ class ClassificationstoreController extends AdminAbstractController implements K
         }
 
         $allParams = array_merge($request->request->all(), $request->query->all());
-        $sortingSettings = \Pimcore\Bundle\AdminBundle\Helper\QueryParams::extractSortingSettings($allParams);
+        $sortingSettings = QueryParams::extractSortingSettings($allParams);
 
         if ($sortingSettings['orderKey'] && $sortingSettings['order']) {
             $orderKey = $mapping[$sortingSettings['orderKey']] ?? $sortingSettings['orderKey'];
@@ -781,13 +774,13 @@ class ClassificationstoreController extends AdminAbstractController implements K
         }
 
         if ($request->get('limit')) {
-            $limit = (int) $request->get('limit');
+            $limit = (int)$request->get('limit');
         } elseif (is_array($relationIds)) {
             $limit = count($relationIds);
         }
 
         if ($request->get('start')) {
-            $start = (int) $request->get('start');
+            $start = (int)$request->get('start');
         }
 
         $list = new Classificationstore\KeyGroupRelation\Listing();
@@ -805,7 +798,7 @@ class ClassificationstoreController extends AdminAbstractController implements K
             $db = Db::get();
             $filterString = $request->get('filter');
             $filters = json_decode($filterString);
-            /** @var \stdClass $f */
+            /** @var stdClass $f */
             foreach ($filters as $f) {
                 if (!isset($f->value)) {
                     continue;
@@ -845,7 +838,7 @@ class ClassificationstoreController extends AdminAbstractController implements K
         foreach ($listItems as $config) {
             $type = $config->getType();
             $definition = json_decode($config->getDefinition(), true);
-            $definition = \Pimcore\Model\DataObject\Classificationstore\Service::getFieldDefinitionFromJson($definition, $type);
+            $definition = Service::getFieldDefinitionFromJson($definition, $type);
             DataObject\Service::enrichLayoutDefinition($definition);
 
             $item = [
@@ -868,7 +861,7 @@ class ClassificationstoreController extends AdminAbstractController implements K
         return $this->adminJson($rootElement);
     }
 
-        #[Route('/relations', name: 'relations', methods: ['POST', 'PUT'])]
+    #[Route('/relations', name: 'relations', methods: [Request::METHOD_POST, Request::METHOD_PUT])]
     public function relationsAction(Request $request): JsonResponse
     {
         if ($request->get('data')) {
@@ -881,8 +874,8 @@ class ClassificationstoreController extends AdminAbstractController implements K
             $mandatory = $data['mandatory'];
 
             $config = new Classificationstore\KeyGroupRelation();
-            $config->setGroupId((int) $groupId);
-            $config->setKeyId((int) $keyId);
+            $config->setGroupId((int)$groupId);
+            $config->setKeyId((int)$keyId);
             $config->setSorter($sorter);
             $config->setMandatory($mandatory);
 
@@ -895,11 +888,7 @@ class ClassificationstoreController extends AdminAbstractController implements K
         return $this->adminJson(['success' => false]);
     }
 
-        /**
-     *
-     * @throws \Exception
-         */
-        #[Route('/add-collections', name: 'addcollections', methods: ['POST'])]
+    #[Route('/add-collections', name: 'addcollections', methods: [Request::METHOD_POST])]
     public function addCollectionsAction(Request $request): JsonResponse
     {
         $this->checkPermission('objects');
@@ -908,7 +897,7 @@ class ClassificationstoreController extends AdminAbstractController implements K
         $data = [];
 
         if ($ids) {
-            $db = \Pimcore\Db::get();
+            $db = Db::get();
             $mappedData = [];
             $groupsData = $db->fetchAllAssociative('select * from classificationstore_groups g, classificationstore_collectionrelations c where colId IN (:ids) and g.id = c.groupId', [
                 'ids' => implode(',', array_filter($ids, 'intval')),
@@ -972,14 +961,14 @@ class ClassificationstoreController extends AdminAbstractController implements K
                     $keyList = $data[$groupId]['keys'];
                     $type = $keyData->getType();
                     $definition = json_decode($keyData->getDefinition(), true);
-                    $definition = \Pimcore\Model\DataObject\Classificationstore\Service::getFieldDefinitionFromJson($definition, $type);
+                    $definition = Service::getFieldDefinitionFromJson($definition, $type);
 
                     if (method_exists($definition, '__wakeup')) {
                         $definition->__wakeup();
                     }
 
                     $context['object'] = $object;
-                    $context['class'] = $object ? $object->getClass() : null;
+                    $context['class'] = $object?->getClass();
                     $context['ownerType'] = 'classificationstore';
                     $context['ownerName'] = $fieldname;
                     $context['keyId'] = $keyData->getKeyId();
@@ -1004,11 +993,7 @@ class ClassificationstoreController extends AdminAbstractController implements K
         return $this->adminJson($data);
     }
 
-        /**
-     *
-     * @throws \Exception
-         */
-        #[Route('/add-groups', name: 'addgroups', methods: ['POST'])]
+    #[Route('/add-groups', name: 'addgroups', methods: [Request::METHOD_POST])]
     public function addGroupsAction(Request $request): JsonResponse
     {
         $this->checkPermission('objects');
@@ -1051,14 +1036,14 @@ class ClassificationstoreController extends AdminAbstractController implements K
             $keyList = $data[$groupId]['keys'];
             $type = $keyData->getType();
             $definition = json_decode($keyData->getDefinition(), true);
-            $definition = \Pimcore\Model\DataObject\Classificationstore\Service::getFieldDefinitionFromJson($definition, $type);
+            $definition = Service::getFieldDefinitionFromJson($definition, $type);
 
             if (method_exists($definition, '__wakeup')) {
                 $definition->__wakeup();
             }
 
             $context['object'] = $object;
-            $context['class'] = $object ? $object->getClass() : null;
+            $context['class'] = $object?->getClass();
             $context['ownerType'] = 'classificationstore';
             $context['ownerName'] = $fieldname;
             $context['keyId'] = $keyData->getKeyId();
@@ -1081,16 +1066,12 @@ class ClassificationstoreController extends AdminAbstractController implements K
         return $this->adminJson($data);
     }
 
-        /**
-     *
-     * @throws \Exception
-         */
-        #[Route('/properties', name: 'propertiesget', methods: ['GET'])]
+    #[Route('/properties', name: 'propertiesget', methods: [Request::METHOD_GET])]
     public function propertiesGetAction(Request $request): JsonResponse
     {
-        $storeId = (int) $request->get('storeId');
+        $storeId = (int)$request->get('storeId');
         $frameName = $request->get('frameName');
-        $db = \Pimcore\Db::get();
+        $db = Db::get();
 
         $conditionParts = [];
 
@@ -1136,7 +1117,7 @@ class ClassificationstoreController extends AdminAbstractController implements K
         }
 
         $allParams = array_merge($request->request->all(), $request->query->all());
-        $sortingSettings = \Pimcore\Bundle\AdminBundle\Helper\QueryParams::extractSortingSettings($allParams);
+        $sortingSettings = QueryParams::extractSortingSettings($allParams);
         if ($sortingSettings['orderKey'] && $sortingSettings['order']) {
             $orderKey = $sortingSettings['orderKey'];
             $order = $sortingSettings['order'];
@@ -1148,10 +1129,10 @@ class ClassificationstoreController extends AdminAbstractController implements K
         }
 
         if ($request->get('limit')) {
-            $limit = (int) $request->get('limit');
+            $limit = (int)$request->get('limit');
         }
         if ($request->get('start')) {
-            $start = (int) $request->get('start');
+            $start = (int)$request->get('start');
         }
 
         $list = new Classificationstore\KeyConfig\Listing();
@@ -1165,17 +1146,17 @@ class ClassificationstoreController extends AdminAbstractController implements K
 
         $searchfilter = $request->get('searchfilter');
         if ($searchfilter) {
-            $conditionParts[] = '(name LIKE ' . $db->quote('%' . $searchfilter . '%') . ' OR description LIKE ' . $db->quote('%'. $searchfilter . '%') . ')';
+            $conditionParts[] = '(name LIKE ' . $db->quote('%' . $searchfilter . '%') . ' OR description LIKE ' . $db->quote('%' . $searchfilter . '%') . ')';
         }
 
         if ($storeId) {
-            $conditionParts[] = '(storeId = '. $db->quote($storeId) . ')';
+            $conditionParts[] = '(storeId = ' . $db->quote($storeId) . ')';
         }
 
         if ($request->get('filter')) {
             $filterString = $request->get('filter');
             $filters = json_decode($filterString);
-            /** @var \stdClass $f */
+            /** @var stdClass $f */
             foreach ($filters as $f) {
                 if (!isset($f->value)) {
                     continue;
@@ -1229,7 +1210,7 @@ class ClassificationstoreController extends AdminAbstractController implements K
         return $this->adminJson($rootElement);
     }
 
-        #[Route('/properties', name: 'properties', methods: ['POST', 'PUT'])]
+    #[Route('/properties', name: 'properties', methods: [Request::METHOD_POST, Request::METHOD_PUT])]
     public function propertiesAction(Request $request): JsonResponse
     {
         if ($request->get('data')) {
@@ -1282,7 +1263,7 @@ class ClassificationstoreController extends AdminAbstractController implements K
     protected function getKeyConfigItem(Classificationstore\KeyConfig $config): array
     {
         $item = $this->getConfigItem($config);
-        $item['type'] = $config->getType() ? $config->getType() : 'input';
+        $item['type'] = $config->getType() ?: 'input';
         $definition = $config->getDefinition();
         $item['definition'] = $definition;
 
@@ -1296,11 +1277,11 @@ class ClassificationstoreController extends AdminAbstractController implements K
         return $item;
     }
 
-        #[Route('/add-property', name: 'addproperty', methods: ['POST'])]
+    #[Route('/add-property', name: 'addproperty', methods: [Request::METHOD_POST])]
     public function addPropertyAction(Request $request): JsonResponse
     {
         $name = $request->get('name');
-        $storeId = (int) $request->get('storeId');
+        $storeId = (int)$request->get('storeId');
 
         $definition = [
             'fieldtype' => 'input',
@@ -1320,7 +1301,7 @@ class ClassificationstoreController extends AdminAbstractController implements K
         return $this->adminJson(['success' => true, 'id' => $config->getName()]);
     }
 
-        #[Route('/delete-property', name: 'deleteproperty', methods: ['DELETE'])]
+    #[Route('/delete-property', name: 'deleteproperty', methods: [Request::METHOD_DELETE])]
     public function deletePropertyAction(Request $request): JsonResponse
     {
         $id = $request->request->getInt('id');
@@ -1333,31 +1314,27 @@ class ClassificationstoreController extends AdminAbstractController implements K
         return $this->adminJson(['success' => true]);
     }
 
-        /**
-     *
-     * @throws \Exception
-         */
-        #[Route('/edit-store', name: 'editstore', methods: ['PUT'])]
+    #[Route('/edit-store', name: 'editstore', methods: [Request::METHOD_PUT])]
     public function editStoreAction(Request $request): JsonResponse
     {
         $id = $request->request->getInt('id');
         $data = json_decode($request->request->get('data'), true);
         $name = $data['name'];
         if (!$name) {
-            throw new \Exception('Name must not be empty');
+            throw new Exception('Name must not be empty');
         }
 
         $description = $data['description'];
 
         $config = Classificationstore\StoreConfig::getByName($name);
         if ($config && $config->getId() != $id) {
-            throw new \Exception('There is already a config with the same name');
+            throw new Exception('There is already a config with the same name');
         }
 
         $config = Classificationstore\StoreConfig::getById($id);
 
         if (!$config) {
-            throw new \Exception('Configuration does not exist');
+            throw new Exception('Configuration does not exist');
         }
 
         $config->setName($name);
@@ -1367,7 +1344,7 @@ class ClassificationstoreController extends AdminAbstractController implements K
         return $this->adminJson(['success' => true]);
     }
 
-        #[Route('/storetree', name: 'storetree', methods: ['GET'])]
+    #[Route('/storetree', name: 'storetree', methods: [Request::METHOD_GET])]
     public function storetreeAction(Request $request): JsonResponse
     {
         $result = [];
@@ -1386,8 +1363,6 @@ class ClassificationstoreController extends AdminAbstractController implements K
 
             $resultItem['qtitle'] = 'ID: ' . $item->getId();
 
-            if ($item->getDescription()) {
-            }
             $resultItem['qtip'] = $item->getDescription() ? htmlspecialchars($item->getDescription(), ENT_QUOTES) : ' ';
             $result[] = $resultItem;
         }
@@ -1395,7 +1370,7 @@ class ClassificationstoreController extends AdminAbstractController implements K
         return $this->adminJson($result);
     }
 
-        #[Route('/get-page', name: 'getpage', methods: ['GET'])]
+    #[Route('/get-page', name: 'getpage', methods: [Request::METHOD_GET])]
     public function getPageAction(Request $request): JsonResponse
     {
         $tableSuffix = $request->get('table');
@@ -1404,10 +1379,10 @@ class ClassificationstoreController extends AdminAbstractController implements K
         }
 
         $table = 'classificationstore_' . $tableSuffix;
-        $db = \Pimcore\Db::get();
-        $id = (int) $request->get('id');
-        $storeId = (int) $request->get('storeId');
-        $pageSize = (int) $request->get('pageSize');
+        $db = Db::get();
+        $id = (int)$request->get('id');
+        $storeId = (int)$request->get('storeId');
+        $pageSize = (int)$request->get('pageSize');
 
         if ($request->get('sortKey')) {
             $sortKey = $request->get('sortKey');
@@ -1425,7 +1400,7 @@ class ClassificationstoreController extends AdminAbstractController implements K
             $sortKey = 'name';
         }
 
-        $sorter = ' order by `' . $sortKey .  '` ' . $sortDir;
+        $sorter = ' order by `' . $sortKey . '` ' . $sortDir;
 
         if ($table == 'keys') {
             $query = '
@@ -1442,13 +1417,13 @@ class ClassificationstoreController extends AdminAbstractController implements K
                     select @rownum := @rownum + 1 as pos,  id, name
                     from `' . $table . '`
                     where storeId = ' . $storeId . $sorter . '
-                  ) all_rows) item where id = ' .  $id . ';';
+                  ) all_rows) item where id = ' . $id . ';';
         }
 
         $db->executeQuery('select @rownum := 0;');
         $result = $db->fetchAllAssociative($query);
 
-        $page = (int) $result[0]['page'] ;
+        $page = (int)$result[0]['page'];
 
         return $this->adminJson(['success' => true, 'page' => $page]);
     }
@@ -1481,7 +1456,7 @@ class ClassificationstoreController extends AdminAbstractController implements K
         if ($user instanceof User) {
             $translationListing = new Listing();
             $translationListing->setDomain(Translation::DOMAIN_ADMIN);
-            $translationListing->setCondition('language=? AND text LIKE ?', [$user->getLanguage(), '%'.$searchTerm.'%']);
+            $translationListing->setCondition('language=? AND text LIKE ?', [$user->getLanguage(), '%' . $searchTerm . '%']);
 
             foreach ($translationListing as $translation) {
                 $terms[] = $translation->getKey();

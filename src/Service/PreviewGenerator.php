@@ -9,12 +9,14 @@
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\Service;
 
+use Locale;
+use LogicException;
 use Pimcore\Model\DataObject\ClassDefinition\LinkGeneratorInterface;
 use Pimcore\Model\DataObject\ClassDefinition\PreviewGeneratorInterface;
 use Pimcore\Model\DataObject\Concrete;
@@ -36,7 +38,7 @@ class PreviewGenerator implements PreviewGeneratorInterface
             $filteredParameters = $this->filterParameters($object, $params);
 
             $locale = $filteredParameters[PreviewGeneratorInterface::PARAMETER_LOCALE] ?? Tool::getDefaultLanguage();
-            $site = array_key_exists(PreviewGeneratorInterface::PARAMETER_SITE, $filteredParameters) ? Site::getById($filteredParameters[PreviewGeneratorInterface::PARAMETER_SITE]) : (new Site\Listing())->current();
+            $site = array_key_exists(PreviewGeneratorInterface::PARAMETER_SITE, $filteredParameters) ? Site::getById($filteredParameters[PreviewGeneratorInterface::PARAMETER_SITE]) : new Site\Listing()->current();
 
             return $linkGenerator->generate($object, [
                 PreviewGeneratorInterface::PARAMETER_LOCALE => $locale,
@@ -44,7 +46,7 @@ class PreviewGenerator implements PreviewGeneratorInterface
             ]);
         }
 
-        throw new \LogicException("No link generator given for element of type {$object->getClassName()}");
+        throw new LogicException("No link generator given for element of type {$object->getClassName()}");
     }
 
     /**
@@ -82,7 +84,7 @@ class PreviewGenerator implements PreviewGeneratorInterface
 
         $locales = [];
         foreach (Tool::getValidLanguages() as $locale) {
-            $label = sprintf('%s (%s)', \Locale::getDisplayLanguage($locale, $userLocale), $locale);
+            $label = sprintf('%s (%s)', Locale::getDisplayLanguage($locale, $userLocale), $locale);
             $locales[$label] = $locale;
         }
 

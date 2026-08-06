@@ -11,12 +11,13 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\GDPR\DataProvider;
 
+use Pimcore\Bundle\AdminBundle\Helper\QueryParams;
 use Pimcore\Db;
 use Pimcore\Model\User;
 use Pimcore\Security\User\TokenStorageUserResolver;
@@ -51,7 +52,7 @@ class PimcoreUsers implements DataProviderInterface
         return 30;
     }
 
-    public function searchData(int $id, string $firstname, string $lastname, string $email, int $start, int $limit, string $sort = null): array
+    public function searchData(int $id, string $firstname, string $lastname, string $email, int $start, int $limit, ?string $sort = null): array
     {
         if (empty($id) && empty($firstname) && empty($lastname) && empty($email)) {
             return ['data' => [], 'success' => true, 'total' => 0];
@@ -82,7 +83,7 @@ class PimcoreUsers implements DataProviderInterface
         $userListing->setLimit($limit);
         $userListing->setOffset($start);
 
-        $sortingSettings = \Pimcore\Bundle\AdminBundle\Helper\QueryParams::extractSortingSettings(['sort' => $sort]);
+        $sortingSettings = QueryParams::extractSortingSettings(['sort' => $sort]);
         if ($sortingSettings['orderKey']) {
             $userListing->setOrderKey($sortingSettings['orderKey']);
         }
@@ -128,9 +129,7 @@ class PimcoreUsers implements DataProviderInterface
     protected function getVersionDataForUser(User\AbstractUser $user): array
     {
         $db = Db::get();
-        $versions = $db->fetchAllAssociative("SELECT ctype, cid, note, FROM_UNIXTIME(`date`) AS 'date' FROM versions WHERE userId = ?", [$user->getId()]);
-
-        return $versions;
+        return $db->fetchAllAssociative("SELECT ctype, cid, note, FROM_UNIXTIME(`date`) AS 'date' FROM versions WHERE userId = ?", [$user->getId()]);
     }
 
     protected function getUsageLogDataForUser(User\AbstractUser $user): array
@@ -142,7 +141,7 @@ class PimcoreUsers implements DataProviderInterface
         if ($handle) {
             while (!feof($handle)) {
                 $buffer = fgets($handle);
-                if ($buffer && strpos($buffer, $pattern) !== false) {
+                if ($buffer && str_contains($buffer, $pattern)) {
                     $matches[] = $buffer;
                 }
             }
@@ -155,7 +154,7 @@ class PimcoreUsers implements DataProviderInterface
             if ($handle) {
                 while (!feof($handle)) {
                     $buffer = fgets($handle);
-                    if (strpos($buffer, $pattern) !== false) {
+                    if (str_contains($buffer, $pattern)) {
                         $matches[] = $buffer;
                     }
                 }

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -10,14 +11,20 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\Controller\Admin;
 
+use Exception;
 use Pimcore\Bundle\AdminBundle\Controller\AdminAbstractController;
 use Pimcore\Bundle\AdminBundle\Event\AdminEvents;
+use Pimcore\Model\Asset;
+use Pimcore\Model\DataObject;
+use Pimcore\Model\DataObject\AbstractObject;
+use Pimcore\Model\Document;
+use Pimcore\Model\Document\Listing;
 use Pimcore\Model\Element\Tag;
 use Symfony\Component\EventDispatcher\GenericEvent;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -25,14 +32,14 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
-    /**
+/**
  *
  * @internal
-     */
-    #[Route('/tags')]
+ */
+#[Route('/tags')]
 class TagsController extends AdminAbstractController
 {
-        #[Route('/add', name: 'pimcore_admin_tags_add', methods: ['POST'])]
+    #[Route('/add', name: 'pimcore_admin_tags_add', methods: [Request::METHOD_POST])]
     public function addAction(Request $request): JsonResponse
     {
         $this->checkPermission('tags_configuration');
@@ -44,21 +51,17 @@ class TagsController extends AdminAbstractController
             $tag->save();
 
             return $this->adminJson(['success' => true, 'id' => $tag->getId()]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return $this->adminJson(['success' => false, 'message' => $e->getMessage()]);
         }
     }
 
-        /**
-     *
-     * @throws \Exception
-         */
-        #[Route('/delete', name: 'pimcore_admin_tags_delete', methods: ['DELETE'])]
+    #[Route('/delete', name: 'pimcore_admin_tags_delete', methods: [Request::METHOD_DELETE])]
     public function deleteAction(Request $request): JsonResponse
     {
         $this->checkPermission('tags_configuration');
 
-        $tag = Tag::getById((int) $request->get('id'));
+        $tag = Tag::getById((int)$request->get('id'));
         if ($tag) {
             $tag->delete();
 
@@ -68,16 +71,12 @@ class TagsController extends AdminAbstractController
         }
     }
 
-        /**
-     *
-     * @throws \Exception
-         */
-        #[Route('/update', name: 'pimcore_admin_tags_update', methods: ['PUT'])]
+    #[Route('/update', name: 'pimcore_admin_tags_update', methods: [Request::METHOD_PUT])]
     public function updateAction(Request $request): JsonResponse
     {
         $this->checkPermission('tags_configuration');
 
-        $tag = Tag::getById((int) $request->get('id'));
+        $tag = Tag::getById((int)$request->get('id'));
         if ($tag) {
             $parentId = $request->get('parentId');
             if ($parentId || $parentId === '0') {
@@ -95,7 +94,7 @@ class TagsController extends AdminAbstractController
         }
     }
 
-        #[Route('/tree-get-children-by-id', name: 'pimcore_admin_tags_treegetchildrenbyid', methods: ['GET'])]
+    #[Route('/tree-get-children-by-id', name: 'pimcore_admin_tags_treegetchildrenbyid', methods: [Request::METHOD_GET])]
     public function treeGetChildrenByIdAction(Request $request): JsonResponse
     {
         $showSelection = $request->get('showSelection') == 'true';
@@ -136,7 +135,7 @@ class TagsController extends AdminAbstractController
             }
 
             $filterIds = array_unique(array_values($filterIds));
-            $tagList->setCondition('id IN('.implode(',', $filterIds).')');
+            $tagList->setCondition('id IN(' . implode(',', $filterIds) . ')');
             $recursiveChildren = true;
         }
 
@@ -179,7 +178,7 @@ class TagsController extends AdminAbstractController
         return $tagArray;
     }
 
-        #[Route('/load-tags-for-element', name: 'pimcore_admin_tags_loadtagsforelement', methods: ['GET'])]
+    #[Route('/load-tags-for-element', name: 'pimcore_admin_tags_loadtagsforelement', methods: [Request::METHOD_GET])]
     public function loadTagsForElementAction(Request $request): JsonResponse
     {
         $assginmentCId = (int)$request->get('assignmentCId');
@@ -197,7 +196,7 @@ class TagsController extends AdminAbstractController
         return $this->adminJson($assignedTagArray);
     }
 
-        #[Route('/add-tag-to-element', name: 'pimcore_admin_tags_addtagtoelement', methods: ['PUT'])]
+    #[Route('/add-tag-to-element', name: 'pimcore_admin_tags_addtagtoelement', methods: [Request::METHOD_PUT])]
     public function addTagToElementAction(Request $request): JsonResponse
     {
         $assginmentCId = (int)$request->get('assignmentElementId');
@@ -214,7 +213,7 @@ class TagsController extends AdminAbstractController
         }
     }
 
-        #[Route('/remove-tag-from-element', name: 'pimcore_admin_tags_removetagfromelement', methods: ['DELETE'])]
+    #[Route('/remove-tag-from-element', name: 'pimcore_admin_tags_removetagfromelement', methods: [Request::METHOD_DELETE])]
     public function removeTagFromElementAction(Request $request): JsonResponse
     {
         $assginmentCId = (int)$request->get('assignmentElementId');
@@ -231,8 +230,11 @@ class TagsController extends AdminAbstractController
         }
     }
 
-        #[Route('/get-batch-assignment-jobs', name: 'pimcore_admin_tags_getbatchassignmentjobs', methods: ['GET'])]
-    public function getBatchAssignmentJobsAction(Request $request, EventDispatcherInterface $eventDispatcher): JsonResponse
+    #[Route('/get-batch-assignment-jobs', name: 'pimcore_admin_tags_getbatchassignmentjobs', methods: [Request::METHOD_GET])]
+    public function getBatchAssignmentJobsAction(
+        Request                  $request,
+        EventDispatcherInterface $eventDispatcher
+    ): JsonResponse
     {
         $elementId = (int)$request->get('elementId');
         $elementType = strip_tags($request->get('elementType', ''));
@@ -240,21 +242,21 @@ class TagsController extends AdminAbstractController
         $idList = [];
         switch ($elementType) {
             case 'object':
-                $object = \Pimcore\Model\DataObject::getById($elementId);
+                $object = DataObject::getById($elementId);
                 if ($object) {
                     $idList = $this->getSubObjectIds($object, $eventDispatcher);
                 }
 
                 break;
             case 'asset':
-                $asset = \Pimcore\Model\Asset::getById($elementId);
+                $asset = Asset::getById($elementId);
                 if ($asset) {
                     $idList = $this->getSubAssetIds($asset, $eventDispatcher);
                 }
 
                 break;
             case 'document':
-                $document = \Pimcore\Model\Document::getById($elementId);
+                $document = Document::getById($elementId);
                 if ($document) {
                     $idList = $this->getSubDocumentIds($document, $eventDispatcher);
                 }
@@ -276,9 +278,9 @@ class TagsController extends AdminAbstractController
     /**
      * @return int[]
      */
-    private function getSubObjectIds(\Pimcore\Model\DataObject\AbstractObject $object, EventDispatcherInterface $eventDispatcher): array
+    private function getSubObjectIds(AbstractObject $object, EventDispatcherInterface $eventDispatcher): array
     {
-        $childrenList = new \Pimcore\Model\DataObject\Listing();
+        $childrenList = new DataObject\Listing();
         $condition = '`path` LIKE ?';
         if (!$this->getAdminUser()->isAdmin()) {
             $userIds = $this->getAdminUser()->getRoles();
@@ -297,7 +299,7 @@ class TagsController extends AdminAbstractController
             'context' => [],
         ]);
         $eventDispatcher->dispatch($beforeListLoadEvent, AdminEvents::OBJECT_LIST_BEFORE_LIST_LOAD);
-        /** @var \Pimcore\Model\DataObject\Listing $childrenList */
+        /** @var DataObject\Listing $childrenList */
         $childrenList = $beforeListLoadEvent->getArgument('list');
 
         return $childrenList->loadIdList();
@@ -306,9 +308,9 @@ class TagsController extends AdminAbstractController
     /**
      * @return int[]
      */
-    private function getSubAssetIds(\Pimcore\Model\Asset $asset, EventDispatcherInterface $eventDispatcher): array
+    private function getSubAssetIds(Asset $asset, EventDispatcherInterface $eventDispatcher): array
     {
-        $childrenList = new \Pimcore\Model\Asset\Listing();
+        $childrenList = new Asset\Listing();
         $condition = '`path` LIKE ?';
         if (!$this->getAdminUser()->isAdmin()) {
             $userIds = $this->getAdminUser()->getRoles();
@@ -327,7 +329,7 @@ class TagsController extends AdminAbstractController
             'context' => [],
         ]);
         $eventDispatcher->dispatch($beforeListLoadEvent, AdminEvents::ASSET_LIST_BEFORE_LIST_LOAD);
-        /** @var \Pimcore\Model\Asset\Listing $childrenList */
+        /** @var Asset\Listing $childrenList */
         $childrenList = $beforeListLoadEvent->getArgument('list');
 
         return $childrenList->loadIdList();
@@ -336,9 +338,9 @@ class TagsController extends AdminAbstractController
     /**
      * @return int[]
      */
-    private function getSubDocumentIds(\Pimcore\Model\Document $document, EventDispatcherInterface $eventDispatcher): array
+    private function getSubDocumentIds(Document $document, EventDispatcherInterface $eventDispatcher): array
     {
-        $childrenList = new \Pimcore\Model\Document\Listing();
+        $childrenList = new Listing();
         $condition = '`path` LIKE ?';
         if (!$this->getAdminUser()->isAdmin()) {
             $userIds = $this->getAdminUser()->getRoles();
@@ -357,13 +359,13 @@ class TagsController extends AdminAbstractController
             'context' => [],
         ]);
         $eventDispatcher->dispatch($beforeListLoadEvent, AdminEvents::DOCUMENT_LIST_BEFORE_LIST_LOAD);
-        /** @var \Pimcore\Model\Document\Listing $childrenList */
+        /** @var Listing $childrenList */
         $childrenList = $beforeListLoadEvent->getArgument('list');
 
         return $childrenList->loadIdList();
     }
 
-        #[Route('/do-batch-assignment', name: 'pimcore_admin_tags_dobatchassignment', methods: ['PUT'])]
+    #[Route('/do-batch-assignment', name: 'pimcore_admin_tags_dobatchassignment', methods: [Request::METHOD_PUT])]
     public function doBatchAssignmentAction(Request $request): JsonResponse
     {
         $cType = strip_tags($request->get('elementType', ''));

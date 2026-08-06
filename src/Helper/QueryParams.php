@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -10,13 +11,15 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\Helper;
 
 use Carbon\Carbon;
+use Exception;
+use Pimcore\Db;
 
 /**
  * @internal
@@ -31,25 +34,22 @@ class QueryParams
         $orderKey = null;
         $order = null;
 
-        $sortParam = isset($params['sort']) ? $params['sort'] : false;
-        if ($sortParam) {
+        if ($sortParam = $params['sort'] ?? false) {
             $sortParam = json_decode($sortParam, true);
             $sortParam = $sortParam[0];
 
             $order = strtoupper($sortParam['direction']) === 'DESC' ? 'DESC' : 'ASC';
 
-            if (substr($sortParam['property'], 0, 1) != '~') {
-                $orderKey = $sortParam['property'];
-            } else {
-                $orderKey = $sortParam['property'];
+            $orderKey = $sortParam['property'];
 
+            if (str_starts_with($sortParam['property'], '~')) {
                 $parts = explode('~', $orderKey);
 
                 $fieldname = $parts[2];
                 $groupKeyId = $parts[3];
                 $groupKeyId = explode('-', $groupKeyId);
-                $groupId = (int) $groupKeyId[0];
-                $keyid = (int) $groupKeyId[1];
+                $groupId = (int)$groupKeyId[0];
+                $keyid = (int)$groupKeyId[1];
 
                 return ['orderKey' => $sortParam['property'], 'fieldname' => $fieldname, 'groupId' => $groupId, 'keyId' => $keyid, 'order' => $order, 'isFeature' => 1];
             }
@@ -68,19 +68,18 @@ class QueryParams
     /**
      * Creates a condition string from the passed ExtJs filter definitions
      *
-     *
-     *
-     * @throws \Exception
+     * @throws Exception
      */
     public static function getFilterCondition(string $filterString, array $matchExact = ['id', 'id'], bool $returnString = true, array $callbacks = []): array|string
     {
         if (!$filterString) {
             return '';
         }
+
         $conditions = [];
 
         $filters = json_decode($filterString);
-        $db = \Pimcore\Db::get();
+        $db = Db::get();
         foreach ($filters as $f) {
             if ($f->type == 'string') {
                 if (in_array($f->property, $matchExact)) {
@@ -97,14 +96,14 @@ class QueryParams
                 } elseif ($f->operator == 'gt') {
                     $symbol = ' > ';
                 }
-                $conditions[$f->property][] = ' ' . $db->quoteIdentifier($f->property)  . ' ' . $symbol . $db->quote($f->value) . ' ';
+                $conditions[$f->property][] = ' ' . $db->quoteIdentifier($f->property) . ' ' . $symbol . $db->quote($f->value) . ' ';
             } elseif ($f->type == 'date') {
                 /**
                  * make sure you pass the date as timestamp
                  *
                  * filter: {type : 'date',dateFormat: 'timestamp'}
                  */
-                $date = Carbon::createFromTimestamp($f->value)->setTime(0, 0, 0);
+                $date = Carbon::createFromTimestamp($f->value)->setTime(0, 0);
 
                 if ($f->operator == 'eq') {
                     $conditions[$f->property][] = ' ' . $f->property . ' >= ' . $db->quote($date->getTimestamp());
@@ -115,7 +114,7 @@ class QueryParams
                     $conditions[$f->property][] = ' ' . $f->property . ' > ' . $db->quote($date->addDay()->subSecond()->getTimestamp());
                 }
             } else {
-                throw new \Exception('Filer of type ' . $f->type . ' not jet supported.');
+                throw new Exception('Filer of type ' . $f->type . ' not jet supported.');
             }
         }
 

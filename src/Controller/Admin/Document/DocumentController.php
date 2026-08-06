@@ -10,18 +10,12 @@
  * LICENSE.md which is distributed with this source code.
  *
  * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- * @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\Controller\Admin\Document;
 
-use function base64_encode;
-use function basename;
-use function date;
 use Exception;
-use function file_exists;
-use function file_get_contents;
-use function file_put_contents;
 use Imagick;
 use Pimcore;
 use Pimcore\Bundle\AdminBundle\Controller\Admin\ElementControllerBase;
@@ -47,7 +41,6 @@ use Pimcore\Model\Version;
 use Pimcore\Tool;
 use Pimcore\Tool\Session;
 use RuntimeException;
-use function sprintf;
 use Symfony\Component\EventDispatcher\GenericEvent;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -59,6 +52,13 @@ use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\RouterInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
+use function base64_encode;
+use function basename;
+use function date;
+use function file_exists;
+use function file_get_contents;
+use function file_put_contents;
+use function sprintf;
 use function uniqid;
 use function unlink;
 
@@ -75,20 +75,26 @@ class DocumentController extends ElementControllerBase implements KernelControll
 
     protected Document\Service $_documentService;
 
-    #[Route('/tree-get-root', name: 'pimcore_admin_document_document_treegetroot', methods: ['GET'])]
+    #[Route('/tree-get-root', name: 'pimcore_admin_document_document_treegetroot', methods: [Request::METHOD_GET])]
     public function treeGetRootAction(Request $request): JsonResponse
     {
         return parent::treeGetRootAction($request);
     }
 
-    #[Route('/delete-info', name: 'pimcore_admin_document_document_deleteinfo', methods: ['GET'])]
-    public function deleteInfoAction(Request $request, EventDispatcherInterface $eventDispatcher): JsonResponse
+    #[Route('/delete-info', name: 'pimcore_admin_document_document_deleteinfo', methods: [Request::METHOD_GET])]
+    public function deleteInfoAction(
+        Request                  $request,
+        EventDispatcherInterface $eventDispatcher
+    ): JsonResponse
     {
         return parent::deleteInfoAction($request, $eventDispatcher);
     }
 
-    #[Route('/get-data-by-id', name: 'pimcore_admin_document_document_getdatabyid', methods: ['GET'])]
-    public function getDataByIdAction(Request $request, EventDispatcherInterface $eventDispatcher): JsonResponse
+    #[Route('/get-data-by-id', name: 'pimcore_admin_document_document_getdatabyid', methods: [Request::METHOD_GET])]
+    public function getDataByIdAction(
+        Request                  $request,
+        EventDispatcherInterface $eventDispatcher
+    ): JsonResponse
     {
         $document = Document::getById((int)$request->get('id'));
 
@@ -128,8 +134,11 @@ class DocumentController extends ElementControllerBase implements KernelControll
         throw $this->createAccessDeniedHttpException();
     }
 
-    #[Route('/tree-get-children-by-id', name: 'pimcore_admin_document_document_treegetchildrenbyid', methods: ['GET'])]
-    public function treeGetChildrenByIdAction(Request $request, EventDispatcherInterface $eventDispatcher): JsonResponse
+    #[Route('/tree-get-children-by-id', name: 'pimcore_admin_document_document_treegetchildrenbyid', methods: [Request::METHOD_GET])]
+    public function treeGetChildrenByIdAction(
+        Request                  $request,
+        EventDispatcherInterface $eventDispatcher
+    ): JsonResponse
     {
         $allParams = array_merge($request->request->all(), $request->query->all());
 
@@ -138,7 +147,7 @@ class DocumentController extends ElementControllerBase implements KernelControll
         $offset = (int)($allParams['start'] ?? 0);
 
         if (!is_null($filter)) {
-            if (substr($filter, -1) != '*') {
+            if (!str_ends_with($filter, '*')) {
                 $filter .= '*';
             }
             $filter = str_replace('*', '%', $filter);
@@ -233,7 +242,7 @@ class DocumentController extends ElementControllerBase implements KernelControll
         }
     }
 
-    #[Route('/add', name: 'pimcore_admin_document_document_add', methods: ['POST'])]
+    #[Route('/add', name: 'pimcore_admin_document_document_add', methods: [Request::METHOD_POST])]
     public function addAction(Request $request): JsonResponse
     {
         $success = false;
@@ -278,8 +287,8 @@ class DocumentController extends ElementControllerBase implements KernelControll
                 switch ($request->get('type')) {
                     case 'page':
                         $document = Document\Page::create($parentDocument->getId(), $createValues, false);
-                        $document->setTitle($request->get('title', null));
-                        $document->setProperty('navigation_name', 'text', $request->get('name', null), false, false);
+                        $document->setTitle($request->get('title'));
+                        $document->setProperty('navigation_name', 'text', $request->get('name'));
                         $document->save();
                         $success = true;
 
@@ -317,7 +326,7 @@ class DocumentController extends ElementControllerBase implements KernelControll
 
                         break;
                     default:
-                        $classname = \Pimcore::getContainer()->get('pimcore.class.resolver.document')->resolve($request->get('type'));
+                        $classname = Pimcore::getContainer()->get('pimcore.class.resolver.document')->resolve($request->get('type'));
 
                         if (Tool::classExists($classname)) {
                             $document = $classname::create($parentDocument->getId(), $createValues);
@@ -372,7 +381,7 @@ class DocumentController extends ElementControllerBase implements KernelControll
         ]);
     }
 
-    #[Route('/delete', name: 'pimcore_admin_document_document_delete', methods: ['DELETE'])]
+    #[Route('/delete', name: 'pimcore_admin_document_document_delete', methods: [Request::METHOD_DELETE])]
     public function deleteAction(Request $request): JsonResponse
     {
         $type = $request->get('type');
@@ -419,12 +428,7 @@ class DocumentController extends ElementControllerBase implements KernelControll
         throw $this->createAccessDeniedHttpException();
     }
 
-    /**
-     *
-     * @throws Exception
-     * @throws RuntimeException
-     */
-    #[Route('/update', name: 'pimcore_admin_document_document_update', methods: ['PUT'])]
+    #[Route('/update', name: 'pimcore_admin_document_document_update', methods: [Request::METHOD_PUT])]
     public function updateAction(Request $request): JsonResponse
     {
         $data = ['success' => false];
@@ -586,14 +590,11 @@ class DocumentController extends ElementControllerBase implements KernelControll
         }
     }
 
-    #[Route('/doc-types', name: 'pimcore_admin_document_document_doctypesget', methods: ['GET'])]
+    #[Route('/doc-types', name: 'pimcore_admin_document_document_doctypesget', methods: [Request::METHOD_GET])]
     public function docTypesGetAction(Request $request): JsonResponse
     {
-        // get list of types
-        $list = new DocType\Listing();
-
         $docTypes = [];
-        foreach ($list->getDocTypes() as $type) {
+        foreach (new DocType\Listing()->getDocTypes() as $type) {
             if ($this->getAdminUser()->isAllowed($type->getId(), 'docType')) {
                 $data = $type->getObjectVars();
                 $data['writeable'] = $type->isWriteable();
@@ -604,7 +605,7 @@ class DocumentController extends ElementControllerBase implements KernelControll
         return $this->adminJson(['data' => $docTypes, 'success' => true, 'total' => count($docTypes)]);
     }
 
-    #[Route('/doc-types', name: 'pimcore_admin_document_document_doctypes', methods: ['PUT', 'POST', 'DELETE'])]
+    #[Route('/doc-types', name: 'pimcore_admin_document_document_doctypes', methods: [Request::METHOD_PUT, Request::METHOD_POST, Request::METHOD_DELETE])]
     public function docTypesAction(Request $request): JsonResponse
     {
         if ($request->get('data')) {
@@ -636,7 +637,7 @@ class DocumentController extends ElementControllerBase implements KernelControll
 
                 return $this->adminJson(['data' => $responseData, 'success' => true]);
             } elseif ($request->get('xaction') === 'create') {
-                if (!(new DocType())->isWriteable()) {
+                if (!new DocType()->isWriteable()) {
                     throw new ConfigWriteException();
                 }
 
@@ -658,11 +659,7 @@ class DocumentController extends ElementControllerBase implements KernelControll
         return $this->adminJson(false);
     }
 
-    /**
-     *
-     * @throws BadRequestHttpException If type is invalid
-     */
-    #[Route('/get-doc-types', name: 'pimcore_admin_document_document_getdoctypes', methods: ['GET'])]
+    #[Route('/get-doc-types', name: 'pimcore_admin_document_document_getdoctypes', methods: [Request::METHOD_GET])]
     public function getDocTypesAction(Request $request): JsonResponse
     {
         $list = new DocType\Listing();
@@ -683,7 +680,7 @@ class DocumentController extends ElementControllerBase implements KernelControll
         return $this->adminJson(['docTypes' => $docTypes]);
     }
 
-    #[Route('/version-to-session', name: 'pimcore_admin_document_document_versiontosession', methods: ['POST'])]
+    #[Route('/version-to-session', name: 'pimcore_admin_document_document_versiontosession', methods: [Request::METHOD_POST])]
     public function versionToSessionAction(Request $request): Response
     {
         $id = (int)$request->get('id');
@@ -697,7 +694,7 @@ class DocumentController extends ElementControllerBase implements KernelControll
         return new Response();
     }
 
-    #[Route('/publish-version', name: 'pimcore_admin_document_document_publishversion', methods: ['POST'])]
+    #[Route('/publish-version', name: 'pimcore_admin_document_document_publishversion', methods: [Request::METHOD_POST])]
     public function publishVersionAction(Request $request): JsonResponse
     {
         $this->versionToSessionAction($request);
@@ -730,7 +727,7 @@ class DocumentController extends ElementControllerBase implements KernelControll
         return $this->adminJson(['success' => true, 'treeData' => $treeData]);
     }
 
-    #[Route('/update-site', name: 'pimcore_admin_document_document_updatesite', methods: ['PUT'])]
+    #[Route('/update-site', name: 'pimcore_admin_document_document_updatesite', methods: [Request::METHOD_PUT])]
     public function updateSiteAction(Request $request): JsonResponse
     {
         $domains = $request->request->getString('domains');
@@ -767,7 +764,7 @@ class DocumentController extends ElementControllerBase implements KernelControll
         return $this->adminJson($site->getObjectVars());
     }
 
-    #[Route('/remove-site', name: 'pimcore_admin_document_document_removesite', methods: ['DELETE'])]
+    #[Route('/remove-site', name: 'pimcore_admin_document_document_removesite', methods: [Request::METHOD_DELETE])]
     public function removeSiteAction(Request $request): JsonResponse
     {
         $site = Site::getByRootId((int)$request->get('id'));
@@ -776,7 +773,7 @@ class DocumentController extends ElementControllerBase implements KernelControll
         return $this->adminJson(['success' => true]);
     }
 
-    #[Route('/copy-info', name: 'pimcore_admin_document_document_copyinfo', methods: ['GET'])]
+    #[Route('/copy-info', name: 'pimcore_admin_document_document_copyinfo', methods: [Request::METHOD_GET])]
     public function copyInfoAction(Request $request): JsonResponse
     {
         $transactionId = time();
@@ -869,28 +866,23 @@ class DocumentController extends ElementControllerBase implements KernelControll
         ]);
     }
 
-    #[Route('/copy-rewrite-ids', name: 'pimcore_admin_document_document_copyrewriteids', methods: ['PUT'])]
+    #[Route('/copy-rewrite-ids', name: 'pimcore_admin_document_document_copyrewriteids', methods: [Request::METHOD_PUT])]
     public function copyRewriteIdsAction(Request $request): JsonResponse
     {
-        $transactionId = $request->get('transactionId');
+        $transactionId = $request->request->getString('transactionId');
 
-        $idStore = Session::useBag($request->getSession(), function (AttributeBagInterface $session) use ($transactionId) {
-            return $session->get($transactionId);
-        }, 'pimcore_copy');
+        $idStore = Session::useBag($request->getSession(), fn(AttributeBagInterface $session) => $session->get($transactionId), 'pimcore_copy');
 
         if (!array_key_exists('rewrite-stack', $idStore)) {
             $idStore['rewrite-stack'] = array_values($idStore['idMapping']);
         }
 
-        $id = array_shift($idStore['rewrite-stack']);
-        $document = Document::getById($id);
-
-        if ($document) {
+        if ($document = Document::getById($id = array_shift($idStore['rewrite-stack']))) {
             // create rewriteIds() config parameter
             $rewriteConfig = ['document' => $idStore['idMapping']];
 
             $document = Document\Service::rewriteIds($document, $rewriteConfig, [
-                'enableInheritance' => ($request->get('enableInheritance') == 'true') ? true : false,
+                'enableInheritance' => $request->request->getBoolean('enableInheritance'),
             ]);
 
             $document->setUserModification($this->getAdminUser()->getId());
@@ -908,28 +900,21 @@ class DocumentController extends ElementControllerBase implements KernelControll
         ]);
     }
 
-    #[Route('/copy', name: 'pimcore_admin_document_document_copy', methods: ['POST'])]
+    #[Route('/copy', name: 'pimcore_admin_document_document_copy', methods: [Request::METHOD_POST])]
     public function copyAction(Request $request): JsonResponse
     {
         $success = false;
-        $sourceId = (int)$request->get('sourceId');
-        $source = Document::getById($sourceId);
+        $source = Document::getById($request->request->getInt('sourceId'));
         $session = Session::getSessionBag($request->getSession(), 'pimcore_copy');
+        $targetId = $request->request->getInt('targetId');
 
-        $targetId = (int)$request->get('targetId');
+        $sessionBag = $session->get($request->request->getString('transactionId'));
 
-        $sessionBag = $session->get($request->get('transactionId'));
+        if ($request->request->get('targetParentId')) {
+            $sourceParent = Document::getById($request->request->getInt('sourceParentId'));
 
-        if ($request->get('targetParentId')) {
-            $sourceParent = Document::getById((int)$request->get('sourceParentId'));
-
-            // this is because the key can get the prefix "_copy" if the target does already exists
-            if ($sessionBag['parentId']) {
-                $targetParent = Document::getById($sessionBag['parentId']);
-            } else {
-                $targetParent = Document::getById((int)$request->get('targetParentId'));
-            }
-
+            // this is because the key can get the prefix "_copy" if the target does already exist
+            $targetParent = Document::getById(((int)$sessionBag['parentId']) ?: $request->request->getInt('targetParentId'));
             $targetPath = preg_replace('@^' . $sourceParent->getRealFullPath() . '@', $targetParent . '/', $source->getRealPath());
             $target = Document::getByPath($targetPath);
         } else {
@@ -945,20 +930,18 @@ class DocumentController extends ElementControllerBase implements KernelControll
                     }
 
                     if ($request->get('type') == 'child') {
-                        $enableInheritance = ($request->get('enableInheritance') == 'true') ? true : false;
+                        $enableInheritance = $request->request->getBoolean('enableInheritance');
 
-                        $language = (string)$request->request->get('language') ?: null;
+                        $language = $request->request->getString('language') ?: null;
                         if ($language && !Tool::isValidLanguage($language)) {
                             throw new BadRequestHttpException('Invalid language: ' . $language);
                         }
 
-                        $resetIndex = ($request->get('resetIndex') == 'true') ? true : false;
-
-                        $newDocument = $this->_documentService->copyAsChild($target, $source, $enableInheritance, $resetIndex, $language);
+                        $newDocument = $this->_documentService->copyAsChild($target, $source, $enableInheritance, $request->request->getBoolean('resetIndex'), $language);
 
                         $sessionBag['idMapping'][(int)$source->getId()] = (int)$newDocument->getId();
 
-                        // this is because the key can get the prefix "_copy" if the target does already exists
+                        // this is because the key can get the prefix "_copy" if the target does already exist
                         if ($request->get('saveParentId')) {
                             $sessionBag['parentId'] = $newDocument->getId();
                         }
@@ -981,8 +964,14 @@ class DocumentController extends ElementControllerBase implements KernelControll
         return $this->adminJson(['success' => $success]);
     }
 
-    #[Route('/diff-versions/from/{from}/to/{to}', name: 'pimcore_admin_document_document_diffversions', requirements: ['from' => '\d+', 'to' => '\d+'], methods: ['GET'])]
-    public function diffVersionsAction(Request $request, int $from, int $to, DocumentRenderer $documentRenderer, RouterInterface $router): Response
+    #[Route('/diff-versions/from/{from}/to/{to}', name: 'pimcore_admin_document_document_diffversions', requirements: ['from' => '\d+', 'to' => '\d+'], methods: [Request::METHOD_GET])]
+    public function diffVersionsAction(
+        Request          $request,
+        int              $from,
+        int              $to,
+        DocumentRenderer $documentRenderer,
+        RouterInterface  $router
+    ): Response
     {
         // return with error if prerequisites do not match
         if (!HtmlToImage::isSupported() || !class_exists('Imagick')) {
@@ -1064,15 +1053,13 @@ class DocumentController extends ElementControllerBase implements KernelControll
     {
         $file = PIMCORE_SYSTEM_TEMP_DIRECTORY . '/' . basename($request->get('id'));
         if (file_exists($file)) {
-            $response = new BinaryFileResponse($file);
-
-            return $response;
+            return new BinaryFileResponse($file);
         }
 
         throw $this->createNotFoundException('Version diff file not found');
     }
 
-    #[Route('/get-id-for-path', name: 'pimcore_admin_document_document_getidforpath', methods: ['GET'])]
+    #[Route('/get-id-for-path', name: 'pimcore_admin_document_document_getidforpath', methods: [Request::METHOD_GET])]
     public function getIdForPathAction(Request $request): JsonResponse
     {
         if ($doc = Document::getByPath($request->get('path'))) {
@@ -1085,7 +1072,7 @@ class DocumentController extends ElementControllerBase implements KernelControll
         }
     }
 
-    #[Route('/language-tree', name: 'pimcore_admin_document_document_languagetree', methods: ['GET'])]
+    #[Route('/language-tree', name: 'pimcore_admin_document_document_languagetree', methods: [Request::METHOD_GET])]
     public function languageTreeAction(Request $request): JsonResponse
     {
         $document = Document::getById((int)$request->query->get('node'));
@@ -1100,11 +1087,7 @@ class DocumentController extends ElementControllerBase implements KernelControll
         return $this->adminJson($result);
     }
 
-    /**
-     *
-     * @throws Exception
-     */
-    #[Route('/language-tree-root', name: 'pimcore_admin_document_document_languagetreeroot', methods: ['GET'])]
+    #[Route('/language-tree-root', name: 'pimcore_admin_document_document_languagetreeroot', methods: [Request::METHOD_GET])]
     public function languageTreeRootAction(Request $request): JsonResponse
     {
         $document = Document::getById((int)$request->query->get('id'));
@@ -1163,7 +1146,7 @@ class DocumentController extends ElementControllerBase implements KernelControll
         ]);
     }
 
-    private function getTranslationTreeNodeConfig(Document $document, array $languages, array $translations = null): array
+    private function getTranslationTreeNodeConfig(Document $document, array $languages, ?array $translations = null): array
     {
         $service = new Document\Service();
 
@@ -1194,7 +1177,7 @@ class DocumentController extends ElementControllerBase implements KernelControll
         return $config;
     }
 
-    #[Route('/convert', name: 'pimcore_admin_document_document_convert', methods: ['PUT'])]
+    #[Route('/convert', name: 'pimcore_admin_document_document_convert', methods: [Request::METHOD_PUT])]
     public function convertAction(Request $request): JsonResponse
     {
         $document = Document::getById((int)$request->get('id'));
@@ -1205,7 +1188,7 @@ class DocumentController extends ElementControllerBase implements KernelControll
         $type = $request->get('type');
         $class = '\\Pimcore\\Model\\Document\\' . ucfirst($type);
         if (Tool::classExists($class)) {
-            $new = new $class;
+            $new = new $class();
 
             // overwrite internal store to avoid "duplicate full path" error
             RuntimeCache::set('document_' . $document->getId(), $new);
@@ -1232,7 +1215,7 @@ class DocumentController extends ElementControllerBase implements KernelControll
         return $this->adminJson(['success' => true]);
     }
 
-    #[Route('/translation-determine-parent', name: 'pimcore_admin_document_document_translationdetermineparent', methods: ['GET'])]
+    #[Route('/translation-determine-parent', name: 'pimcore_admin_document_document_translationdetermineparent', methods: [Request::METHOD_GET])]
     public function translationDetermineParentAction(Request $request): JsonResponse
     {
         $success = false;
@@ -1252,12 +1235,12 @@ class DocumentController extends ElementControllerBase implements KernelControll
 
         return $this->adminJson([
             'success' => $success,
-            'targetPath' => $targetDocument ? $targetDocument->getRealFullPath() : null,
-            'targetId' => $targetDocument ? $targetDocument->getid() : null,
+            'targetPath' => $targetDocument?->getRealFullPath(),
+            'targetId' => $targetDocument?->getid(),
         ]);
     }
 
-    #[Route('/translation-add', name: 'pimcore_admin_document_document_translationadd', methods: ['POST'])]
+    #[Route('/translation-add', name: 'pimcore_admin_document_document_translationadd', methods: [Request::METHOD_POST])]
     public function translationAddAction(Request $request): JsonResponse
     {
         $sourceDocument = Document::getById((int)$request->get('sourceId'));
@@ -1272,7 +1255,7 @@ class DocumentController extends ElementControllerBase implements KernelControll
                 throw new Exception(sprintf('Target Document(ID:%s) Language(Properties) missing', $sourceDocument->getId()));
             }
 
-            $service = new Document\Service;
+            $service = new Document\Service();
             if ($service->getTranslationSourceId($targetDocument) != $targetDocument->getId()) {
                 throw new Exception('Target Document already linked to Source Document ID(' . $service->getTranslationSourceId($targetDocument) . '). Please unlink existing relation first.');
             }
@@ -1284,13 +1267,13 @@ class DocumentController extends ElementControllerBase implements KernelControll
         ]);
     }
 
-    #[Route('/translation-remove', name: 'pimcore_admin_document_document_translationremove', methods: ['DELETE'])]
+    #[Route('/translation-remove', name: 'pimcore_admin_document_document_translationremove', methods: [Request::METHOD_DELETE])]
     public function translationRemoveAction(Request $request): JsonResponse
     {
         $sourceDocument = Document::getById((int)$request->get('sourceId'));
         $targetDocument = Document::getById((int)$request->get('targetId'));
         if ($sourceDocument && $targetDocument) {
-            $service = new Document\Service;
+            $service = new Document\Service();
             $service->removeTranslationLink($sourceDocument, $targetDocument);
         }
 
@@ -1299,7 +1282,7 @@ class DocumentController extends ElementControllerBase implements KernelControll
         ]);
     }
 
-    #[Route('/translation-check-language', name: 'pimcore_admin_document_document_translationchecklanguage', methods: ['GET'])]
+    #[Route('/translation-check-language', name: 'pimcore_admin_document_document_translationchecklanguage', methods: [Request::METHOD_GET])]
     public function translationCheckLanguageAction(Request $request): JsonResponse
     {
         $success = false;

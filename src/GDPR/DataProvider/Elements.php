@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\GDPR\DataProvider;
@@ -30,8 +30,6 @@ abstract class Elements implements DataProviderInterface
 
         $query = str_replace('%', '*', $query);
         $query = str_replace('@', '#', $query);
-        $query = preg_replace("@([^ ])\-@", '$1 ', $query);
-
-        return $query;
+        return preg_replace('@([^ ])\-@', '$1 ', $query);
     }
 }

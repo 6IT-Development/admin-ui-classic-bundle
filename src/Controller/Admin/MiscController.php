@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -10,19 +11,23 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\Controller\Admin;
 
+use InvalidArgumentException;
+use Locale;
 use Pimcore\Bundle\AdminBundle\Controller\AdminAbstractController;
 use Pimcore\Bundle\AdminBundle\System\AdminConfig;
 use Pimcore\Bundle\AdminBundle\Tool as AdminTool;
 use Pimcore\Config;
 use Pimcore\Controller\Config\ControllerDataProvider;
 use Pimcore\Localization\LocaleServiceInterface;
+use Pimcore\Model\Element\Service;
 use Pimcore\Tool;
+use Pimcore\Tool\Admin;
 use Pimcore\Tool\Storage;
 use Pimcore\Translation\Translator;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -33,15 +38,18 @@ use Symfony\Component\HttpKernel\Profiler\Profiler;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
-    /**
+/**
  *
  * @internal
-     */
-    #[Route('/misc')]
+ */
+#[Route('/misc')]
 class MiscController extends AdminAbstractController
 {
-        #[Route('/get-available-controller-references', name: 'pimcore_admin_misc_getavailablecontroller_references', methods: ['GET'])]
-    public function getAvailableControllerReferencesAction(Request $request, ControllerDataProvider $provider): JsonResponse
+    #[Route('/get-available-controller-references', name: 'pimcore_admin_misc_getavailablecontroller_references', methods: [Request::METHOD_GET])]
+    public function getAvailableControllerReferencesAction(
+        Request                $request,
+        ControllerDataProvider $provider
+    ): JsonResponse
     {
         $controllerReferences = $provider->getControllerReferences();
 
@@ -58,7 +66,7 @@ class MiscController extends AdminAbstractController
         ]);
     }
 
-        #[Route('/get-available-templates', name: 'pimcore_admin_misc_getavailabletemplates', methods: ['GET'])]
+    #[Route('/get-available-templates', name: 'pimcore_admin_misc_getavailabletemplates', methods: [Request::METHOD_GET])]
     public function getAvailableTemplatesAction(ControllerDataProvider $provider): JsonResponse
     {
         $templates = $provider->getTemplates();
@@ -76,8 +84,11 @@ class MiscController extends AdminAbstractController
         ]);
     }
 
-        #[Route('/json-translations-system', name: 'pimcore_admin_misc_jsontranslationssystem', methods: ['GET'])]
-    public function jsonTranslationsSystemAction(Request $request, TranslatorInterface $translator): Response
+    #[Route('/json-translations-system', name: 'pimcore_admin_misc_jsontranslationssystem', methods: [Request::METHOD_GET])]
+    public function jsonTranslationsSystemAction(
+        Request             $request,
+        TranslatorInterface $translator
+    ): Response
     {
         $language = $request->get('language');
 
@@ -87,9 +98,9 @@ class MiscController extends AdminAbstractController
         $translations = [];
 
         $fallbackLanguages = [];
-        if (null !== \Locale::getRegion($language)) {
+        if (null !== Locale::getRegion($language)) {
             // if language is region specific, add the primary language as fallback
-            $fallbackLanguages[] = \Locale::getPrimaryLanguage($language);
+            $fallbackLanguages[] = Locale::getPrimaryLanguage($language);
         }
         if ($language != 'en') {
             // add en as a fallback
@@ -115,16 +126,12 @@ class MiscController extends AdminAbstractController
         return $response;
     }
 
-        /**
-     *
-     * @internal
-         */
-        #[Route('/script-proxy', name: 'pimcore_admin_misc_scriptproxy', methods: ['GET'])]
+    #[Route('/script-proxy', name: 'pimcore_admin_misc_scriptproxy', methods: [Request::METHOD_GET])]
     public function scriptProxyAction(Request $request): Response
     {
         $storageFile = $request->get('storageFile');
         if (!$storageFile) {
-            throw new \InvalidArgumentException('The parameter storageFile is required');
+            throw new InvalidArgumentException('The parameter storageFile is required');
         }
 
         $fileExtension = pathinfo($storageFile, PATHINFO_EXTENSION);
@@ -151,15 +158,18 @@ class MiscController extends AdminAbstractController
         }
     }
 
-        #[Route('/admin-css', name: 'pimcore_admin_misc_admincss', methods: ['GET'])]
-    public function adminCssAction(Request $request, Config $config): Response
+    #[Route('/admin-css', name: 'pimcore_admin_misc_admincss', methods: [Request::METHOD_GET])]
+    public function adminCssAction(
+        Request $request,
+        Config  $config
+    ): Response
     {
         // customviews config
         $cvData = \Pimcore\Bundle\AdminBundle\CustomView\Config::get();
 
         // languages
-        $languages = \Pimcore\Tool::getValidLanguages();
-        $adminLanguages = \Pimcore\Tool\Admin::getLanguages();
+        $languages = Tool::getValidLanguages();
+        $adminLanguages = Admin::getLanguages();
         $languages = array_unique(array_merge($languages, $adminLanguages));
 
         $response = $this->render('@PimcoreAdmin/admin/misc/admin_css.html.twig', [
@@ -172,7 +182,7 @@ class MiscController extends AdminAbstractController
         return $response;
     }
 
-        #[Route('/ping', name: 'pimcore_admin_misc_ping', methods: ['GET'])]
+    #[Route('/ping', name: 'pimcore_admin_misc_ping', methods: [Request::METHOD_GET])]
     public function pingAction(Request $request): JsonResponse
     {
         $response = [
@@ -182,7 +192,7 @@ class MiscController extends AdminAbstractController
         return $this->adminJson($response);
     }
 
-        #[Route('/available-languages', name: 'pimcore_admin_misc_availablelanguages', methods: ['GET'])]
+    #[Route('/available-languages', name: 'pimcore_admin_misc_availablelanguages', methods: [Request::METHOD_GET])]
     public function availableLanguagesAction(Request $request): Response
     {
         $locales = Tool::getSupportedLocales();
@@ -192,16 +202,19 @@ class MiscController extends AdminAbstractController
         return $response;
     }
 
-        #[Route('/get-valid-filename', name: 'pimcore_admin_misc_getvalidfilename', methods: ['GET'])]
+    #[Route('/get-valid-filename', name: 'pimcore_admin_misc_getvalidfilename', methods: [Request::METHOD_GET])]
     public function getValidFilenameAction(Request $request): JsonResponse
     {
         return $this->adminJson([
-            'filename' => \Pimcore\Model\Element\Service::getValidKey($request->get('value'), $request->get('type')),
+            'filename' => Service::getValidKey($request->get('value'), $request->get('type')),
         ]);
     }
 
-        #[Route('/maintenance', name: 'pimcore_admin_misc_maintenance', methods: ['POST'])]
-    public function maintenanceAction(Request $request, Tool\MaintenanceModeHelperInterface $maintenanceModeHelper): JsonResponse
+    #[Route('/maintenance', name: 'pimcore_admin_misc_maintenance', methods: [Request::METHOD_POST])]
+    public function maintenanceAction(
+        Request                             $request,
+        Tool\MaintenanceModeHelperInterface $maintenanceModeHelper
+    ): JsonResponse
     {
         $this->checkPermission('maintenance_mode');
 
@@ -210,8 +223,8 @@ class MiscController extends AdminAbstractController
         }
 
         if ($request->get('deactivate')) {
-            if (Tool\Admin::isInMaintenanceMode()) {
-                Tool\Admin::deactivateMaintenanceMode();
+            if (Admin::isInMaintenanceMode()) {
+                Admin::deactivateMaintenanceMode();
             }
             $maintenanceModeHelper->deactivate();
         }
@@ -221,7 +234,7 @@ class MiscController extends AdminAbstractController
         ]);
     }
 
-        #[Route('/country-list', name: 'pimcore_admin_misc_countrylist', methods: ['GET'])]
+    #[Route('/country-list', name: 'pimcore_admin_misc_countrylist', methods: [Request::METHOD_GET])]
     public function countryListAction(LocaleServiceInterface $localeService): JsonResponse
     {
         $countries = $localeService->getDisplayRegions();
@@ -240,7 +253,7 @@ class MiscController extends AdminAbstractController
         return $this->adminJson(['data' => $options]);
     }
 
-        #[Route('/language-list', name: 'pimcore_admin_misc_languagelist', methods: ['GET'])]
+    #[Route('/language-list', name: 'pimcore_admin_misc_languagelist', methods: [Request::METHOD_GET])]
     public function languageListAction(Request $request): JsonResponse
     {
         $locales = Tool::getSupportedLocales();
@@ -256,7 +269,7 @@ class MiscController extends AdminAbstractController
         return $this->adminJson(['data' => $options]);
     }
 
-        #[Route('/get-language-flag', name: 'pimcore_admin_misc_getlanguageflag', methods: ['GET'])]
+    #[Route('/get-language-flag', name: 'pimcore_admin_misc_getlanguageflag', methods: [Request::METHOD_GET])]
     public function getLanguageFlagAction(Request $request): BinaryFileResponse
     {
         $iconPath = AdminTool::getLanguageFlagFile($request->get('language'));
@@ -266,12 +279,13 @@ class MiscController extends AdminAbstractController
         return $response;
     }
 
-        #[Route('/icon-list', name: 'pimcore_admin_misc_iconlist', methods: ['GET'])]
-    public function iconListAction(Request $request, ?Profiler $profiler): Response
+    #[Route('/icon-list', name: 'pimcore_admin_misc_iconlist', methods: [Request::METHOD_GET])]
+    public function iconListAction(
+        Request   $request,
+        ?Profiler $profiler
+    ): Response
     {
-        if ($profiler) {
-            $profiler->disable();
-        }
+        $profiler?->disable();
 
         $type = $request->get('type');
         $publicDir = PIMCORE_WEB_ROOT . '/bundles/pimcoreadmin';
@@ -334,7 +348,7 @@ class MiscController extends AdminAbstractController
         return $languageOptions;
     }
 
-        #[Route('/test', name: 'pimcore_admin_misc_test')]
+    #[Route('/test', name: 'pimcore_admin_misc_test')]
     public function testAction(Request $request): Response
     {
         return new Response('done');

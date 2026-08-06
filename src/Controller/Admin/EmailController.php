@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -10,18 +11,23 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\Controller\Admin;
 
+use Exception;
 use Pimcore\Bundle\AdminBundle\Controller\AdminAbstractController;
+use Pimcore\Bundle\AdminBundle\Helper\QueryParams;
 use Pimcore\Http\RequestHelper;
 use Pimcore\Logger;
 use Pimcore\Mail;
+use Pimcore\Model\Document;
+use Pimcore\Model\Document\Email;
 use Pimcore\Model\Element\ElementInterface;
 use Pimcore\Model\Tool;
+use ReflectionClass;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -29,22 +35,18 @@ use Symfony\Component\HttpKernel\Profiler\Profiler;
 use Symfony\Component\Mime\Address;
 use Symfony\Component\Routing\Attribute\Route;
 
-    /**
+/**
  *
  * @internal
-     */
-    #[Route('/email')]
+ */
+#[Route('/email')]
 class EmailController extends AdminAbstractController
 {
-        /**
-     *
-     * @throws \Exception
-         */
-        #[Route('/email-logs', name: 'pimcore_admin_email_emaillogs', methods: ['GET', 'POST'])]
+    #[Route('/email-logs', name: 'pimcore_admin_email_emaillogs', methods: [Request::METHOD_GET, Request::METHOD_POST])]
     public function emailLogsAction(Request $request): JsonResponse
     {
         if (!$this->getAdminUser()->isAllowed('emails') && !$this->getAdminUser()->isAllowed('gdpr_data_extractor')) {
-            throw new \Exception("Permission denied, user needs 'emails' permission.");
+            throw new Exception("Permission denied, user needs 'emails' permission.");
         }
 
         $list = new Tool\Email\Log\Listing();
@@ -110,23 +112,20 @@ class EmailController extends AdminAbstractController
         ]);
     }
 
-        /**
-     *
-     * @throws \Exception
-         */
-        #[Route('/show-email-log', name: 'pimcore_admin_email_showemaillog', methods: ['GET'])]
-    public function showEmailLogAction(Request $request, ?Profiler $profiler): JsonResponse|Response
+    #[Route('/show-email-log', name: 'pimcore_admin_email_showemaillog', methods: [Request::METHOD_GET])]
+    public function showEmailLogAction(
+        Request   $request,
+        ?Profiler $profiler
+    ): JsonResponse|Response
     {
-        if ($profiler) {
-            $profiler->disable();
-        }
+        $profiler?->disable();
 
         if (!$this->getAdminUser()->isAllowed('emails')) {
             throw $this->createAccessDeniedHttpException("Permission denied, user needs 'emails' permission.");
         }
 
         $type = $request->get('type');
-        $emailLog = Tool\Email\Log::getById((int) $request->get('id'));
+        $emailLog = Tool\Email\Log::getById((int)$request->get('id'));
 
         if (!$emailLog) {
             throw $this->createNotFoundException();
@@ -141,7 +140,7 @@ class EmailController extends AdminAbstractController
         } elseif ($type === 'params') {
             try {
                 $params = $emailLog->getParams();
-            } catch (\Exception $e) {
+            } catch (Exception) {
                 Logger::warning('Could not decode JSON param string');
                 $params = [];
             }
@@ -159,11 +158,11 @@ class EmailController extends AdminAbstractController
         }
     }
 
-    protected function enhanceLoggingData(array &$data, array &$fullEntry = null): void
+    protected function enhanceLoggingData(array &$data, ?array &$fullEntry = null): void
     {
         if (!empty($data['objectClass'])) {
             $class = '\\' . ltrim($data['objectClass'], '\\');
-            $reflection = new \ReflectionClass($class);
+            $reflection = new ReflectionClass($class);
 
             if (!empty($data['objectId']) && $reflection->implementsInterface(ElementInterface::class)) {
                 $obj = $class::getById($data['objectId']);
@@ -208,27 +207,14 @@ class EmailController extends AdminAbstractController
                 if (($data['objectClassBase'] ?? '') == 'DataObject') {
                     $fullEntry['iconCls'] = 'pimcore_icon_object';
                 } elseif (($data['objectClassBase'] ?? '') == 'Asset') {
-                    switch ($data['objectClassSubType']) {
-                        case 'Image':
-                            $fullEntry['iconCls'] = 'pimcore_icon_image';
-
-                            break;
-                        case 'Video':
-                            $fullEntry['iconCls'] = 'pimcore_icon_wmv';
-
-                            break;
-                        case 'Text':
-                            $fullEntry['iconCls'] = 'pimcore_icon_txt';
-
-                            break;
-                        case 'Document':
-                            $fullEntry['iconCls'] = 'pimcore_icon_pdf';
-
-                            break;
-                        default:
-                            $fullEntry['iconCls'] = 'pimcore_icon_asset';
-                    }
-                } elseif (strpos($data['objectClass'] ?? '', 'Document') === 0) {
+                    $fullEntry['iconCls'] = match ($data['objectClassSubType']) {
+                        'Image' => 'pimcore_icon_image',
+                        'Video' => 'pimcore_icon_wmv',
+                        'Text' => 'pimcore_icon_txt',
+                        'Document' => 'pimcore_icon_pdf',
+                        default => 'pimcore_icon_asset',
+                    };
+                } elseif (str_starts_with($data['objectClass'] ?? '', 'Document')) {
                     $fullEntry['iconCls'] = 'pimcore_icon_' . strtolower($data['objectClassSubType']);
                 } else {
                     $data['iconCls'] = 'pimcore_icon_text';
@@ -239,11 +225,7 @@ class EmailController extends AdminAbstractController
         }
     }
 
-        /**
-     *
-     * @throws \Exception
-         */
-        #[Route('/delete-email-log', name: 'pimcore_admin_email_deleteemaillog', methods: ['DELETE'])]
+    #[Route('/delete-email-log', name: 'pimcore_admin_email_deleteemaillog', methods: [Request::METHOD_DELETE])]
     public function deleteEmailLogAction(Request $request): JsonResponse
     {
         if (!$this->getAdminUser()->isAllowed('emails')) {
@@ -251,7 +233,7 @@ class EmailController extends AdminAbstractController
         }
 
         $success = false;
-        $emailLog = Tool\Email\Log::getById((int) $request->get('id'));
+        $emailLog = Tool\Email\Log::getById((int)$request->get('id'));
         if ($emailLog instanceof Tool\Email\Log) {
             $emailLog->delete();
             $success = true;
@@ -262,11 +244,7 @@ class EmailController extends AdminAbstractController
         ]);
     }
 
-        /**
-     *
-     * @throws \Exception
-         */
-        #[Route('/resend-email', name: 'pimcore_admin_email_resendemail', methods: ['POST'])]
+    #[Route('/resend-email', name: 'pimcore_admin_email_resendemail', methods: [Request::METHOD_POST])]
     public function resendEmailAction(Request $request): JsonResponse
     {
         if (!$this->getAdminUser()->isAllowed('emails')) {
@@ -274,7 +252,7 @@ class EmailController extends AdminAbstractController
         }
 
         $success = false;
-        $emailLog = Tool\Email\Log::getById((int) $request->get('id'));
+        $emailLog = Tool\Email\Log::getById((int)$request->get('id'));
 
         if ($emailLog instanceof Tool\Email\Log) {
             $mail = new Mail();
@@ -322,7 +300,7 @@ class EmailController extends AdminAbstractController
             // re-add params
             try {
                 $params = $emailLog->getParams();
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 Logger::warning('Could not decode JSON param string');
                 $params = [];
             }
@@ -353,15 +331,11 @@ class EmailController extends AdminAbstractController
         ]);
     }
 
-        /**
-     *
-     * @throws \Exception
-         */
-        #[Route('/send-test-email', name: 'pimcore_admin_email_sendtestemail', methods: ['POST'])]
+    #[Route('/send-test-email', name: 'pimcore_admin_email_sendtestemail', methods: [Request::METHOD_POST])]
     public function sendTestEmailAction(Request $request): JsonResponse
     {
         if (!$this->getAdminUser()->isAllowed('emails')) {
-            throw new \Exception("Permission denied, user needs 'emails' permission.");
+            throw new Exception("Permission denied, user needs 'emails' permission.");
         }
 
         // Simulate a frontend request to prefix assets
@@ -374,9 +348,9 @@ class EmailController extends AdminAbstractController
         } elseif ($request->get('emailType') == 'html') {
             $mail->html($request->get('content'));
         } elseif ($request->get('emailType') == 'document') {
-            $doc = \Pimcore\Model\Document::getByPath($request->get('documentPath'));
+            $doc = Document::getByPath($request->get('documentPath'));
 
-            if ($doc instanceof \Pimcore\Model\Document\Email) {
+            if ($doc instanceof Email) {
                 $mail->setDocument($doc);
 
                 if ($request->get('mailParamaters')) {
@@ -389,7 +363,7 @@ class EmailController extends AdminAbstractController
                     }
                 }
             } else {
-                throw new \Exception('Email document not found!');
+                throw new Exception('Email document not found!');
             }
         }
 
@@ -417,15 +391,11 @@ class EmailController extends AdminAbstractController
         ]);
     }
 
-        /**
-     *
-     * @throws \Exception
-         */
-        #[Route('/blocklist', name: 'pimcore_admin_email_blocklist', methods: ['POST'])]
+    #[Route('/blocklist', name: 'pimcore_admin_email_blocklist', methods: [Request::METHOD_POST])]
     public function blocklistAction(Request $request): JsonResponse
     {
         if (!$this->getAdminUser()->isAllowed('emails')) {
-            throw new \Exception("Permission denied, user needs 'emails' permission.");
+            throw new Exception("Permission denied, user needs 'emails' permission.");
         }
 
         if ($request->get('data')) {
@@ -468,10 +438,10 @@ class EmailController extends AdminAbstractController
 
             $list = new Tool\Email\Blocklist\Listing();
 
-            $list->setLimit((int) $request->get('limit', 50));
-            $list->setOffset((int) $request->get('start', 0));
+            $list->setLimit((int)$request->get('limit', 50));
+            $list->setOffset((int)$request->get('start', 0));
 
-            $sortingSettings = \Pimcore\Bundle\AdminBundle\Helper\QueryParams::extractSortingSettings($request->query->all());
+            $sortingSettings = QueryParams::extractSortingSettings($request->query->all());
             if ($sortingSettings['orderKey']) {
                 $orderKey = $sortingSettings['orderKey'];
             }
@@ -480,7 +450,7 @@ class EmailController extends AdminAbstractController
             }
 
             if ($request->get('filter')) {
-                $list->setCondition('`address` LIKE ' . $list->quote('%'.$request->get('filter').'%'));
+                $list->setCondition('`address` LIKE ' . $list->quote('%' . $request->get('filter') . '%'));
             }
 
             $data = $list->load();
@@ -506,7 +476,7 @@ class EmailController extends AdminAbstractController
         $data = null;
         if ($params['data']['type'] === 'object') {
             $class = '\\' . ltrim($params['data']['objectClass'], '\\');
-            $reflection = new \ReflectionClass($class);
+            $reflection = new ReflectionClass($class);
 
             if (!empty($params['data']['objectId']) && $reflection->implementsInterface(ElementInterface::class)) {
                 $obj = $class::getById($params['data']['objectId']);

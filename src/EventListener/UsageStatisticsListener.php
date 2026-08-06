@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -10,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\EventListener;
@@ -98,7 +99,7 @@ class UsageStatisticsListener implements EventSubscriberInterface
                 $value = json_decode($value);
                 if (is_array($value)) {
                     array_walk_recursive($value, function (&$item, $key) {
-                        if (strpos((string)$key, 'pass') !== false) {
+                        if (str_contains((string)$key, 'pass')) {
                             $item = '*************';
                         }
                     });

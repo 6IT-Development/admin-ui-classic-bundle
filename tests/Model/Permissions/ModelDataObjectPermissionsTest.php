@@ -11,16 +11,18 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\Tests\Model\Controller;
 
+use Exception;
 use Pimcore\Bundle\AdminBundle\Controller\Admin\DataObject\DataObjectController;
 use Pimcore\Model\DataObject;
 use Pimcore\Model\User;
 use Pimcore\Tests\Support\Util\TestHelper;
+use ReflectionException;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
@@ -104,14 +106,14 @@ class ModelDataObjectPermissionsTest extends AbstractPermissionTest
         $role = new User\Role();
         $role->setName('Testrole');
         $role->setWorkspacesObject([
-            (new User\Workspace\DataObject())->setValues(['cId' => $this->groupfolder->getId(), 'cPath' => $this->groupfolder->getFullpath(), 'list' => true, 'view' => true, 'save'=>true, 'publish'=>false ]),
+            new User\Workspace\DataObject()->setValues(['cId' => $this->groupfolder->getId(), 'cPath' => $this->groupfolder->getFullpath(), 'list' => true, 'view' => true, 'save' => true, 'publish' => false]),
         ]);
         $role->save();
 
         $role2 = new User\Role();
         $role2->setName('dummyRole');
         $role2->setWorkspacesObject([
-            (new User\Workspace\DataObject())->setValues(['cId' => $this->groupfolder->getId(), 'cPath' => $this->groupfolder->getFullpath(), 'list' => false, 'view' => false, 'save'=>false, 'publish'=>false, 'settings' => true ]),
+            new User\Workspace\DataObject()->setValues(['cId' => $this->groupfolder->getId(), 'cPath' => $this->groupfolder->getFullpath(), 'list' => false, 'view' => false, 'save' => false, 'publish' => false, 'settings' => true]),
         ]);
         $role2->save();
 
@@ -121,11 +123,11 @@ class ModelDataObjectPermissionsTest extends AbstractPermissionTest
         $this->userPermissionTest1->setPermissions(['objects']);
         $this->userPermissionTest1->setRoles([$role->getId(), $role2->getId()]);
         $this->userPermissionTest1->setWorkspacesObject([
-            (new User\Workspace\DataObject())->setValues(['cId' => $this->permissionfoo->getId(), 'cPath' => $this->permissionfoo->getFullpath(), 'list' => true, 'view' => true]),
-            (new User\Workspace\DataObject())->setValues(['cId' => $this->permissionbar->getId(), 'cPath' => $this->permissionbar->getFullpath(), 'list' => true, 'view' => true]),
-            (new User\Workspace\DataObject())->setValues(['cId' => $this->foo->getId(), 'cPath' => $this->foo->getFullpath(), 'list' => false, 'view' => false]),
-            (new User\Workspace\DataObject())->setValues(['cId' => $this->bars->getId(), 'cPath' => $this->bars->getFullpath(), 'list' => false, 'view' => false]),
-            (new User\Workspace\DataObject())->setValues(['cId' => $this->userfolder->getId(), 'cPath' => $this->userfolder->getFullpath(), 'list' => true, 'view' => true, 'create'=> true, 'rename'=> true]),
+            new User\Workspace\DataObject()->setValues(['cId' => $this->permissionfoo->getId(), 'cPath' => $this->permissionfoo->getFullpath(), 'list' => true, 'view' => true]),
+            new User\Workspace\DataObject()->setValues(['cId' => $this->permissionbar->getId(), 'cPath' => $this->permissionbar->getFullpath(), 'list' => true, 'view' => true]),
+            new User\Workspace\DataObject()->setValues(['cId' => $this->foo->getId(), 'cPath' => $this->foo->getFullpath(), 'list' => false, 'view' => false]),
+            new User\Workspace\DataObject()->setValues(['cId' => $this->bars->getId(), 'cPath' => $this->bars->getFullpath(), 'list' => false, 'view' => false]),
+            new User\Workspace\DataObject()->setValues(['cId' => $this->userfolder->getId(), 'cPath' => $this->userfolder->getFullpath(), 'list' => true, 'view' => true, 'create' => true, 'rename' => true]),
         ]);
         $this->userPermissionTest1->save();
 
@@ -135,12 +137,12 @@ class ModelDataObjectPermissionsTest extends AbstractPermissionTest
         $this->userPermissionTest2->setPermissions(['objects']);
         $this->userPermissionTest2->setRoles([$role->getId(), $role2->getId()]);
         $this->userPermissionTest2->setWorkspacesObject([
-            (new User\Workspace\DataObject())->setValues(['cId' => $this->permissionfoo->getId(), 'cPath' => $this->permissionfoo->getFullpath(), 'list' => true, 'view' => true]),
-            (new User\Workspace\DataObject())->setValues(['cId' => $this->permissionbar->getId(), 'cPath' => $this->permissionbar->getFullpath(), 'list' => true, 'view' => true]),
-            (new User\Workspace\DataObject())->setValues(['cId' => $this->foo->getId(), 'cPath' => $this->foo->getFullpath(), 'list' => false, 'view' => false]),
-            (new User\Workspace\DataObject())->setValues(['cId' => $this->bars->getId(), 'cPath' => $this->bars->getFullpath(), 'list' => false, 'view' => false]),
-            (new User\Workspace\DataObject())->setValues(['cId' => $this->userfolder->getId(), 'cPath' => $this->userfolder->getFullpath(), 'list' => true, 'view' => true]),
-            (new User\Workspace\DataObject())->setValues(['cId' => $this->groupfolder->getId(), 'cPath' => $this->groupfolder->getFullpath(), 'list' => false, 'view' => false, 'save'=>true, 'publish'=>true, 'settings' => false]),
+            new User\Workspace\DataObject()->setValues(['cId' => $this->permissionfoo->getId(), 'cPath' => $this->permissionfoo->getFullpath(), 'list' => true, 'view' => true]),
+            new User\Workspace\DataObject()->setValues(['cId' => $this->permissionbar->getId(), 'cPath' => $this->permissionbar->getFullpath(), 'list' => true, 'view' => true]),
+            new User\Workspace\DataObject()->setValues(['cId' => $this->foo->getId(), 'cPath' => $this->foo->getFullpath(), 'list' => false, 'view' => false]),
+            new User\Workspace\DataObject()->setValues(['cId' => $this->bars->getId(), 'cPath' => $this->bars->getFullpath(), 'list' => false, 'view' => false]),
+            new User\Workspace\DataObject()->setValues(['cId' => $this->userfolder->getId(), 'cPath' => $this->userfolder->getFullpath(), 'list' => true, 'view' => true]),
+            new User\Workspace\DataObject()->setValues(['cId' => $this->groupfolder->getId(), 'cPath' => $this->groupfolder->getFullpath(), 'list' => false, 'view' => false, 'save' => true, 'publish' => true, 'settings' => false]),
         ]);
         $this->userPermissionTest2->save();
 
@@ -149,7 +151,7 @@ class ModelDataObjectPermissionsTest extends AbstractPermissionTest
         $this->userPermissionTest3->setName('Permissiontest3');
         $this->userPermissionTest3->setPermissions(['objects']);
         $this->userPermissionTest3->setWorkspacesObject([
-            (new User\Workspace\DataObject())->setValues(['cId' => $this->usertestobject->getId(), 'cPath' => $this->usertestobject->getFullpath(), 'list' => true, 'view' => true]),
+            new User\Workspace\DataObject()->setValues(['cId' => $this->usertestobject->getId(), 'cPath' => $this->usertestobject->getFullpath(), 'list' => true, 'view' => true]),
         ]);
         $this->userPermissionTest3->save();
 
@@ -165,7 +167,7 @@ class ModelDataObjectPermissionsTest extends AbstractPermissionTest
         $this->userPermissionTest5->setName('Permissiontest5');
         $this->userPermissionTest5->setPermissions(['assets', 'objects']);
         $this->userPermissionTest5->setWorkspacesObject([
-            (new User\Workspace\DataObject())->setValues(['cId' => $this->usertestobject->getId(), 'cPath' => $this->usertestobject->getFullpath(), 'list' => true, 'view' => true]),
+            new User\Workspace\DataObject()->setValues(['cId' => $this->usertestobject->getId(), 'cPath' => $this->usertestobject->getFullpath(), 'list' => true, 'view' => true]),
         ]);
         $this->userPermissionTest5->save();
 
@@ -174,7 +176,7 @@ class ModelDataObjectPermissionsTest extends AbstractPermissionTest
         $this->userPermissionTest6->setName('Permissiontest6');
         $this->userPermissionTest6->setPermissions([]);
         $this->userPermissionTest6->setWorkspacesObject([
-            (new User\Workspace\DataObject())->setValues(['cId' => $this->usertestobject->getId(), 'cPath' => $this->usertestobject->getFullpath(), 'list' => true, 'view' => true]),
+            new User\Workspace\DataObject()->setValues(['cId' => $this->usertestobject->getId(), 'cPath' => $this->usertestobject->getFullpath(), 'list' => true, 'view' => true]),
         ]);
 
         $this->userPermissionTest6->save();
@@ -207,13 +209,14 @@ class ModelDataObjectPermissionsTest extends AbstractPermissionTest
     /**
      * @param array|null $expectedChildren When null,the main permission is disabled
      *
-     * @throws \ReflectionException
+     * @throws ReflectionException
      */
     protected function doTestTreeGetChildrenById(
         DataObject\AbstractObject $element,
-        User $user,
-        ?array $expectedChildren
-    ): void {
+        User                      $user,
+        ?array                    $expectedChildren
+    ): void
+    {
         $controller = $this->buildController(DataObjectController::class, $user);
 
         $request = new Request([
@@ -227,7 +230,7 @@ class ModelDataObjectPermissionsTest extends AbstractPermissionTest
                 $request,
                 $eventDispatcher
             );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             if (is_null($expectedChildren)) {
                 $this->assertInstanceOf(AccessDeniedHttpException::class, $e, 'Assert main object permission');
 

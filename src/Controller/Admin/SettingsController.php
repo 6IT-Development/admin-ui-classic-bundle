@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -10,13 +11,15 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\Controller\Admin;
 
+use Exception;
 use Pimcore\Bundle\AdminBundle\Controller\AdminAbstractController;
+use Pimcore\Bundle\AdminBundle\Helper\QueryParams;
 use Pimcore\Bundle\AdminBundle\System\AdminConfig;
 use Pimcore\Cache;
 use Pimcore\Cache\Core\CoreCacheHandler;
@@ -24,6 +27,8 @@ use Pimcore\Cache\Symfony\CacheClearer;
 use Pimcore\Db;
 use Pimcore\Event\SystemEvents;
 use Pimcore\Helper\StopMessengerWorkersTrait;
+use Pimcore\Image;
+use Pimcore\Image\Adapter\GD;
 use Pimcore\Localization\LocaleServiceInterface;
 use Pimcore\Logger;
 use Pimcore\Model;
@@ -35,6 +40,7 @@ use Pimcore\Model\Property;
 use Pimcore\Model\WebsiteSetting;
 use Pimcore\SystemSettingsConfig;
 use Pimcore\Tool;
+use Pimcore\Video;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\EventDispatcher\GenericEvent;
 use Symfony\Component\Filesystem\Filesystem;
@@ -49,23 +55,24 @@ use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\HttpKernel\KernelInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Contracts\Translation\TranslatorInterface;
+use Throwable;
 
-    /**
+/**
  *
  * @internal
-     */
-    #[Route('/settings')]
+ */
+#[Route('/settings')]
 class SettingsController extends AdminAbstractController
 {
     use StopMessengerWorkersTrait;
 
-    private const CUSTOM_LOGO_PATH = 'custom-logo.image';
+    private const string CUSTOM_LOGO_PATH = 'custom-logo.image';
 
     public function __construct(protected TranslatorInterface $translator)
     {
     }
 
-        #[Route('/display-custom-logo', name: 'pimcore_settings_display_custom_logo', methods: ['GET'])]
+    #[Route('/display-custom-logo', name: 'pimcore_settings_display_custom_logo', methods: [Request::METHOD_GET])]
     public function displayCustomLogoAction(Request $request): StreamedResponse
     {
         $mime = 'image/svg+xml';
@@ -82,7 +89,7 @@ class SettingsController extends AdminAbstractController
             try {
                 $mime = $storage->mimeType(self::CUSTOM_LOGO_PATH);
                 $stream = $storage->readStream(self::CUSTOM_LOGO_PATH);
-            } catch (\Exception $e) {
+            } catch (Exception) {
                 // do nothing
             }
         }
@@ -95,11 +102,7 @@ class SettingsController extends AdminAbstractController
         ]);
     }
 
-        /**
-     *
-     * @throws \Exception
-         */
-        #[Route('/upload-custom-logo', name: 'pimcore_admin_settings_uploadcustomlogo', methods: ['POST'])]
+    #[Route('/upload-custom-logo', name: 'pimcore_admin_settings_uploadcustomlogo', methods: [Request::METHOD_POST])]
     public function uploadCustomLogoAction(Request $request): JsonResponse
     {
         $logoFile = $request->files->get('Filedata');
@@ -107,7 +110,7 @@ class SettingsController extends AdminAbstractController
         if (!$logoFile instanceof UploadedFile
             || !in_array($logoFile->guessExtension(), ['svg', 'png', 'jpg'])
         ) {
-            throw new \Exception('Unsupported file format.');
+            throw new Exception('Unsupported file format.');
         }
 
         $storage = Tool\Storage::get('admin');
@@ -122,7 +125,7 @@ class SettingsController extends AdminAbstractController
         return $response;
     }
 
-        #[Route('/delete-custom-logo', name: 'pimcore_admin_settings_deletecustomlogo', methods: ['DELETE'])]
+    #[Route('/delete-custom-logo', name: 'pimcore_admin_settings_deletecustomlogo', methods: [Request::METHOD_DELETE])]
     public function deleteCustomLogoAction(Request $request): JsonResponse
     {
         if (Tool\Storage::get('admin')->fileExists(self::CUSTOM_LOGO_PATH)) {
@@ -132,11 +135,11 @@ class SettingsController extends AdminAbstractController
         return $this->adminJson(['success' => true]);
     }
 
-        /**
+    /**
      * Used by the predefined metadata grid
      *
-         */
-        #[Route('/predefined-metadata', name: 'pimcore_admin_settings_metadata', methods: ['POST'])]
+     */
+    #[Route('/predefined-metadata', name: 'pimcore_admin_settings_metadata', methods: [Request::METHOD_POST])]
     public function metadataAction(Request $request): JsonResponse
     {
         $this->checkPermission('asset_metadata');
@@ -176,7 +179,7 @@ class SettingsController extends AdminAbstractController
 
                 return $this->adminJson(['data' => $responseData, 'success' => true]);
             } elseif ($request->get('xaction') == 'create') {
-                if (!(new Metadata\Predefined())->isWriteable()) {
+                if (!new Metadata\Predefined()->isWriteable()) {
                     throw new ConfigWriteException();
                 }
                 $data = $this->decodeJson($request->get('data'));
@@ -229,7 +232,7 @@ class SettingsController extends AdminAbstractController
         return $this->adminJson(['success' => false]);
     }
 
-        #[Route('/get-predefined-metadata', name: 'pimcore_admin_settings_getpredefinedmetadata', methods: ['GET'])]
+    #[Route('/get-predefined-metadata', name: 'pimcore_admin_settings_getpredefinedmetadata', methods: [Request::METHOD_GET])]
     public function getPredefinedMetadataAction(Request $request): JsonResponse
     {
         $type = $request->get('type');
@@ -250,7 +253,7 @@ class SettingsController extends AdminAbstractController
         return $this->adminJson(['data' => $result, 'success' => true]);
     }
 
-        #[Route('/properties', name: 'pimcore_admin_settings_properties', methods: ['POST'])]
+    #[Route('/properties', name: 'pimcore_admin_settings_properties', methods: [Request::METHOD_POST])]
     public function propertiesAction(Request $request): JsonResponse
     {
         if ($request->get('data')) {
@@ -286,7 +289,7 @@ class SettingsController extends AdminAbstractController
 
                 return $this->adminJson(['data' => $responseData, 'success' => true]);
             } elseif ($request->get('xaction') == 'create') {
-                if (!(new Property\Predefined())->isWriteable()) {
+                if (!new Property\Predefined()->isWriteable()) {
                     throw new ConfigWriteException();
                 }
                 $data = $this->decodeJson($request->get('data'));
@@ -338,7 +341,7 @@ class SettingsController extends AdminAbstractController
         return $this->adminJson(['success' => false]);
     }
 
-        #[Route('/get-admin-system', name: 'pimcore_appearance_admin_settings_get', methods: ['GET'])]
+    #[Route('/get-admin-system', name: 'pimcore_appearance_admin_settings_get', methods: [Request::METHOD_GET])]
     public function getAppearanceSystemAction(AdminConfig $config): JsonResponse
     {
         $this->checkPermission('system_appearance_settings');
@@ -351,8 +354,11 @@ class SettingsController extends AdminAbstractController
         return $this->adminJson($response);
     }
 
-        #[Route('/get-system', name: 'pimcore_admin_settings_getsystem', methods: ['GET'])]
-    public function getSystemAction(Request $request, SystemSettingsConfig $config): JsonResponse
+    #[Route('/get-system', name: 'pimcore_admin_settings_getsystem', methods: [Request::METHOD_GET])]
+    public function getSystemAction(
+        Request              $request,
+        SystemSettingsConfig $config
+    ): JsonResponse
     {
         $this->checkPermission('system_settings');
         $config = $config->getSystemSettingsConfig();
@@ -405,16 +411,17 @@ class SettingsController extends AdminAbstractController
         return $this->adminJson($response);
     }
 
-        #[Route('/set-appearance', name: 'pimcore_admin_settings_appearance_set', methods: ['PUT'])]
+    #[Route('/set-appearance', name: 'pimcore_admin_settings_appearance_set', methods: [Request::METHOD_PUT])]
     public function setAppearanceSystemAction(
-        Request $request,
-        KernelInterface $kernel,
+        Request                  $request,
+        KernelInterface          $kernel,
         EventDispatcherInterface $eventDispatcher,
-        CoreCacheHandler $cache,
-        Filesystem $filesystem,
-        CacheClearer $symfonyCacheClearer,
-        AdminConfig $config
-    ): JsonResponse {
+        CoreCacheHandler         $cache,
+        Filesystem               $filesystem,
+        CacheClearer             $symfonyCacheClearer,
+        AdminConfig              $config
+    ): JsonResponse
+    {
         $this->checkPermission('system_appearance_settings');
 
         $values = $this->decodeJson($request->get('data'));
@@ -437,16 +444,17 @@ class SettingsController extends AdminAbstractController
         return $this->adminJson(['success' => true]);
     }
 
-        #[Route('/set-system', name: 'pimcore_admin_settings_setsystem', methods: ['PUT'])]
+    #[Route('/set-system', name: 'pimcore_admin_settings_setsystem', methods: [Request::METHOD_PUT])]
     public function setSystemAction(
-        Request $request,
-        KernelInterface $kernel,
+        Request                  $request,
+        KernelInterface          $kernel,
         EventDispatcherInterface $eventDispatcher,
-        CoreCacheHandler $cache,
-        Filesystem $filesystem,
-        CacheClearer $symfonyCacheClearer,
-        SystemSettingsConfig $config
-    ): JsonResponse {
+        CoreCacheHandler         $cache,
+        Filesystem               $filesystem,
+        CacheClearer             $symfonyCacheClearer,
+        SystemSettingsConfig     $config
+    ): JsonResponse
+    {
         $this->checkPermission('system_settings');
 
         $values = $this->decodeJson($request->get('data'));
@@ -469,23 +477,24 @@ class SettingsController extends AdminAbstractController
         return $this->adminJson(['success' => true]);
     }
 
-        #[Route('/clear-cache', name: 'pimcore_admin_settings_clearcache', methods: ['DELETE'])]
+    #[Route('/clear-cache', name: 'pimcore_admin_settings_clearcache', methods: [Request::METHOD_DELETE])]
     public function clearCacheAction(
-        Request $request,
-        KernelInterface $kernel,
+        Request                  $request,
+        KernelInterface          $kernel,
         EventDispatcherInterface $eventDispatcher,
-        CoreCacheHandler $cache,
-        Filesystem $filesystem,
-        CacheClearer $symfonyCacheClearer
-    ): JsonResponse {
+        CoreCacheHandler         $cache,
+        Filesystem               $filesystem,
+        CacheClearer             $symfonyCacheClearer
+    ): JsonResponse
+    {
         $this->checkPermissionsHasOneOf(['clear_cache', 'system_settings']);
 
         $result = [
             'success' => true,
         ];
 
-        $clearPimcoreCache = !(bool)$request->get('only_symfony_cache');
-        $clearSymfonyCache = !(bool)$request->get('only_pimcore_cache');
+        $clearPimcoreCache = !$request->get('only_symfony_cache');
+        $clearSymfonyCache = !$request->get('only_pimcore_cache');
 
         if ($clearPimcoreCache) {
             $this->clearPimcoreCache($cache, $eventDispatcher, $filesystem);
@@ -509,10 +518,11 @@ class SettingsController extends AdminAbstractController
     }
 
     private function clearPimcoreCache(
-        CoreCacheHandler $cache,
+        CoreCacheHandler         $cache,
         EventDispatcherInterface $eventDispatcher,
-        Filesystem $filesystem,
-    ): void {
+        Filesystem               $filesystem,
+    ): void
+    {
         // empty document cache
         $cache->clearAll();
 
@@ -527,11 +537,12 @@ class SettingsController extends AdminAbstractController
     }
 
     private function clearSymfonyCache(
-        Request $request,
-        KernelInterface $kernel,
+        Request                  $request,
+        KernelInterface          $kernel,
         EventDispatcherInterface $eventDispatcher,
-        CacheClearer $symfonyCacheClearer,
-    ): void {
+        CacheClearer             $symfonyCacheClearer,
+    ): void
+    {
         // pass one or move env parameters to clear multiple envs
         // if no env is passed it will use the current one
         $environments = $request->get('env', $kernel->getEnvironment());
@@ -567,7 +578,7 @@ class SettingsController extends AdminAbstractController
         foreach ($environments as $environment) {
             try {
                 $symfonyCacheClearer->clear($environment);
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 $errors = $result['errors'] ?? [];
                 $errors[] = $e->getMessage();
 
@@ -579,7 +590,7 @@ class SettingsController extends AdminAbstractController
         }
     }
 
-        #[Route('/clear-output-cache', name: 'pimcore_admin_settings_clearoutputcache', methods: ['DELETE'])]
+    #[Route('/clear-output-cache', name: 'pimcore_admin_settings_clearoutputcache', methods: [Request::METHOD_DELETE])]
     public function clearOutputCacheAction(EventDispatcherInterface $eventDispatcher): JsonResponse
     {
         $this->checkPermission('clear_fullpage_cache');
@@ -595,7 +606,7 @@ class SettingsController extends AdminAbstractController
         return $this->adminJson(['success' => true]);
     }
 
-        #[Route('/clear-temporary-files', name: 'pimcore_admin_settings_cleartemporaryfiles', methods: ['DELETE'])]
+    #[Route('/clear-temporary-files', name: 'pimcore_admin_settings_cleartemporaryfiles', methods: [Request::METHOD_DELETE])]
     public function clearTemporaryFilesAction(EventDispatcherInterface $eventDispatcher): JsonResponse
     {
         $this->checkPermission('clear_temp_files');
@@ -614,7 +625,7 @@ class SettingsController extends AdminAbstractController
         return $this->adminJson(['success' => true]);
     }
 
-        #[Route('/get-available-admin-languages', name: 'pimcore_admin_settings_getavailableadminlanguages', methods: ['GET'])]
+    #[Route('/get-available-admin-languages', name: 'pimcore_admin_settings_getavailableadminlanguages', methods: [Request::METHOD_GET])]
     public function getAvailableAdminLanguagesAction(Request $request): JsonResponse
     {
         $langs = [];
@@ -637,13 +648,13 @@ class SettingsController extends AdminAbstractController
         return $this->adminJson($langs);
     }
 
-        #[Route('/get-available-sites', name: 'pimcore_admin_settings_getavailablesites', methods: ['GET'])]
+    #[Route('/get-available-sites', name: 'pimcore_admin_settings_getavailablesites', methods: [Request::METHOD_GET])]
     public function getAvailableSitesAction(Request $request): JsonResponse
     {
         try {
             // we need to check documents permission for listing purposes in sites ext model & url-slugs
             $this->checkPermission('documents');
-        } catch (AccessDeniedHttpException $e) {
+        } catch (AccessDeniedHttpException) {
             Logger::log('[Startup] Sites are not loaded as "documents" permission is missing');
 
             //return empty string to avoid error on startup
@@ -685,7 +696,7 @@ class SettingsController extends AdminAbstractController
         return $this->adminJson($sites);
     }
 
-        #[Route('/get-available-countries', name: 'pimcore_admin_settings_getavailablecountries', methods: ['GET'])]
+    #[Route('/get-available-countries', name: 'pimcore_admin_settings_getavailablecountries', methods: [Request::METHOD_GET])]
     public function getAvailableCountriesAction(LocaleServiceInterface $localeService): JsonResponse
     {
         $countries = $localeService->getDisplayRegions();
@@ -707,13 +718,16 @@ class SettingsController extends AdminAbstractController
         return $this->adminJson($result);
     }
 
-        #[Route('/thumbnail-adapter-check', name: 'pimcore_admin_settings_thumbnailadaptercheck', methods: ['GET'])]
-    public function thumbnailAdapterCheckAction(Request $request, TranslatorInterface $translator): Response
+    #[Route('/thumbnail-adapter-check', name: 'pimcore_admin_settings_thumbnailadaptercheck', methods: [Request::METHOD_GET])]
+    public function thumbnailAdapterCheckAction(
+        Request             $request,
+        TranslatorInterface $translator
+    ): Response
     {
         $content = '';
 
-        $instance = \Pimcore\Image::getInstance();
-        if ($instance instanceof \Pimcore\Image\Adapter\GD) {
+        $instance = Image::getInstance();
+        if ($instance instanceof GD) {
             $content = '<span style="color: red; font-weight: bold;padding: 10px;margin:0 0 20px 0;border:1px solid red;display:block;">' .
                 $translator->trans('important_use_imagick_pecl_extensions_for_best_results_gd_is_just_a_fallback_with_less_quality', [], 'admin') .
                 '</span>';
@@ -722,7 +736,7 @@ class SettingsController extends AdminAbstractController
         return new Response($content);
     }
 
-        #[Route('/thumbnail-tree', name: 'pimcore_admin_settings_thumbnailtree', methods: ['GET', 'POST'])]
+    #[Route('/thumbnail-tree', name: 'pimcore_admin_settings_thumbnailtree', methods: [Request::METHOD_GET, Request::METHOD_POST])]
     public function thumbnailTreeAction(): JsonResponse
     {
         $this->checkPermission('thumbnails');
@@ -774,7 +788,7 @@ class SettingsController extends AdminAbstractController
         return $this->adminJson($thumbnails);
     }
 
-        #[Route('/thumbnail-downloadable', name: 'pimcore_admin_settings_thumbnaildownloadable', methods: ['GET'])]
+    #[Route('/thumbnail-downloadable', name: 'pimcore_admin_settings_thumbnaildownloadable', methods: [Request::METHOD_GET])]
     public function thumbnailDownloadableAction(): JsonResponse
     {
         $thumbnails = [];
@@ -794,7 +808,7 @@ class SettingsController extends AdminAbstractController
         return $this->adminJson($thumbnails);
     }
 
-        #[Route('/thumbnail-add', name: 'pimcore_admin_settings_thumbnailadd', methods: ['POST'])]
+    #[Route('/thumbnail-add', name: 'pimcore_admin_settings_thumbnailadd', methods: [Request::METHOD_POST])]
     public function thumbnailAddAction(Request $request): JsonResponse
     {
         $this->checkPermission('thumbnails');
@@ -822,7 +836,7 @@ class SettingsController extends AdminAbstractController
         return $this->adminJson(['success' => $success, 'id' => $pipe->getName()]);
     }
 
-        #[Route('/thumbnail-delete', name: 'pimcore_admin_settings_thumbnaildelete', methods: ['DELETE'])]
+    #[Route('/thumbnail-delete', name: 'pimcore_admin_settings_thumbnaildelete', methods: [Request::METHOD_DELETE])]
     public function thumbnailDeleteAction(Request $request): JsonResponse
     {
         $this->checkPermission('thumbnails');
@@ -838,7 +852,7 @@ class SettingsController extends AdminAbstractController
         return $this->adminJson(['success' => true]);
     }
 
-        #[Route('/thumbnail-get', name: 'pimcore_admin_settings_thumbnailget', methods: ['GET'])]
+    #[Route('/thumbnail-get', name: 'pimcore_admin_settings_thumbnailget', methods: [Request::METHOD_GET])]
     public function thumbnailGetAction(Request $request): JsonResponse
     {
         $this->checkPermission('thumbnails');
@@ -850,7 +864,7 @@ class SettingsController extends AdminAbstractController
         return $this->adminJson($data);
     }
 
-        #[Route('/thumbnail-update', name: 'pimcore_admin_settings_thumbnailupdate', methods: ['PUT'])]
+    #[Route('/thumbnail-update', name: 'pimcore_admin_settings_thumbnailupdate', methods: [Request::METHOD_PUT])]
     public function thumbnailUpdateAction(Request $request): JsonResponse
     {
         $this->checkPermission('thumbnails');
@@ -884,7 +898,7 @@ class SettingsController extends AdminAbstractController
 
         foreach ($mediaData as $mediaName => $items) {
             if (preg_match('/["<>]/', $mediaName)) {
-                throw new \Exception('Invalid media query name');
+                throw new Exception('Invalid media query name');
             }
 
             foreach ($items as $item) {
@@ -900,12 +914,15 @@ class SettingsController extends AdminAbstractController
         return $this->adminJson(['success' => true]);
     }
 
-        #[Route('/video-thumbnail-adapter-check', name: 'pimcore_admin_settings_videothumbnailadaptercheck', methods: ['GET'])]
-    public function videoThumbnailAdapterCheckAction(Request $request, TranslatorInterface $translator): Response
+    #[Route('/video-thumbnail-adapter-check', name: 'pimcore_admin_settings_videothumbnailadaptercheck', methods: [Request::METHOD_GET])]
+    public function videoThumbnailAdapterCheckAction(
+        Request             $request,
+        TranslatorInterface $translator
+    ): Response
     {
         $content = '';
 
-        if (!\Pimcore\Video::isAvailable()) {
+        if (!Video::isAvailable()) {
             $content = '<span style="color: red; font-weight: bold;padding: 10px;margin:0 0 20px 0;border:1px solid red;display:block;">' .
                 $translator->trans('php_cli_binary_and_or_ffmpeg_binary_setting_is_missing', [], 'admin') .
                 '</span>';
@@ -914,7 +931,7 @@ class SettingsController extends AdminAbstractController
         return new Response($content);
     }
 
-        #[Route('/video-thumbnail-tree', name: 'pimcore_admin_settings_videothumbnailtree', methods: ['GET', 'POST'])]
+    #[Route('/video-thumbnail-tree', name: 'pimcore_admin_settings_videothumbnailtree', methods: [Request::METHOD_GET, Request::METHOD_POST])]
     public function videoThumbnailTreeAction(): JsonResponse
     {
         $this->checkPermission('thumbnails');
@@ -966,7 +983,7 @@ class SettingsController extends AdminAbstractController
         return $this->adminJson($thumbnails);
     }
 
-        #[Route('/video-thumbnail-list', name: 'pimcore_admin_settings_videothumbnail_list', methods: ['GET'])]
+    #[Route('/video-thumbnail-list', name: 'pimcore_admin_settings_videothumbnail_list', methods: [Request::METHOD_GET])]
     public function videoThumbnailListAction(): JsonResponse
     {
         $thumbnails = [
@@ -976,7 +993,7 @@ class SettingsController extends AdminAbstractController
 
         foreach ($list->getThumbnails() as $item) {
             $thumbnails[] = [
-                'id'   => $item->getName(),
+                'id' => $item->getName(),
                 'text' => $item->getName(),
             ];
         }
@@ -984,7 +1001,7 @@ class SettingsController extends AdminAbstractController
         return $this->adminJson($thumbnails);
     }
 
-        #[Route('/video-thumbnail-add', name: 'pimcore_admin_settings_videothumbnailadd', methods: ['POST'])]
+    #[Route('/video-thumbnail-add', name: 'pimcore_admin_settings_videothumbnailadd', methods: [Request::METHOD_POST])]
     public function videoThumbnailAddAction(Request $request): JsonResponse
     {
         $this->checkPermission('thumbnails');
@@ -1012,7 +1029,7 @@ class SettingsController extends AdminAbstractController
         return $this->adminJson(['success' => $success, 'id' => $pipe->getName()]);
     }
 
-        #[Route('/video-thumbnail-delete', name: 'pimcore_admin_settings_videothumbnaildelete', methods: ['DELETE'])]
+    #[Route('/video-thumbnail-delete', name: 'pimcore_admin_settings_videothumbnaildelete', methods: [Request::METHOD_DELETE])]
     public function videoThumbnailDeleteAction(Request $request): JsonResponse
     {
         $this->checkPermission('thumbnails');
@@ -1028,7 +1045,7 @@ class SettingsController extends AdminAbstractController
         return $this->adminJson(['success' => true]);
     }
 
-        #[Route('/video-thumbnail-get', name: 'pimcore_admin_settings_videothumbnailget', methods: ['GET'])]
+    #[Route('/video-thumbnail-get', name: 'pimcore_admin_settings_videothumbnailget', methods: [Request::METHOD_GET])]
     public function videoThumbnailGetAction(Request $request): JsonResponse
     {
         $this->checkPermission('thumbnails');
@@ -1041,7 +1058,7 @@ class SettingsController extends AdminAbstractController
         return $this->adminJson($data);
     }
 
-        #[Route('/video-thumbnail-update', name: 'pimcore_admin_settings_videothumbnailupdate', methods: ['PUT'])]
+    #[Route('/video-thumbnail-update', name: 'pimcore_admin_settings_videothumbnailupdate', methods: [Request::METHOD_PUT])]
     public function videoThumbnailUpdateAction(Request $request): JsonResponse
     {
         $this->checkPermission('thumbnails');
@@ -1087,11 +1104,7 @@ class SettingsController extends AdminAbstractController
         return $this->adminJson(['success' => true]);
     }
 
-        /**
-     *
-     * @throws \Exception
-         */
-        #[Route('/website-settings', name: 'pimcore_admin_settings_websitesettings', methods: ['POST'])]
+    #[Route('/website-settings', name: 'pimcore_admin_settings_websitesettings', methods: [Request::METHOD_POST])]
     public function websiteSettingsAction(Request $request): JsonResponse
     {
         $this->checkPermission('website_settings');
@@ -1152,10 +1165,10 @@ class SettingsController extends AdminAbstractController
         } else {
             $list = new WebsiteSetting\Listing();
 
-            $list->setLimit((int) $request->get('limit', 50));
-            $list->setOffset((int) $request->get('start', 0));
+            $list->setLimit((int)$request->get('limit', 50));
+            $list->setOffset((int)$request->get('start', 0));
 
-            $sortingSettings = \Pimcore\Bundle\AdminBundle\Helper\QueryParams::extractSortingSettings(array_merge($request->request->all(), $request->query->all()));
+            $sortingSettings = QueryParams::extractSortingSettings(array_merge($request->request->all(), $request->query->all()));
             if ($sortingSettings['orderKey']) {
                 $list->setOrderKey($sortingSettings['orderKey']);
                 $list->setOrder($sortingSettings['order']);
@@ -1165,7 +1178,7 @@ class SettingsController extends AdminAbstractController
             }
 
             if ($request->get('filter')) {
-                $list->setCondition('`name` LIKE ' . $list->quote('%'.$request->get('filter').'%'));
+                $list->setCondition('`name` LIKE ' . $list->quote('%' . $request->get('filter') . '%'));
             }
 
             $totalCount = $list->getTotalCount();
@@ -1218,7 +1231,7 @@ class SettingsController extends AdminAbstractController
         return $resultItem;
     }
 
-        #[Route('/get-available-algorithms', name: 'pimcore_admin_settings_getavailablealgorithms', methods: ['GET'])]
+    #[Route('/get-available-algorithms', name: 'pimcore_admin_settings_getavailablealgorithms', methods: [Request::METHOD_GET])]
     public function getAvailableAlgorithmsAction(Request $request): JsonResponse
     {
         $options = [
@@ -1248,7 +1261,7 @@ class SettingsController extends AdminAbstractController
      */
     protected function deleteViews(string $language, string $dbName): void
     {
-        $db = \Pimcore\Db::get();
+        $db = Db::get();
         $views = $db->fetchAllAssociative('SHOW FULL TABLES IN ' . $db->quoteIdentifier($dbName) . " WHERE TABLE_TYPE LIKE 'VIEW'");
 
         foreach ($views as $view) {

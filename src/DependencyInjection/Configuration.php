@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -10,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\DependencyInjection;
@@ -45,91 +46,90 @@ final class Configuration implements ConfigurationInterface
 
         $rootNode->children()
             ->arrayNode('admin_languages')
-                ->prototype('scalar')
-                ->end()
+            ->prototype('scalar')
+            ->end()
             ->end()
             ->arrayNode('csrf_protection')
-                ->addDefaultsIfNotSet()
-                ->children()
-                    ->arrayNode('excluded_routes')
-                        ->prototype('scalar')
-                        ->end()
-                    ->end()
-                ->end()
+            ->addDefaultsIfNotSet()
+            ->children()
+            ->arrayNode('excluded_routes')
+            ->prototype('scalar')
+            ->end()
+            ->end()
+            ->end()
             ->end()
             ->arrayNode('admin_csp_header')
-                ->canBeDisabled()
-                ->info('Can be used to enable or disable the Content Security Policy headers.')
-                ->children()
-                    ->arrayNode('exclude_paths')
-                        ->scalarPrototype()->end()
-                        ->info('Regular Expressions like: /^\/path\/toexclude/')
-                    ->end()
-                    ->arrayNode('additional_urls')
-                        ->addDefaultsIfNotSet()
-                        ->normalizeKeys(false)
-                        ->children()
-                            ->arrayNode(ContentSecurityPolicyHandler::DEFAULT_OPT)
-                                ->scalarPrototype()->end()
-                            ->end()
-                            ->arrayNode(ContentSecurityPolicyHandler::IMG_OPT)
-                                ->scalarPrototype()->end()
-                            ->end()
-                            ->arrayNode(ContentSecurityPolicyHandler::SCRIPT_OPT)
-                                ->scalarPrototype()->end()
-                            ->end()
-                            ->arrayNode(ContentSecurityPolicyHandler::STYLE_OPT)
-                                ->scalarPrototype()->end()
-                            ->end()
-                            ->arrayNode(ContentSecurityPolicyHandler::CONNECT_OPT)
-                                ->scalarPrototype()->end()
-                            ->end()
-                            ->arrayNode(ContentSecurityPolicyHandler::FONT_OPT)
-                                ->scalarPrototype()->end()
-                            ->end()
-                            ->arrayNode(ContentSecurityPolicyHandler::MEDIA_OPT)
-                                ->scalarPrototype()->end()
-                            ->end()
-                            ->arrayNode(ContentSecurityPolicyHandler::FRAME_OPT)
-                                ->scalarPrototype()->end()
-                            ->end()
-                        ->end()
-                    ->end()
-                ->end()
+            ->canBeDisabled()
+            ->info('Can be used to enable or disable the Content Security Policy headers.')
+            ->children()
+            ->arrayNode('exclude_paths')
+            ->scalarPrototype()->end()
+            ->info('Regular Expressions like: /^\/path\/toexclude/')
+            ->end()
+            ->arrayNode('additional_urls')
+            ->addDefaultsIfNotSet()
+            ->normalizeKeys(false)
+            ->children()
+            ->arrayNode(ContentSecurityPolicyHandler::DEFAULT_OPT)
+            ->scalarPrototype()->end()
+            ->end()
+            ->arrayNode(ContentSecurityPolicyHandler::IMG_OPT)
+            ->scalarPrototype()->end()
+            ->end()
+            ->arrayNode(ContentSecurityPolicyHandler::SCRIPT_OPT)
+            ->scalarPrototype()->end()
+            ->end()
+            ->arrayNode(ContentSecurityPolicyHandler::STYLE_OPT)
+            ->scalarPrototype()->end()
+            ->end()
+            ->arrayNode(ContentSecurityPolicyHandler::CONNECT_OPT)
+            ->scalarPrototype()->end()
+            ->end()
+            ->arrayNode(ContentSecurityPolicyHandler::FONT_OPT)
+            ->scalarPrototype()->end()
+            ->end()
+            ->arrayNode(ContentSecurityPolicyHandler::MEDIA_OPT)
+            ->scalarPrototype()->end()
+            ->end()
+            ->arrayNode(ContentSecurityPolicyHandler::FRAME_OPT)
+            ->scalarPrototype()->end()
+            ->end()
+            ->end()
+            ->end()
+            ->end()
             ->end()
             ->scalarNode('custom_admin_path_identifier')
-                ->defaultNull()
-                ->validate()
-                    ->ifTrue(function ($v) {
-                        return strlen($v) < 20;
-                    })
-                    ->thenInvalid('custom_admin_path_identifier must be at least 20 characters long')
-                ->end()
+            ->defaultNull()
+            ->validate()
+            ->ifTrue(function ($v) {
+                return strlen($v) < 20;
+            })
+            ->thenInvalid('custom_admin_path_identifier must be at least 20 characters long')
+            ->end()
             ->end()
             ->scalarNode('custom_admin_route_name')
-                ->defaultValue('my_custom_admin_entry_point')
+            ->defaultValue('my_custom_admin_entry_point')
             ->end()
             ->arrayNode('branding')
-                ->addDefaultsIfNotSet()
-                ->children()
-                    ->booleanNode('login_screen_invert_colors')
-                        ->defaultFalse()
-                    ->end()
-                    ->scalarNode('color_login_screen')
-                        ->defaultNull()
-                    ->end()
-                    ->scalarNode('color_admin_interface')
-                        ->defaultNull()
-                    ->end()
-                    ->scalarNode('color_admin_interface_background')
-                        ->defaultNull()
-                    ->end()
-                    ->scalarNode('login_screen_custom_image')
-                        ->defaultValue('')
-                    ->end()
-                ->end()
+            ->addDefaultsIfNotSet()
+            ->children()
+            ->booleanNode('login_screen_invert_colors')
+            ->defaultFalse()
             ->end()
-        ;
+            ->scalarNode('color_login_screen')
+            ->defaultNull()
+            ->end()
+            ->scalarNode('color_admin_interface')
+            ->defaultNull()
+            ->end()
+            ->scalarNode('color_admin_interface_background')
+            ->defaultNull()
+            ->end()
+            ->scalarNode('login_screen_custom_image')
+            ->defaultValue('')
+            ->end()
+            ->end()
+            ->end();
 
         $this->addAdminNode($rootNode);
 
@@ -156,10 +156,10 @@ final class Configuration implements ConfigurationInterface
 
         $dataObjects
             ->children()
-                ->arrayNode('classes')
-                    ->info('Configure which classes should be considered, array key is class name')
-                    ->prototype('array')
-                        ->info('
+            ->arrayNode('classes')
+            ->info('Configure which classes should be considered, array key is class name')
+            ->prototype('array')
+            ->info('
     MY_CLASS_NAME:
 		include: true
 		allowDelete: false
@@ -167,24 +167,23 @@ final class Configuration implements ConfigurationInterface
 			- manualSegemens
 			- calculatedSegments
                         ')
-                        ->children()
-                            ->booleanNode('include')
-                                ->info('Set if class should be considered in export.')
-                                ->defaultTrue()
-                            ->end()
-                            ->booleanNode('allowDelete')
-                                ->info('Allow delete of objects directly in preview grid.')
-                                ->defaultFalse()
-                            ->end()
-                            ->arrayNode('includedRelations')
-                                ->info('List relation attributes that should be included recursively into export.')
-                                ->prototype('scalar')->end()
-                            ->end()
-                        ->end()
-                    ->end()
-                ->end()
+            ->children()
+            ->booleanNode('include')
+            ->info('Set if class should be considered in export.')
+            ->defaultTrue()
             ->end()
-        ;
+            ->booleanNode('allowDelete')
+            ->info('Allow delete of objects directly in preview grid.')
+            ->defaultFalse()
+            ->end()
+            ->arrayNode('includedRelations')
+            ->info('List relation attributes that should be included recursively into export.')
+            ->prototype('scalar')->end()
+            ->end()
+            ->end()
+            ->end()
+            ->end()
+            ->end();
 
         $gdprDataExtractor->append($dataObjects);
 
@@ -196,11 +195,11 @@ final class Configuration implements ConfigurationInterface
 
         $assets
             ->children()
-                ->arrayNode('types')
-                    ->info('Configure which types should be considered')
-                    ->prototype('array')
-                    ->info('asset types')
-                ->end()->defaultValue([])
+            ->arrayNode('types')
+            ->info('Configure which types should be considered')
+            ->prototype('array')
+            ->info('asset types')
+            ->end()->defaultValue([])
             ->end();
 
         $gdprDataExtractor->append($assets);
@@ -216,13 +215,12 @@ final class Configuration implements ConfigurationInterface
         $notesEvents
             ->addDefaultsIfNotSet()
             ->children()
-                ->arrayNode('types')
-                    ->info('List all notes/event types.')
-                    ->prototype('scalar')->end()
-                    ->defaultValue(['', 'content', 'seo', 'warning', 'notice'])
-                ->end()
+            ->arrayNode('types')
+            ->info('List all notes/event types.')
+            ->prototype('scalar')->end()
+            ->defaultValue(['', 'content', 'seo', 'warning', 'notice'])
             ->end()
-        ;
+            ->end();
 
         return $notesEvents;
     }
@@ -248,12 +246,12 @@ final class Configuration implements ConfigurationInterface
             ->addDefaultsIfNotSet()
             ->append($this->buildEventsNode())
             ->children()
-                ->booleanNode('hide_edit_image')
-                    ->defaultFalse()
-                ->end()
-                ->booleanNode('disable_tree_preview')
-                    ->defaultTrue()
-                ->end()
+            ->booleanNode('hide_edit_image')
+            ->defaultFalse()
+            ->end()
+            ->booleanNode('disable_tree_preview')
+            ->defaultTrue()
+            ->end()
             ->end();
 
         return $assetsNode;
@@ -270,12 +268,11 @@ final class Configuration implements ConfigurationInterface
 
         $documentsNode
             ->children()
-                ->arrayNode('email_search')
-                    ->info('List of searchable email documents.')
-                    ->prototype('scalar')->end()
-                ->end()
+            ->arrayNode('email_search')
+            ->info('List of searchable email documents.')
+            ->prototype('scalar')->end()
             ->end()
-        ;
+            ->end();
 
         return $documentsNode;
     }
@@ -290,17 +287,17 @@ final class Configuration implements ConfigurationInterface
 
         $rootNode
             ->children()
-                ->arrayNode('translations')
-                    ->addDefaultsIfNotSet()
-                    ->children()
-                        ->scalarNode('path')->defaultNull()->end()
-                    ->end()
-                ->end()
+            ->arrayNode('translations')
+            ->addDefaultsIfNotSet()
+            ->children()
+            ->scalarNode('path')->defaultNull()->end()
+            ->end()
+            ->end()
             ->end();
 
         $rootNode
             ->children()
-                ->variableNode('security_firewall')->end()
+            ->variableNode('security_firewall')->end()
             ->end();
     }
 
@@ -358,45 +355,45 @@ final class Configuration implements ConfigurationInterface
 
         $adminNode
             ->children()
-                ->arrayNode('session')
-                    ->addDefaultsIfNotSet()
-                    ->children()
-                        ->arrayNode('attribute_bags')
-                            ->useAttributeAsKey('name')
-                            ->beforeNormalization()
-                                ->ifArray()->then(function ($v) use ($normalizers) {
-                                    if (isAssocArray($v)) {
-                                        return $normalizers['assoc']($v);
-                                    } else {
-                                        return $normalizers['sequential']($v);
-                                    }
-                                })
-                            ->end()
-                            ->example([
-                                ['foo', 'bar'],
-                                [
-                                    'foo' => '_foo',
-                                    'bar' => '_bar',
-                                ],
-                                [
-                                    'foo' => [
-                                        'storage_key' => '_foo',
-                                    ],
-                                    'bar' => [
-                                        'storage_key' => '_bar',
-                                    ],
-                                ],
-                            ])
-                            ->prototype('array')
-                                ->children()
-                                    ->scalarNode('storage_key')
-                                        ->defaultNull()
-                                    ->end()
-                                ->end()
-                            ->end()
-                        ->end()
-                    ->end()
-                ->end()
+            ->arrayNode('session')
+            ->addDefaultsIfNotSet()
+            ->children()
+            ->arrayNode('attribute_bags')
+            ->useAttributeAsKey('name')
+            ->beforeNormalization()
+            ->ifArray()->then(function ($v) use ($normalizers) {
+                if (isAssocArray($v)) {
+                    return $normalizers['assoc']($v);
+                } else {
+                    return $normalizers['sequential']($v);
+                }
+            })
+            ->end()
+            ->example([
+                ['foo', 'bar'],
+                [
+                    'foo' => '_foo',
+                    'bar' => '_bar',
+                ],
+                [
+                    'foo' => [
+                        'storage_key' => '_foo',
+                    ],
+                    'bar' => [
+                        'storage_key' => '_bar',
+                    ],
+                ],
+            ])
+            ->prototype('array')
+            ->children()
+            ->scalarNode('storage_key')
+            ->defaultNull()
+            ->end()
+            ->end()
+            ->end()
+            ->end()
+            ->end()
+            ->end()
             ->end();
     }
 
@@ -409,18 +406,17 @@ final class Configuration implements ConfigurationInterface
             ->addDefaultsIfNotSet()
             ->canBeDisabled()
             ->children()
-                ->arrayNode('check_new_notification')
-                    ->canBeDisabled()
-                    ->info('Can be used to enable or disable the check of new notifications (url: /admin/notification/find-last-unread).')
-                    ->children()
-                        ->integerNode('interval')
-                            ->info('Interval in seconds to check new notifications')
-                            ->defaultValue(30)
-                        ->end()
-                    ->end()
-                ->end()
+            ->arrayNode('check_new_notification')
+            ->canBeDisabled()
+            ->info('Can be used to enable or disable the check of new notifications (url: /admin/notification/find-last-unread).')
+            ->children()
+            ->integerNode('interval')
+            ->info('Interval in seconds to check new notifications')
+            ->defaultValue(30)
             ->end()
-        ;
+            ->end()
+            ->end()
+            ->end();
 
         return $notificationsNode;
     }
@@ -433,17 +429,17 @@ final class Configuration implements ConfigurationInterface
         $userNode
             ->addDefaultsIfNotSet()
             ->children()
-                ->arrayNode('default_key_bindings')
-                    ->prototype('array')
-                        ->children()
-                            ->scalarNode('key')->isRequired()->end()
-                            ->scalarNode('action')->isRequired()->end()
-                            ->scalarNode('alt')->defaultFalse()->end()
-                            ->scalarNode('ctrl')->defaultFalse()->end()
-                            ->scalarNode('shift')->defaultFalse()->end()
-                        ->end()
-                    ->end()
-                ->end()
+            ->arrayNode('default_key_bindings')
+            ->prototype('array')
+            ->children()
+            ->scalarNode('key')->isRequired()->end()
+            ->scalarNode('action')->isRequired()->end()
+            ->scalarNode('alt')->defaultFalse()->end()
+            ->scalarNode('ctrl')->defaultFalse()->end()
+            ->scalarNode('shift')->defaultFalse()->end()
+            ->end()
+            ->end()
+            ->end()
             ->end();
 
         return $userNode;

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -10,12 +11,13 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\Controller\Admin;
 
+use Exception;
 use Pimcore\Bundle\AdminBundle\Controller\AdminAbstractController;
 use Pimcore\Bundle\AdminBundle\Event\AssetEvents;
 use Pimcore\Bundle\AdminBundle\Event\Model\AssetDeleteInfoEvent;
@@ -43,7 +45,8 @@ abstract class ElementControllerBase extends AdminAbstractController
 {
     public function __construct(
         protected ElementServiceInterface $elementService
-    ) {
+    )
+    {
     }
 
     /**
@@ -54,7 +57,7 @@ abstract class ElementControllerBase extends AdminAbstractController
         return [];
     }
 
-    #[Route('/tree-get-root', name: 'treegetroot', methods: ['GET'])]
+    #[Route('/tree-get-root', name: 'treegetroot', methods: [Request::METHOD_GET])]
     public function treeGetRootAction(Request $request): JsonResponse
     {
         $type = $request->get('elementType');
@@ -71,17 +74,17 @@ abstract class ElementControllerBase extends AdminAbstractController
                 return $this->adminJson($this->getTreeNodeConfig($root));
             }
 
-            return $this->adminJson(['success' => false, 'id' =>  $id]);
+            return $this->adminJson(['success' => false, 'id' => $id]);
         }
 
         return $this->adminJson(['success' => false, 'message' => 'missing_permission']);
     }
 
-    /**
-     * @throws \Exception
-     */
-    #[Route('/delete-info', name: 'deleteinfo', methods: ['GET'])]
-    public function deleteInfoAction(Request $request, EventDispatcherInterface $eventDispatcher): JsonResponse
+    #[Route('/delete-info', name: 'deleteinfo', methods: [Request::METHOD_GET])]
+    public function deleteInfoAction(
+        Request                  $request,
+        EventDispatcherInterface $eventDispatcher
+    ): JsonResponse
     {
         $hasDependency = false;
         $errors = false;
@@ -96,7 +99,7 @@ abstract class ElementControllerBase extends AdminAbstractController
 
         foreach ($ids as $id) {
             try {
-                $element = Service::getElementById($type, (int) $id);
+                $element = Service::getElementById($type, (int)$id);
                 if (!$element) {
                     continue;
                 }
@@ -104,7 +107,7 @@ abstract class ElementControllerBase extends AdminAbstractController
                 if (!$hasDependency) {
                     $hasDependency = $element->getDependencies()->isRequired();
                 }
-            } catch (\Exception $e) {
+            } catch (Exception) {
                 Logger::err('failed to access element with id: ' . $id);
 
                 continue;
@@ -216,7 +219,7 @@ abstract class ElementControllerBase extends AdminAbstractController
         // get the element key in case of just one
         $elementKey = false;
         if (count($ids) === 1) {
-            $element = Service::getElementById($type, (int) $ids[0]);
+            $element = Service::getElementById($type, (int)$ids[0]);
 
             if ($element instanceof ElementInterface) {
                 $elementKey = $element->getKey();

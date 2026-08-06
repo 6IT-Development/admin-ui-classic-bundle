@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -10,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\DataObject\GridColumnConfig\Operator;
@@ -20,17 +21,18 @@ use Pimcore\Bundle\AdminBundle\DataObject\GridColumnConfig\ResultContainer;
 use Pimcore\Db;
 use Pimcore\Model\Element\ElementInterface;
 use Pimcore\Model\Element\Service;
+use stdClass;
 
 /**
  * @internal
  */
 final class RequiredBy extends AbstractOperator
 {
-    private ?string $elementType = null;
+    private ?string $elementType;
 
     private bool $onlyCount;
 
-    public function __construct(\stdClass $config, array $context = [])
+    public function __construct(stdClass $config, array $context = [])
     {
         parent::__construct($config, $context);
 
@@ -38,33 +40,36 @@ final class RequiredBy extends AbstractOperator
         $this->onlyCount = $config->onlyCount ?? false;
     }
 
-    public function getLabeledValue(array|ElementInterface $element): ResultContainer|\stdClass|null
+    public function getLabeledValue(array|ElementInterface $element): ResultContainer|stdClass|null
     {
-        $result = new \stdClass();
+        $result = new stdClass();
         $result->label = $this->label;
         $result->isArrayType = true;
 
         $db = Db::get();
         $typeCondition = '';
         switch ($this->getElementType()) {
-            case 'document': $typeCondition = " AND sourcetype = 'document'";
+            case 'document':
+                $typeCondition = " AND sourcetype = 'document'";
 
                 break;
-            case 'asset': $typeCondition = " AND sourcetype = 'asset'";
+            case 'asset':
+                $typeCondition = " AND sourcetype = 'asset'";
 
                 break;
-            case 'object': $typeCondition = " AND sourcetype = 'object'";
+            case 'object':
+                $typeCondition = " AND sourcetype = 'object'";
 
                 break;
         }
 
         if ($this->getOnlyCount()) {
-            $query = 'select count(*) from dependencies where targettype = ? AND targetid = ?'. $typeCondition;
+            $query = 'select count(*) from dependencies where targettype = ? AND targetid = ?' . $typeCondition;
             $count = $db->fetchOne($query, [Service::getElementType($element), $element->getId()]);
             $result->value = $count;
         } else {
             $resultList = [];
-            $query = 'select * from dependencies where targettype = ? AND targetid = ?'. $typeCondition;
+            $query = 'select * from dependencies where targettype = ? AND targetid = ?' . $typeCondition;
             $dependencies = $db->fetchAllAssociative($query, [Service::getElementType($element), $element->getId()]);
             foreach ($dependencies as $dependency) {
                 $sourceType = $dependency['sourcetype'];

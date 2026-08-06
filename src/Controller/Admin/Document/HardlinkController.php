@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -10,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\Controller\Admin\Document;
@@ -22,18 +23,14 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
 
-    /**
+/**
  *
  * @internal
-     */
-    #[Route('/hardlink', name: 'pimcore_admin_document_hardlink_')]
+ */
+#[Route('/hardlink', name: 'pimcore_admin_document_hardlink_')]
 class HardlinkController extends DocumentControllerBase
 {
-        /**
-     *
-     * @throws \Exception
-         */
-        #[Route('/get-data-by-id', name: 'getdatabyid', methods: ['GET'])]
+    #[Route('/get-data-by-id', name: 'getdatabyid', methods: [Request::METHOD_GET])]
     public function getDataByIdAction(Request $request): JsonResponse
     {
         $link = Document\Hardlink::getById((int)$request->get('id'));
@@ -69,14 +66,10 @@ class HardlinkController extends DocumentControllerBase
         return $this->preSendDataActions($data, $link);
     }
 
-        /**
-     *
-     * @throws \Exception
-         */
-        #[Route('/save', name: 'save', methods: ['POST', 'PUT'])]
+    #[Route('/save', name: 'save', methods: [Request::METHOD_POST, Request::METHOD_PUT])]
     public function saveAction(Request $request): JsonResponse
     {
-        $link = Document\Hardlink::getById((int) $request->get('id'));
+        $link = Document\Hardlink::getById((int)$request->get('id'));
         if (!$link) {
             throw $this->createNotFoundException('Hardlink not found');
         }

@@ -11,22 +11,23 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Schema\Schema;
+use Pimcore\Db;
 use Pimcore\Extension\Bundle\Installer\SettingsStoreAwareInstaller;
 use Symfony\Component\HttpKernel\Bundle\BundleInterface;
 
 class Installer extends SettingsStoreAwareInstaller
 {
-    protected const USER_PERMISSIONS_CATEGORY = 'Pimcore Admin Bundle';
+    protected const string USER_PERMISSIONS_CATEGORY = 'Pimcore Admin Bundle';
 
-    const USER_PERMISSIONS = [
+    public const array USER_PERMISSIONS = [
         'admin_translations',
         'gdpr_data_extractor',
         'system_appearance_settings',
@@ -52,14 +53,15 @@ class Installer extends SettingsStoreAwareInstaller
 
     public function __construct(
         protected BundleInterface $bundle,
-        protected Connection $db
-    ) {
+        protected Connection      $db
+    )
+    {
         parent::__construct($bundle);
     }
 
     protected function addPermissions(): void
     {
-        $db = \Pimcore\Db::get();
+        $db = Db::get();
 
         $existingKeys = $db->fetchFirstColumn('SELECT ' . $db->quoteIdentifier('key') . ' FROM users_permission_definitions');
 
@@ -77,7 +79,7 @@ class Installer extends SettingsStoreAwareInstaller
 
     protected function removePermissions(): void
     {
-        $db = \Pimcore\Db::get();
+        $db = Db::get();
 
         foreach (self::USER_PERMISSIONS as $permission) {
             $db->delete('users_permission_definitions', [

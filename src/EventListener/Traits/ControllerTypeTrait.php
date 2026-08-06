@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -10,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\EventListener\Traits;
@@ -26,7 +27,7 @@ trait ControllerTypeTrait
     /**
      * Get controller of specified type
      */
-    protected function getControllerType(ControllerEvent $event, string $type): mixed
+    protected function getControllerType(ControllerEvent $event, string $type): null
     {
         $callable = $event->getController();
 

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -10,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\Controller\Admin\Document;
@@ -32,30 +33,30 @@ use Pimcore\Model\Document;
 use Pimcore\Model\Element;
 use Pimcore\Model\Schedule\Task;
 use Pimcore\Templating\Renderer\EditableRenderer;
+use Pimcore\Tool;
 use Pimcore\Tool\Frontend;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Twig\Environment;
 
-    /**
+/**
  *
  * @internal
-     */
-    #[Route('/page', name: 'pimcore_admin_document_page_')]
+ */
+#[Route('/page', name: 'pimcore_admin_document_page_')]
 class PageController extends DocumentControllerBase
 {
     use RecursionBlockingEventDispatchHelperTrait;
 
-        /**
-     *
-     * @throws \Exception
-         */
-        #[Route('/get-data-by-id', name: 'getdatabyid', methods: ['GET'])]
-    public function getDataByIdAction(Request $request, StaticPageGenerator $staticPageGenerator): JsonResponse
+
+    #[Route('/get-data-by-id', name: 'getdatabyid', methods: [Request::METHOD_GET])]
+    public function getDataByIdAction(
+        Request             $request,
+        StaticPageGenerator $staticPageGenerator
+    ): JsonResponse
     {
         $page = Document\Page::getById((int)$request->get('id'));
 
@@ -105,46 +106,41 @@ class PageController extends DocumentControllerBase
         return $this->preSendDataActions($data, $page, $draftVersion);
     }
 
-        /**
-     *
-     * @throws \Exception
-         */
-        #[Route('/save', name: 'save', methods: ['PUT', 'POST'])]
-    public function saveAction(Request $request, StaticPageGenerator $staticPageGenerator): JsonResponse
+    #[Route('/save', name: 'save', methods: [Request::METHOD_PUT, Request::METHOD_POST])]
+    public function saveAction(
+        Request             $request,
+        StaticPageGenerator $staticPageGenerator
+    ): JsonResponse
     {
-        $oldPage = Document\Page::getById((int) $request->get('id'));
-        if (!$oldPage) {
+        if (!$oldPage = Document\Page::getById($request->request->getInt('id'))) {
             throw $this->createNotFoundException('Page not found');
         }
 
         /** @var Document\Page|null $pageSession */
         $pageSession = $this->getFromSession($oldPage, $request->getSession());
 
-        if ($pageSession) {
-            $page = $pageSession;
-        } else {
-            $page = $this->getLatestVersion($oldPage);
+        $page = $pageSession ?: $this->getLatestVersion($oldPage);
+
+        if ($request->request->has('missingRequiredEditable')) {
+            $page->setMissingRequiredEditable($request->request->getBoolean('missingRequiredEditable'));
         }
 
-        if ($request->get('missingRequiredEditable') !== null) {
-            $page->setMissingRequiredEditable(($request->get('missingRequiredEditable') == 'true') ? true : false);
-        }
-
-        $settings = [];
-        if ($request->get('settings')) {
-            $settings = $this->decodeJson($request->get('settings'));
+        if ($request->request->has('settings')) {
+            $settings = $this->decodeJson($request->request->getString('settings'));
             if ($settings['published'] ?? false) {
                 $page->setMissingRequiredEditable(null);
             }
         }
 
         [$task, $page, $version] = $this->saveDocument($page, $request);
+
         $arguments = [
             'oldPage' => $oldPage,
             'task' => $task,
         ];
-        $documentEvent = new DocumentEvent($page, $arguments);
-        $this->dispatchEvent($documentEvent, DocumentEvents::PAGE_POST_SAVE_ACTION);
+
+        $this->dispatchEvent(new DocumentEvent($page, $arguments), DocumentEvents::PAGE_POST_SAVE_ACTION);
+
         if ($task === self::TASK_PUBLISH || $task === self::TASK_UNPUBLISH) {
             $treeData = $this->getTreeNodeConfig($page);
 
@@ -177,19 +173,26 @@ class PageController extends DocumentControllerBase
 
             $treeData = $this->getTreeNodeConfig($page);
 
-            return $this->adminJson(['success' => true, 'treeData' => $treeData, 'draft' => $draftData]);
+            return $this->adminJson([
+                'success' => true,
+                'treeData' => $treeData,
+                'draft' => $draftData
+            ]);
         }
     }
 
-        #[Route('/generate-previews', name: 'generatepreviews', methods: ['GET'])]
-    public function generatePreviewsAction(Request $request, MessageBusInterface $messengerBusPimcoreCore): JsonResponse
+    #[Route('/generate-previews', name: 'generatepreviews', methods: [Request::METHOD_GET])]
+    public function generatePreviewsAction(
+        Request             $request,
+        MessageBusInterface $messengerBusPimcoreCore
+    ): JsonResponse
     {
         $list = new Document\Listing();
         $list->setCondition('`type` = ?', ['page']);
 
         foreach ($list->loadIdList() as $docId) {
             $messengerBusPimcoreCore->dispatch(
-                new GeneratePagePreviewMessage($docId, \Pimcore\Tool::getHostUrl())
+                new GeneratePagePreviewMessage($docId, Tool::getHostUrl())
             );
 
             break;
@@ -198,10 +201,10 @@ class PageController extends DocumentControllerBase
         return $this->adminJson(['success' => true]);
     }
 
-        #[Route('/display-preview-image', name: 'display_preview_image', methods: ['GET'])]
+    #[Route('/display-preview-image', name: 'display_preview_image', methods: [Request::METHOD_GET])]
     public function displayPreviewImageAction(Request $request): BinaryFileResponse
     {
-        $document = Document\Page::getById((int) $request->get('id'));
+        $document = Document\Page::getById((int)$request->get('id'));
         if ($document instanceof Document\Page) {
             return new BinaryFileResponse($document->getPreviewImageFilesystemPath(), 200, [
                 'Content-Type' => 'image/jpg',
@@ -211,7 +214,7 @@ class PageController extends DocumentControllerBase
         throw $this->createNotFoundException('Page not found');
     }
 
-        #[Route('/check-pretty-url', name: 'checkprettyurl', methods: ['POST'])]
+    #[Route('/check-pretty-url', name: 'checkprettyurl', methods: [Request::METHOD_POST])]
     public function checkPrettyUrlAction(Request $request): JsonResponse
     {
         $docId = $request->request->getInt('id');
@@ -229,7 +232,7 @@ class PageController extends DocumentControllerBase
         $path = rtrim($path, '/');
 
         // must start with /
-        if ($path !== '' && strpos($path, '/') !== 0) {
+        if ($path !== '' && !str_starts_with($path, '/')) {
             $success = false;
             $message[] = 'URL must start with /.';
         }
@@ -252,19 +255,19 @@ class PageController extends DocumentControllerBase
 
         if ($list->getTotalCount() > 0) {
             $checkDocument = Document::getById($docId);
-            $checkSite     = Frontend::getSiteForDocument($checkDocument);
-            $checkSiteId   = empty($checkSite) ? 0 : $checkSite->getId();
+            $checkSite = Frontend::getSiteForDocument($checkDocument);
+            $checkSiteId = empty($checkSite) ? 0 : $checkSite->getId();
 
             foreach ($list as $document) {
                 if (empty($document)) {
                     continue;
                 }
 
-                $site   = Frontend::getSiteForDocument($document);
+                $site = Frontend::getSiteForDocument($document);
                 $siteId = empty($site) ? 0 : $site->getId();
 
                 if ($siteId === $checkSiteId) {
-                    $success   = false;
+                    $success = false;
                     $message[] = 'URL path already exists.';
 
                     break;
@@ -278,7 +281,7 @@ class PageController extends DocumentControllerBase
         ]);
     }
 
-        #[Route('/clear-editable-data', name: 'cleareditabledata', methods: ['PUT'])]
+    #[Route('/clear-editable-data', name: 'cleareditabledata', methods: [Request::METHOD_PUT])]
     public function clearEditableDataAction(Request $request): JsonResponse
     {
         $docId = $request->request->getInt('id');
@@ -303,14 +306,10 @@ class PageController extends DocumentControllerBase
         ]);
     }
 
-        /**
-     *
-     * @throws \Exception
-         */
-        #[Route('/qr-code', name: 'qrcode', methods: ['GET'])]
+    #[Route('/qr-code', name: 'qrcode', methods: [Request::METHOD_GET])]
     public function qrCodeAction(Request $request): BinaryFileResponse
     {
-        $page = Document\Page::getById((int) $request->query->get('id'));
+        $page = Document\Page::getById((int)$request->query->get('id'));
 
         if (!$page) {
             throw $this->createNotFoundException('Page not found');
@@ -334,29 +333,26 @@ class PageController extends DocumentControllerBase
             $response->setContentDisposition('attachment', 'qrcode-preview.png');
         }
 
-        $response->deleteFileAfterSend(true);
+        $response->deleteFileAfterSend();
 
         return $response;
     }
 
-        /**
-     *
-     * @throws NotFoundHttpException|\Exception
-         */
-        #[Route('/areabrick-render-index-editmode', name: 'areabrick-render-index-editmode', methods: ['POST'])]
+    #[Route('/areabrick-render-index-editmode', name: 'areabrick-render-index-editmode', methods: [Request::METHOD_POST])]
     public function areabrickRenderIndexEditmode(
-        Request $request,
-        BlockStateStack $blockStateStack,
+        Request                             $request,
+        BlockStateStack                     $blockStateStack,
         EditmodeEditableDefinitionCollector $definitionCollector,
-        Environment $twig,
-        EditableRenderer $editableRenderer,
-        DocumentResolver $documentResolver,
-        LocaleServiceInterface $localeService
-    ): JsonResponse {
+        Environment                         $twig,
+        EditableRenderer                    $editableRenderer,
+        DocumentResolver                    $documentResolver,
+        LocaleServiceInterface              $localeService
+    ): JsonResponse
+    {
         $blockStateStackData = json_decode($request->get('blockStateStack'), true);
         $blockStateStack->loadArray($blockStateStackData);
 
-        $document = Document\PageSnippet::getById((int) $request->get('documentId'));
+        $document = Document\PageSnippet::getById((int)$request->get('documentId'));
         if (!$document) {
             throw $this->createNotFoundException();
         }
@@ -382,7 +378,7 @@ class PageController extends DocumentControllerBase
         $areablock->setEditmode(true);
         $areaBrickData = json_decode($request->get('areablockData'), true);
         $areablock->setDataFromEditmode($areaBrickData);
-        $htmlCode = trim($areablock->renderIndex((int) $request->get('index'), true));
+        $htmlCode = trim($areablock->renderIndex((int)$request->get('index'), true));
 
         return new JsonResponse([
             'editableDefinitions' => $definitionCollector->getDefinitions(),

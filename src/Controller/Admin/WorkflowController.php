@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -10,12 +11,14 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\Controller\Admin;
 
+use Exception;
+use InvalidArgumentException;
 use Pimcore\Bundle\AdminBundle\Controller\AdminAbstractController;
 use Pimcore\Bundle\AdminBundle\Service\Workflow\ActionsButtonService;
 use Pimcore\Controller\KernelControllerEventInterface;
@@ -40,11 +43,11 @@ use Symfony\Component\Workflow\Registry;
 use Symfony\Component\Workflow\WorkflowInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
-    /**
+/**
  *
  * @internal
-     */
-    #[Route('/workflow')]
+ */
+#[Route('/workflow')]
 class WorkflowController extends AdminAbstractController implements KernelControllerEventInterface
 {
     private ConcreteObject|Document|Asset|null $element;
@@ -53,15 +56,14 @@ class WorkflowController extends AdminAbstractController implements KernelContro
     {
     }
 
-        /**
-     * Returns a JSON of the available workflow actions to the admin panel
-     *
-         */
-        #[Route('/get-workflow-form', name: 'pimcore_admin_workflow_getworkflowform')]
-    public function getWorkflowFormAction(Request $request, Manager $workflowManager): JsonResponse
+    #[Route('/get-workflow-form', name: 'pimcore_admin_workflow_getworkflowform')]
+    public function getWorkflowFormAction(
+        Request $request,
+        Manager $workflowManager
+    ): JsonResponse
     {
         try {
-            $workflow = $workflowManager->getWorkflowIfExists($this->element, (string) $request->get('workflowName'));
+            $workflow = $workflowManager->getWorkflowIfExists($this->element, (string)$request->get('workflowName'));
 
             if (empty($workflow)) {
                 $wfConfig = [
@@ -85,21 +87,25 @@ class WorkflowController extends AdminAbstractController implements KernelContro
                 }
 
                 if (!$transition instanceof Transition) {
-                    $wfConfig['message'] = sprintf('transition %s currently not allowed', (string) $request->get('transitionName'));
+                    $wfConfig['message'] = sprintf('transition %s currently not allowed', $request->get('transitionName'));
                 } else {
                     $wfConfig['notes_required'] = $transition->getNotesCommentRequired();
                     $wfConfig['additional_fields'] = [];
                 }
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $wfConfig['message'] = $e->getMessage();
         }
 
         return $this->adminJson($wfConfig);
     }
 
-        #[Route('/submit-workflow-transition', name: 'pimcore_admin_workflow_submitworkflowtransition', methods: ['POST'])]
-    public function submitWorkflowTransitionAction(Request $request, Registry $workflowRegistry, Manager $workflowManager): JsonResponse
+    #[Route('/submit-workflow-transition', name: 'pimcore_admin_workflow_submitworkflowtransition', methods: [Request::METHOD_POST])]
+    public function submitWorkflowTransitionAction(
+        Request  $request,
+        Registry $workflowRegistry,
+        Manager  $workflowManager
+    ): JsonResponse
     {
         $workflowOptions = $request->get('workflow', []);
         $workflow = $workflowRegistry->get($this->element, $request->get('workflowName'));
@@ -116,8 +122,8 @@ class WorkflowController extends AdminAbstractController implements KernelContro
                 $reason = '';
                 if (count((array)$e->getSubItems()) > 0) {
                     $reason = '<ul>' . implode('', array_map(function ($item) {
-                        return '<li>' . $item . '</li>';
-                    }, $e->getSubItems())) . '</ul>';
+                            return '<li>' . $item . '</li>';
+                        }, $e->getSubItems())) . '</ul>';
                 }
 
                 $data = [
@@ -126,7 +132,7 @@ class WorkflowController extends AdminAbstractController implements KernelContro
                     'reasons' => [$reason],
 
                 ];
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $data = [
                     'success' => false,
                     'message' => 'error performing action on this element',
@@ -138,7 +144,7 @@ class WorkflowController extends AdminAbstractController implements KernelContro
 
             $reasons = array_map(function ($blockTransitionItem) {
                 return $blockTransitionItem->getMessage();
-            }, iterator_to_array($blockTransitionList->getIterator(), true));
+            }, iterator_to_array($blockTransitionList->getIterator()));
 
             $data = [
                 'success' => false,
@@ -150,12 +156,13 @@ class WorkflowController extends AdminAbstractController implements KernelContro
         return $this->adminJson($data);
     }
 
-        #[Route('/submit-global-action', name: 'pimcore_admin_workflow_submitglobal', methods: ['POST'])]
+    #[Route('/submit-global-action', name: 'pimcore_admin_workflow_submitglobal', methods: [Request::METHOD_POST])]
     public function submitGlobalAction(
-        Request $request,
+        Request  $request,
         Registry $workflowRegistry,
-        Manager $workflowManager
-    ): JsonResponse {
+        Manager  $workflowManager
+    ): JsonResponse
+    {
         $workflowOptions = $request->get('workflow', []);
         $workflow = $workflowRegistry->get($this->element, $request->get('workflowName'));
 
@@ -180,8 +187,8 @@ class WorkflowController extends AdminAbstractController implements KernelContro
             $reason = '';
             if (count((array)$e->getSubItems()) > 0) {
                 $reason = '<ul>' . implode('', array_map(function ($item) {
-                    return '<li>' . $item . '</li>';
-                }, $e->getSubItems())) . '</ul>';
+                        return '<li>' . $item . '</li>';
+                    }, $e->getSubItems())) . '</ul>';
             }
 
             $data = [
@@ -190,7 +197,7 @@ class WorkflowController extends AdminAbstractController implements KernelContro
                 'reasons' => [$reason],
 
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $data = [
                 'success' => false,
                 'message' => 'error performing action on this element',
@@ -201,14 +208,17 @@ class WorkflowController extends AdminAbstractController implements KernelContro
         return $this->adminJson($data);
     }
 
-        /**
+    /**
      * Returns the JSON needed by the workflow elements detail tab store
-     *
-     *
-     * @throws \Exception
-         */
-        #[Route('/get-workflow-details', name: 'pimcore_admin_workflow_getworkflowdetailsstore')]
-    public function getWorkflowDetailsStore(Request $request, Manager $workflowManager, StatusInfo $placeStatusInfo, RouterInterface $router, ActionsButtonService $actionsButtonService): JsonResponse
+     */
+    #[Route('/get-workflow-details', name: 'pimcore_admin_workflow_getworkflowdetailsstore')]
+    public function getWorkflowDetailsStore(
+        Request              $request,
+        Manager              $workflowManager,
+        StatusInfo           $placeStatusInfo,
+        RouterInterface      $router,
+        ActionsButtonService $actionsButtonService
+    ): JsonResponse
     {
         $data = [];
 
@@ -220,7 +230,7 @@ class WorkflowController extends AdminAbstractController implements KernelContro
 
             try {
                 $svg = $this->getWorkflowSvg($workflow);
-            } catch (\InvalidArgumentException $e) {
+            } catch (InvalidArgumentException $e) {
                 $msg = $e->getMessage();
             }
 
@@ -239,7 +249,7 @@ class WorkflowController extends AdminAbstractController implements KernelContro
             $data[] = [
                 'workflowName' => $this->translator->trans($workflowConfig->getLabel(), [], 'admin'),
                 'placeInfo' => $placeStatusInfo->getAllPalacesHtml($this->element, $workflow->getName()),
-                'graph' => $msg ?: '<a href="' . $url .'" target="_blank"><div class="workflow-graph-preview">'.$svg.'</div></a>',
+                'graph' => $msg ?: '<a href="' . $url . '" target="_blank"><div class="workflow-graph-preview">' . $svg . '</div></a>',
                 'allowedTransitions' => $allowedTransitions,
                 'globalActions' => $globalActions,
             ];
@@ -252,14 +262,14 @@ class WorkflowController extends AdminAbstractController implements KernelContro
         ]);
     }
 
-        /**
+    /**
      * Returns the JSON needed by the workflow elements detail tab store
-     *
-     *
-     * @throws \Exception
-         */
-        #[Route('/show-graph', name: 'pimcore_admin_workflow_show_graph')]
-    public function showGraph(Request $request, Manager $workflowManager): Response
+     */
+    #[Route('/show-graph', name: 'pimcore_admin_workflow_show_graph')]
+    public function showGraph(
+        Request $request,
+        Manager $workflowManager
+    ): Response
     {
         $workflow = $workflowManager->getWorkflowByName($request->get('workflow'));
 
@@ -269,14 +279,15 @@ class WorkflowController extends AdminAbstractController implements KernelContro
         return $response;
     }
 
-        /**
+    /**
      * Get custom HTML for the workflow transition submit modal, depending whether it is configured or not.
-     *
-     *
-     * @throws \Exception
-         */
-        #[Route('/modal-custom-html', name: 'pimcore_admin_workflow_modal_custom_html', methods: ['POST'])]
-    public function getModalCustomHtml(Request $request, Registry $workflowRegistry, Manager $manager): JsonResponse
+     */
+    #[Route('/modal-custom-html', name: 'pimcore_admin_workflow_modal_custom_html', methods: [Request::METHOD_POST])]
+    public function getModalCustomHtml(
+        Request  $request,
+        Registry $workflowRegistry,
+        Manager  $manager
+    ): JsonResponse
     {
         $workflow = $workflowRegistry->get($this->element, $request->get('workflowName'));
 
@@ -324,7 +335,7 @@ class WorkflowController extends AdminAbstractController implements KernelContro
     }
 
     /**
-     * @throws \Exception
+     * @throws Exception
      */
     private function getWorkflowSvg(WorkflowInterface $workflow): string
     {
@@ -334,11 +345,11 @@ class WorkflowController extends AdminAbstractController implements KernelContro
         $dot = Console::getExecutable('dot');
 
         if (!$php) {
-            throw new \InvalidArgumentException($this->translator->trans('workflow_cmd_not_found', ['php'], 'admin'));
+            throw new InvalidArgumentException($this->translator->trans('workflow_cmd_not_found', ['php'], 'admin'));
         }
 
         if (!$dot) {
-            throw new \InvalidArgumentException($this->translator->trans('workflow_cmd_not_found', ['dot'], 'admin'));
+            throw new InvalidArgumentException($this->translator->trans('workflow_cmd_not_found', ['dot'], 'admin'));
         }
 
         $cmd = $php . ' ' . PIMCORE_PROJECT_ROOT . '/bin/console pimcore:workflow:dump ${WNAME} ${WPLACES} | ${DOT} -Tsvg';
@@ -399,7 +410,7 @@ class WorkflowController extends AdminAbstractController implements KernelContro
     }
 
     /**
-     * @throws \Exception
+     * @throws Exception
      */
     public function onKernelControllerEvent(ControllerEvent $event): void
     {
@@ -410,15 +421,15 @@ class WorkflowController extends AdminAbstractController implements KernelContro
         $request = $event->getRequest();
 
         if ($request->get('ctype') === 'document') {
-            $this->element = Document::getById((int) $request->get('cid', 0));
+            $this->element = Document::getById((int)$request->get('cid', 0));
         } elseif ($request->get('ctype') === 'asset') {
-            $this->element = Asset::getById((int) $request->get('cid', 0));
+            $this->element = Asset::getById((int)$request->get('cid', 0));
         } elseif ($request->get('ctype') === 'object') {
-            $this->element = ConcreteObject::getById((int) $request->get('cid', 0));
+            $this->element = ConcreteObject::getById((int)$request->get('cid', 0));
         }
 
         if (!$this->element) {
-            throw new \Exception('Cannot load element' . $request->get('cid') . ' of type \'' . $request->get('ctype') . '\'');
+            throw new Exception('Cannot load element' . $request->get('cid') . ' of type \'' . $request->get('ctype') . '\'');
         }
 
         //get the latest available version of the element -

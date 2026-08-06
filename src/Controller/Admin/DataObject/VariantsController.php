@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -10,12 +11,13 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\Controller\Admin\DataObject;
 
+use Exception;
 use Pimcore\Bundle\AdminBundle\Controller\AdminAbstractController;
 use Pimcore\Bundle\AdminBundle\Helper\GridHelperService;
 use Pimcore\Bundle\AdminBundle\Security\CsrfProtectionHandler;
@@ -26,16 +28,16 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
-    /**
+/**
  *
  * @internal
-     */
-    #[Route('/variants', name: 'pimcore_admin_dataobject_variants_')]
+ */
+#[Route('/variants', name: 'pimcore_admin_dataobject_variants_')]
 class VariantsController extends AdminAbstractController
 {
     use DataObjectActionsTrait;
 
-        #[Route('/update-key', name: 'updatekey', methods: ['PUT'])]
+    #[Route('/update-key', name: 'updatekey', methods: [Request::METHOD_PUT])]
     public function updateKeyAction(Request $request): JsonResponse
     {
         $id = $request->request->getInt('id');
@@ -45,25 +47,22 @@ class VariantsController extends AdminAbstractController
         return $this->adminJson($this->renameObject($object, $key));
     }
 
-        /**
-     *
-     * @throws \Exception
-         */
-        #[Route('/get-variants', name: 'getvariants', methods: ['GET', 'POST'])]
+    #[Route('/get-variants', name: 'getvariants', methods: [Request::METHOD_GET, Request::METHOD_POST])]
     public function getVariantsAction(
-        Request $request,
+        Request                  $request,
         EventDispatcherInterface $eventDispatcher,
-        GridHelperService $gridHelperService,
-        LocaleServiceInterface $localeService,
-        CsrfProtectionHandler $csrfProtection
-    ): JsonResponse {
-        $parentObject = DataObject\Concrete::getById((int) $request->get('objectId'));
+        GridHelperService        $gridHelperService,
+        LocaleServiceInterface   $localeService,
+        CsrfProtectionHandler    $csrfProtection
+    ): JsonResponse
+    {
+        $parentObject = DataObject\Concrete::getById((int)$request->get('objectId'));
         if (empty($parentObject)) {
-            throw new \Exception('No Object found with id ' . $request->get('objectId'));
+            throw new Exception('No Object found with id ' . $request->get('objectId'));
         }
 
         if (!$parentObject->isAllowed('view')) {
-            throw new \Exception('Permission denied');
+            throw new Exception('Permission denied');
         }
 
         $allParams = array_merge($request->request->all(), $request->query->all());

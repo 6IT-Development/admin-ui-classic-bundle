@@ -9,12 +9,13 @@
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\Model\GridConfigShare;
 
+use Doctrine\DBAL\Exception;
 use Pimcore\Bundle\AdminBundle\Model\GridConfigShare;
 use Pimcore\Db\Helper;
 use Pimcore\Model;
@@ -27,7 +28,7 @@ use Pimcore\Model;
 class Dao extends Model\Dao\AbstractDao
 {
     /**
-     * @throws Model\Exception\NotFoundException|\Doctrine\DBAL\Exception
+     * @throws Model\Exception\NotFoundException|Exception
      */
     public function getByGridConfigAndSharedWithId(int $gridConfigId, int $sharedWithUserId): void
     {
@@ -48,7 +49,7 @@ class Dao extends Model\Dao\AbstractDao
         foreach ($gridConfigFavourite as $key => $value) {
             if (in_array($key, $this->getValidTableColumns('gridconfig_shares'))) {
                 if (is_bool($value)) {
-                    $value = (int) $value;
+                    $value = (int)$value;
                 }
 
                 $data[$key] = $value;

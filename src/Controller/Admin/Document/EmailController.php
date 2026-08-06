@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -10,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\Controller\Admin\Document;
@@ -22,18 +23,10 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
 
-    /**
- *
- * @internal
-     */
-    #[Route('/email', name: 'pimcore_admin_document_email_')]
+#[Route('/email', name: 'pimcore_admin_document_email_')]
 class EmailController extends DocumentControllerBase
 {
-        /**
-     *
-     * @throws \Exception
-         */
-        #[Route('/get-data-by-id', name: 'getdatabyid', methods: ['GET'])]
+    #[Route('/get-data-by-id', name: 'getdatabyid', methods: [Request::METHOD_GET])]
     public function getDataByIdAction(Request $request): JsonResponse
     {
         $email = Document\Email::getById((int)$request->get('id'));
@@ -70,14 +63,10 @@ class EmailController extends DocumentControllerBase
         return $this->preSendDataActions($data, $email, $draftVersion);
     }
 
-        /**
-     *
-     * @throws \Exception
-         */
-        #[Route('/save', name: 'save', methods: ['PUT', 'POST'])]
+    #[Route('/save', name: 'save', methods: [Request::METHOD_PUT, Request::METHOD_POST])]
     public function saveAction(Request $request): JsonResponse
     {
-        $page = Document\Email::getById((int) $request->get('id'));
+        $page = Document\Email::getById((int)$request->get('id'));
         if (!$page) {
             throw $this->createNotFoundException('Email not found');
         }

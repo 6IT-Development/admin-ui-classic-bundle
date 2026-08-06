@@ -11,12 +11,13 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\Service;
 
+use Exception;
 use Pimcore\Model\Asset;
 use Pimcore\Model\Element\ElementInterface;
 
@@ -25,7 +26,7 @@ interface ElementServiceInterface
     public function getCustomViewById(string $id): ?array;
 
     /**
-     * @throws \Exception
+     * @throws Exception
      */
     public function getElementTreeNodeConfig(ElementInterface $element): array;
 

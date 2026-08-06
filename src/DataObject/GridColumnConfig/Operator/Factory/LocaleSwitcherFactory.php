@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\DataObject\GridColumnConfig\Operator\Factory;
@@ -20,6 +20,7 @@ namespace Pimcore\Bundle\AdminBundle\DataObject\GridColumnConfig\Operator\Factor
 use Pimcore\Bundle\AdminBundle\DataObject\GridColumnConfig\Operator\LocaleSwitcher;
 use Pimcore\Bundle\AdminBundle\DataObject\GridColumnConfig\Operator\OperatorInterface;
 use Pimcore\Localization\LocaleServiceInterface;
+use stdClass;
 
 /**
  * @internal
@@ -33,7 +34,7 @@ final class LocaleSwitcherFactory implements OperatorFactoryInterface
         $this->localeService = $localeService;
     }
 
-    public function build(\stdClass $configElement, array $context = []): OperatorInterface
+    public function build(stdClass $configElement, array $context = []): OperatorInterface
     {
         return new LocaleSwitcher($this->localeService, $configElement, $context);
     }

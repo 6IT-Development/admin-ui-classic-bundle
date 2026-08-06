@@ -9,8 +9,8 @@
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\Helper;
@@ -38,11 +38,12 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 /**
  * @internal
  */
-class GridHelperService
+readonly class GridHelperService
 {
     public function __construct(
-        private readonly EventDispatcherInterface $eventDispatcher
-    ) {
+        private EventDispatcherInterface $eventDispatcher
+    )
+    {
 
     }
 
@@ -94,7 +95,7 @@ class GridHelperService
                 $slugKey = null;
                 $mappedKey = null;
 
-                if (substr($filterField, 0, 1) == '~') {
+                if (str_starts_with($filterField, '~')) {
                     $type = $keyParts[1];
                     if ($type != 'classificationstore') {
                         continue;
@@ -111,13 +112,13 @@ class GridHelperService
                         $language = 'default';
                     }
 
-                    $groupId = (int) $groupKeyId[0];
-                    $keyid = (int) $groupKeyId[1];
+                    $groupId = (int)$groupKeyId[0];
+                    $keyid = (int)$groupKeyId[1];
 
                     $keyConfig = Model\DataObject\Classificationstore\KeyConfig::getById($keyid);
                     $type = $keyConfig->getType();
                     $definition = json_decode($keyConfig->getDefinition(), true);
-                    $field = \Pimcore\Model\DataObject\Classificationstore\Service::getFieldDefinitionFromJson($definition, $type);
+                    $field = DataObject\Classificationstore\Service::getFieldDefinitionFromJson($definition, $type);
 
                     if ($field instanceof Model\DataObject\ClassDefinition\Data) {
                         $mappedKey = 'cskey_' . $fieldName . '_' . $groupId . '_' . $keyid;
@@ -127,7 +128,7 @@ class GridHelperService
                                 $filter['value'],
                                 $operator,
                                 [
-                                    'name' => $mappedKey, ]
+                                    'name' => $mappedKey,]
                             );
 
                             if (!empty($featureCondition)) {
@@ -139,7 +140,7 @@ class GridHelperService
                     $brickType = $keyParts[0];
                     $brickKey = $keyParts[1];
 
-                    if (strpos($brickType, '?') !== false) {
+                    if (str_contains($brickType, '?')) {
                         $brickDescriptor = substr($brickType, 1);
                         $brickDescriptor = json_decode($brickDescriptor, true);
                         $brickType = $brickDescriptor['containerKey'];
@@ -162,7 +163,7 @@ class GridHelperService
                         $filter['value'],
                         $operator,
                         [
-                            'name' => $slugKey, ]
+                            'name' => $slugKey,]
                     );
 
                     $slugConditions[$mappedKey] = $slugCondition;
@@ -170,14 +171,12 @@ class GridHelperService
             }
         }
 
-        $result = [
+        return [
             'featureJoins' => $featureJoins,
             'slugJoins' => $slugJoins,
             'featureConditions' => $featureConditions,
             'slugConditions' => $slugConditions,
         ];
-
-        return $result;
     }
 
     public function getFilterCondition(string $filterJson, ClassDefinition $class, ?string $tablePrefix = null): string
@@ -256,7 +255,7 @@ class GridHelperService
                         //if the definition doesn't exist check for object brick
                         $keyParts = explode('~', $filterField);
 
-                        if (substr($filterField, 0, 1) === '~') {
+                        if (str_starts_with($filterField, '~')) {
                             // not needed for now
                             //                            $type = $keyParts[1];
                             //                            $field = $keyParts[2];
@@ -265,7 +264,7 @@ class GridHelperService
                             $brickType = $keyParts[0];
                             $brickKey = $keyParts[1];
 
-                            if (strpos($brickType, '?') !== false) {
+                            if (str_contains($brickType, '?')) {
                                 $brickDescriptor = substr($brickType, 1);
                                 $brickDescriptor = json_decode($brickDescriptor, true);
                                 $brickType = $brickDescriptor['containerKey'];
@@ -315,8 +314,8 @@ class GridHelperService
                             $fieldConditions = [];
                             foreach ($filter['value'] as $filterValue) {
                                 $brickCondition = '(' . $brickField->getFilterCondition($filterValue, $operator,
-                                    ['brickPrefix' => $brickPrefix]
-                                ) . ' AND ' . $brickType . '.fieldname = ' . $db->quote($brickFilterField) . ')';
+                                        ['brickPrefix' => $brickPrefix]
+                                    ) . ' AND ' . $brickType . '.fieldname = ' . $db->quote($brickFilterField) . ')';
                                 $fieldConditions[] = $brickCondition;
                             }
 
@@ -325,7 +324,7 @@ class GridHelperService
                             }
                         } else {
                             $brickCondition = '(' . $brickField->getFilterCondition($filter['value'], $operator,
-                                ['brickPrefix' => $brickPrefix]) . ' AND ' . $brickType . '.fieldname = ' . $db->quote($brickFilterField) . ')';
+                                    ['brickPrefix' => $brickPrefix]) . ' AND ' . $brickType . '.fieldname = ' . $db->quote($brickFilterField) . ')';
                             $conditionPartsFilters[] = $brickCondition;
                         }
                     } elseif ($field instanceof ClassDefinition\Data\UrlSlug) {
@@ -395,12 +394,12 @@ class GridHelperService
             foreach ($fields as $f) {
                 $fieldName = $f;
                 $parts = explode('~', $f);
-                if (substr($f, 0, 1) == '~') {
+                if (str_starts_with($f, '~')) {
                     // key value, ignore for now
                 } elseif (count($parts) > 1) {
                     $brickType = $parts[0];
 
-                    if (strpos($brickType, '?') !== false) {
+                    if (str_contains($brickType, '?')) {
                         $brickDescriptor = substr($brickType, 1);
                         $brickDescriptor = json_decode($brickDescriptor, true);
                         $brickType = $brickDescriptor['containerKey'];
@@ -513,8 +512,8 @@ class GridHelperService
 
     public function prepareListingForGrid(array $requestParams, string $requestedLanguage, User $adminUser): DataObject\Listing\Concrete
     {
-        $folder = Model\DataObject::getById((int) $requestParams['folderId']);
-        $class = ClassDefinition::getById((string) $requestParams['classId']);
+        $folder = Model\DataObject::getById((int)$requestParams['folderId']);
+        $class = ClassDefinition::getById((string)$requestParams['classId']);
         $className = $class->getName();
 
         $listClass = '\\Pimcore\\Model\\DataObject\\' . ucfirst($className) . '\\Listing';
@@ -535,11 +534,9 @@ class GridHelperService
         $orderKey = 'id';
         $order = 'ASC';
 
-        $fields = [];
         $bricks = [];
         if (!empty($requestParams['fields'])) {
-            $fields = $requestParams['fields'];
-            $bricks = $this->extractBricks($fields);
+            $bricks = $this->extractBricks($requestParams['fields']);
         }
 
         if (isset($requestParams['limit'])) {
@@ -549,7 +546,7 @@ class GridHelperService
             $start = $requestParams['start'];
         }
 
-        $sortingSettings = \Pimcore\Bundle\AdminBundle\Helper\QueryParams::extractSortingSettings($requestParams);
+        $sortingSettings = QueryParams::extractSortingSettings($requestParams);
         $doNotQuote = false;
 
         if ($sortingSettings['order']) {
@@ -557,7 +554,7 @@ class GridHelperService
         }
         if ($sortingSettings['orderKey'] !== null && strlen($sortingSettings['orderKey']) > 0) {
             $orderKey = $sortingSettings['orderKey'];
-            if (substr($orderKey, 0, 1) !== '~') {
+            if (!str_starts_with($orderKey, '~')) {
                 if (array_key_exists($orderKey, $colMappings)) {
                     $orderKey = $colMappings[$orderKey];
                 } elseif ($orderKey === 'fullpath') {
@@ -569,10 +566,10 @@ class GridHelperService
                 } elseif ($class->getFieldDefinition($orderKey) instanceof ClassDefinition\Data\RgbaColor) {
                     $orderKey = 'concat(' . $orderKey . '__rgb, ' . $orderKey . '__a)';
                     $doNotQuote = true;
-                } elseif (strpos($orderKey, '~') !== false) {
+                } elseif (str_contains($orderKey, '~')) {
                     $orderKeyParts = explode('~', $orderKey);
 
-                    if (strpos($orderKey, '?') !== false) {
+                    if (str_contains($orderKey, '?')) {
                         $brickDescriptor = substr($orderKeyParts[0], 1);
                         $brickDescriptor = json_decode($brickDescriptor, true);
                         $orderKey = $list->quoteIdentifier($brickDescriptor['containerKey'] . '_localized')
@@ -588,9 +585,9 @@ class GridHelperService
                             $brickFieldDefinition = $brickDefinition->getFieldDefinition($orderKeyParts[1]);
 
                             if ($brickFieldDefinition instanceof ClassDefinition\Data\QuantityValue) {
-                                $orderKey = 'CONCAT('.$list->quoteIdentifier($orderKeyParts[0]).'.'.$list->quoteIdentifier($orderKeyParts[1].'__unit').', '.$list->quoteIdentifier($orderKeyParts[0]).'.'.$list->quoteIdentifier($orderKeyParts[1].'__value').')';
+                                $orderKey = 'CONCAT(' . $list->quoteIdentifier($orderKeyParts[0]) . '.' . $list->quoteIdentifier($orderKeyParts[1] . '__unit') . ', ' . $list->quoteIdentifier($orderKeyParts[0]) . '.' . $list->quoteIdentifier($orderKeyParts[1] . '__value') . ')';
                             } elseif ($brickFieldDefinition instanceof ClassDefinition\Data\RgbaColor) {
-                                $orderKey = 'CONCAT('.$list->quoteIdentifier($orderKeyParts[0]).'.'.$list->quoteIdentifier($orderKeyParts[1].'__rgb').', '.$list->quoteIdentifier($orderKeyParts[0]).'.'.$list->quoteIdentifier($orderKeyParts[1].'__a').')';
+                                $orderKey = 'CONCAT(' . $list->quoteIdentifier($orderKeyParts[0]) . '.' . $list->quoteIdentifier($orderKeyParts[1] . '__rgb') . ', ' . $list->quoteIdentifier($orderKeyParts[0]) . '.' . $list->quoteIdentifier($orderKeyParts[1] . '__a') . ')';
                             }
                         }
                     }
@@ -604,7 +601,7 @@ class GridHelperService
         $conditionFilters = [];
 
         if (($requestParams['specificId'] ?? false) && is_numeric($requestParams['specificId'])) {
-            $conditionFilters[] = 'oo_id = ' . (int) $requestParams['specificId'];
+            $conditionFilters[] = 'oo_id = ' . (int)$requestParams['specificId'];
         }
 
         if (isset($requestParams['only_direct_children']) && $requestParams['only_direct_children'] === 'true') {
@@ -729,7 +726,7 @@ class GridHelperService
     public function prepareAssetListingForGrid(array $allParams, User $adminUser): Model\Asset\Listing
     {
         $db = Db::get();
-        $folder = Model\Asset::getById((int) $allParams['folderId']);
+        $folder = Model\Asset::getById((int)$allParams['folderId']);
 
         $start = 0;
         $limit = null;
@@ -744,7 +741,7 @@ class GridHelperService
         }
 
         $orderKeyQuote = true;
-        $sortingSettings = \Pimcore\Bundle\AdminBundle\Helper\QueryParams::extractSortingSettings($allParams);
+        $sortingSettings = QueryParams::extractSortingSettings($allParams);
         if ($sortingSettings['orderKey']) {
             $orderKey = explode('~', $sortingSettings['orderKey'])[0];
             if ($orderKey === 'fullpath') {
@@ -809,7 +806,7 @@ class GridHelperService
                     $operator = 'IN';
                 } elseif ($filterType == 'boolean') {
                     $operator = '=';
-                    $filter['value'] = (int) $filter['value'];
+                    $filter['value'] = (int)$filter['value'];
                 }
                 // system field
                 $value = $filter['value'] ?? '';
@@ -823,8 +820,7 @@ class GridHelperService
                         return $db->quote($val);
                     }, $value);
                     $value = '(' . implode(',', $quoted) . ')';
-                } elseif ($operator == 'BETWEEN') {
-                } else {
+                } elseif ($operator !== 'BETWEEN') {
                     $value = $db->quote($value);
                 }
 
@@ -841,7 +837,7 @@ class GridHelperService
                         $language = $filterDef[1];
                     }
                     $language = str_replace(['none', 'default'], '', $language);
-                    $conditionFilters[] = 'id IN (SELECT cid FROM assets_metadata WHERE `name` = ' . $db->quote($filterField) . ' AND `data` ' . $operator . ' ' . $value . ' AND `language` = ' . $db->quote($language). ')';
+                    $conditionFilters[] = 'id IN (SELECT cid FROM assets_metadata WHERE `name` = ' . $db->quote($filterField) . ' AND `data` ' . $operator . ' ' . $value . ' AND `language` = ' . $db->quote($language) . ')';
                 }
             }
         }
@@ -853,7 +849,7 @@ class GridHelperService
         //filtering for tags
         if (!empty($allParams['tagIds'])) {
             foreach ($allParams['tagIds'] as $tagId) {
-                $tagId = (int) $tagId;
+                $tagId = (int)$tagId;
                 if ($allParams['considerChildTags'] ?? false) {
                     $tag = Model\Element\Tag::getById($tagId);
                     if ($tag) {
@@ -861,11 +857,11 @@ class GridHelperService
                         $conditionFilters[] =
                             'id IN (SELECT cId FROM `tags_assignment` INNER JOIN `tags` ON
                             tags.id = tags_assignment.tagid WHERE `ctype` = "asset"
-                            AND (`id` = ' .$tagId. ' OR `idPath` LIKE ' . $db->quote($tagPath . '%') . '))';
+                            AND (`id` = ' . $tagId . ' OR `idPath` LIKE ' . $db->quote($tagPath . '%') . '))';
                     }
                 } else {
                     $conditionFilters[] =
-                        'id IN (SELECT cId FROM `tags_assignment` WHERE `ctype` = "asset" AND tagid = ' .$tagId. ')';
+                        'id IN (SELECT cId FROM `tags_assignment` WHERE `ctype` = "asset" AND tagid = ' . $tagId . ')';
                 }
             }
         }
@@ -889,7 +885,7 @@ class GridHelperService
 
         $query = str_replace('%', '*', $query);
         $query = str_replace('@', '#', $query);
-        $query = preg_replace("@([^ ])\-@", '$1 ', $query);
+        $query = preg_replace('@([^ ])\-@', '$1 ', $query);
 
         $query = str_replace(['<', '>', '(', ')', '~'], ' ', $query);
 
@@ -897,9 +893,7 @@ class GridHelperService
         $query = preg_replace('#[*]+#', '*', $query);
 
         // no boolean operators at the end of the query
-        $query = rtrim($query, '+- ');
-
-        return $query;
+        return rtrim($query, '+- ');
     }
 
     /**
@@ -914,13 +908,13 @@ class GridHelperService
 
         $spreadsheet = $csvReader->loadSpreadsheetFromString($storage->read($csvFile));
         $writer = new Xlsx($spreadsheet);
-        $xlsxFilename = PIMCORE_SYSTEM_TEMP_DIRECTORY. '/' .$fileHandle. '.xlsx';
+        $xlsxFilename = PIMCORE_SYSTEM_TEMP_DIRECTORY . '/' . $fileHandle . '.xlsx';
         $writer->save($xlsxFilename);
 
         $response = new BinaryFileResponse($xlsxFilename);
         $response->headers->set('Content-Type', 'application/xlsx');
         $response->setContentDisposition(ResponseHeaderBag::DISPOSITION_ATTACHMENT, 'export.xlsx');
-        $response->deleteFileAfterSend(true);
+        $response->deleteFileAfterSend();
 
         $storage->delete($csvFile);
 
@@ -943,7 +937,7 @@ class GridHelperService
         $queryColumn = $type === 'asset' ? '`filename`' : '`key`';
 
         return '(
-            (`path` = "' . $path . '/" AND ' . $queryColumn .  ' = "' . $leaf . '")
+            (`path` = "' . $path . '/" AND ' . $queryColumn . ' = "' . $leaf . '")
             OR
             `path` LIKE "' . $fullpath . '/%"
         )';
@@ -955,9 +949,10 @@ class GridHelperService
      */
     private function optimizedConcatNotLike(
         string $fullpath,
-        bool $onlyChildren = false,
+        bool   $onlyChildren = false,
         string $type = 'object'
-    ): string {
+    ): string
+    {
         $pathParts = explode('/', $fullpath);
         $leaf = array_pop($pathParts);
         $path = implode('/', $pathParts);
@@ -968,7 +963,7 @@ class GridHelperService
         }
 
         return '(
-            NOT (`path` = "' . $path . '/" AND ' . $queryColumn .  ' = "' . $leaf . '")
+            NOT (`path` = "' . $path . '/" AND ' . $queryColumn . ' = "' . $leaf . '")
             AND
             `path` NOT LIKE "' . $fullpath . '/%"
         )';
@@ -995,17 +990,16 @@ class GridHelperService
                     $exceptionsConcat = '';
                     foreach ($allowedPaths as $path) {
                         if ($exceptionsConcat !== '') {
-                            $exceptionsConcat.= ' OR ';
+                            $exceptionsConcat .= ' OR ';
                         }
-                        $exceptionsConcat.= $this->optimizedConcatLike($path, $type);
+                        $exceptionsConcat .= $this->optimizedConcatLike($path, $type);
                     }
                     $exceptions = ' OR (' . $exceptionsConcat . ')';
                     //if any allowed child is found, the current folder can be listed but its content is still blocked
                     $onlyChildren = true;
                 }
                 $forbiddenPathSql[] =
-                    '(' . $this->optimizedConcatNotLike($forbiddenPath, $onlyChildren, $type) . $exceptions . ')'
-                ;
+                    '(' . $this->optimizedConcatNotLike($forbiddenPath, $onlyChildren, $type) . $exceptions . ')';
             }
             foreach ($elementPaths['allowed'] as $allowedPaths) {
                 $allowedPathSql[] = $this->optimizedConcatLike($allowedPaths, $type);
@@ -1027,7 +1021,7 @@ class GridHelperService
                 $forbiddenAndAllowedSql .= ' )';
             }
 
-            $forbiddenAndAllowedSql.= ' )';
+            $forbiddenAndAllowedSql .= ' )';
 
             $allowedTypes[] = $forbiddenAndAllowedSql;
         }
@@ -1038,6 +1032,6 @@ class GridHelperService
             $allowedTypes = ['false'];
         }
 
-        return '('.implode(' OR ', $allowedTypes) .')';
+        return '(' . implode(' OR ', $allowedTypes) . ')';
     }
 }

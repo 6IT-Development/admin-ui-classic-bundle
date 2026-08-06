@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -10,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\Controller\Admin\Document;
@@ -23,23 +24,18 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
 
-    /**
+/**
  *
  * @internal
-     */
-    #[Route('/snippet', name: 'pimcore_admin_document_snippet_')]
+ */
+#[Route('/snippet', name: 'pimcore_admin_document_snippet_')]
 class SnippetController extends DocumentControllerBase
 {
-        /**
-     *
-     * @throws \Exception
-         */
-        #[Route('/get-data-by-id', name: 'getdatabyid', methods: ['GET'])]
+
+    #[Route('/get-data-by-id', name: 'getdatabyid', methods: [Request::METHOD_GET])]
     public function getDataByIdAction(Request $request): JsonResponse
     {
-        $snippet = Document\Snippet::getById((int)$request->get('id'));
-
-        if (!$snippet) {
+        if (!$snippet = Document\Snippet::getById((int)$request->get('id'))) {
             throw $this->createNotFoundException('Snippet not found');
         }
 
@@ -80,14 +76,10 @@ class SnippetController extends DocumentControllerBase
         return $this->preSendDataActions($data, $snippet, $draftVersion);
     }
 
-        /**
-     *
-     * @throws \Exception
-         */
-        #[Route('/save', name: 'save', methods: ['POST','PUT'])]
+    #[Route('/save', name: 'save', methods: [Request::METHOD_POST, Request::METHOD_PUT])]
     public function saveAction(Request $request): JsonResponse
     {
-        $snippet = Document\Snippet::getById((int) $request->get('id'));
+        $snippet = Document\Snippet::getById((int)$request->get('id'));
         if (!$snippet) {
             throw $this->createNotFoundException('Snippet not found');
         }
@@ -101,14 +93,15 @@ class SnippetController extends DocumentControllerBase
             $snippet = $this->getLatestVersion($snippet);
         }
 
-        if ($request->get('missingRequiredEditable') !== null) {
-            $snippet->setMissingRequiredEditable(($request->get('missingRequiredEditable') == 'true') ? true : false);
+        if ($request->request->has('missingRequiredEditable')) {
+            $snippet->setMissingRequiredEditable($request->request->getBoolean('missingRequiredEditable'));
         }
 
         [$task, $snippet, $version] = $this->saveDocument($snippet, $request);
 
+        $this->saveToSession($snippet, $request->getSession());
+
         if ($task == self::TASK_PUBLISH || $task === self::TASK_UNPUBLISH) {
-            $this->saveToSession($snippet, $request->getSession());
 
             $treeData = $this->getTreeNodeConfig($snippet);
 
@@ -121,8 +114,6 @@ class SnippetController extends DocumentControllerBase
                 'treeData' => $treeData,
             ]);
         } else {
-            $this->saveToSession($snippet, $request->getSession());
-
             $draftData = [];
             if ($version) {
                 $draftData = [
@@ -132,7 +123,10 @@ class SnippetController extends DocumentControllerBase
                 ];
             }
 
-            return $this->adminJson(['success' => true, 'draft' => $draftData]);
+            return $this->adminJson([
+                'success' => true,
+                'draft' => $draftData
+            ]);
         }
     }
 

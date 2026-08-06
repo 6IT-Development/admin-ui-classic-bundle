@@ -9,12 +9,14 @@
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\Controller\Admin\Document;
 
+use Exception;
+use Pimcore;
 use Pimcore\Bundle\AdminBundle\Controller\AdminAbstractController;
 use Pimcore\Bundle\AdminBundle\Controller\Traits\AdminStyleTrait;
 use Pimcore\Bundle\AdminBundle\Controller\Traits\ApplySchedulerDataTrait;
@@ -49,26 +51,26 @@ abstract class DocumentControllerBase extends AdminAbstractController implements
     use ElementEditLockHelperTrait;
     use UserNameTrait;
 
-    const TASK_PUBLISH = 'publish';
+    public const string TASK_PUBLISH = 'publish';
 
-    const TASK_UNPUBLISH = 'unpublish';
+    public const string TASK_UNPUBLISH = 'unpublish';
 
-    const TASK_SAVE = 'save';
+    public const string TASK_SAVE = 'save';
 
-    const TASK_VERSION = 'version';
+    public const string TASK_VERSION = 'version';
 
-    const TASK_SCHEDULER = 'scheduler';
+    public const string TASK_SCHEDULER = 'scheduler';
 
-    const TASK_AUTOSAVE = 'autosave';
+    public const string TASK_AUTOSAVE = 'autosave';
 
-    const TASK_DELETE = 'delete';
+    public const string TASK_DELETE = 'delete';
 
     public function __construct(protected ElementServiceInterface $elementService)
     {
     }
 
     /**
-     * @throws \Exception
+     * @throws Exception
      */
     protected function preSendDataActions(array &$data, Model\Document $document, ?Version $draftVersion = null): JsonResponse
     {
@@ -97,7 +99,7 @@ abstract class DocumentControllerBase extends AdminAbstractController implements
             'data' => $data,
             'document' => $document,
         ]);
-        \Pimcore::getEventDispatcher()->dispatch($event, AdminEvents::DOCUMENT_GET_PRE_SEND_DATA);
+        Pimcore::getEventDispatcher()->dispatch($event, AdminEvents::DOCUMENT_GET_PRE_SEND_DATA);
         $data = $event->getArgument('data');
 
         if ($document->isAllowed('view')) {
@@ -138,7 +140,7 @@ abstract class DocumentControllerBase extends AdminAbstractController implements
                         }
 
                         $properties[$propertyName] = $property;
-                    } catch (\Exception $e) {
+                    } catch (Exception) {
                         Logger::warning("Can't add " . $propertyName . ' to document ' . $document->getRealFullPath());
                     }
                 }
@@ -196,7 +198,7 @@ abstract class DocumentControllerBase extends AdminAbstractController implements
 
     protected function addTranslationsData(Model\Document $document, array &$data): void
     {
-        $service = new Model\Document\Service;
+        $service = new Model\Document\Service();
         $translations = $service->getTranslations($document);
         $unlinkTranslations = $service->getTranslations($document, 'unlink');
         $language = $document->getProperty('language');
@@ -205,10 +207,10 @@ abstract class DocumentControllerBase extends AdminAbstractController implements
         $data['unlinkTranslations'] = $unlinkTranslations;
     }
 
-        #[Route('/save-to-session', name: 'savetosession', methods: ['POST'])]
+    #[Route('/save-to-session', name: 'savetosession', methods: [Request::METHOD_POST])]
     public function saveToSessionAction(Request $request): JsonResponse
     {
-        if ($documentId = (int) $request->get('id')) {
+        if ($documentId = (int)$request->get('id')) {
             if (!$document = Model\Document\Service::getElementFromSession('document', $documentId, $request->getSession()->getId())) {
                 $document = Model\Document\PageSnippet::getById($documentId);
                 if (!$document) {
@@ -242,8 +244,6 @@ abstract class DocumentControllerBase extends AdminAbstractController implements
      */
     protected function getFromSession(Model\Document $doc, SessionInterface $session): ?Model\Document
     {
-        $sessionDocument = null;
-
         // check if there's a document in session which should be used as data-source
         // see also PageController::clearEditableDataAction() | this is necessary to reset all fields and to get rid of
         // outdated and unused data elements in this document (eg. entries of area-blocks)
@@ -256,7 +256,7 @@ abstract class DocumentControllerBase extends AdminAbstractController implements
         return $sessionDocument;
     }
 
-        #[Route('/remove-from-session', name: 'removefromsession', methods: ['DELETE'])]
+    #[Route('/remove-from-session', name: 'removefromsession', methods: [Request::METHOD_DELETE])]
     public function removeFromSessionAction(Request $request): JsonResponse
     {
         Model\Document\Service::removeElementFromSession('document', $request->get('id'), $request->getSession()->getId());
@@ -300,16 +300,13 @@ abstract class DocumentControllerBase extends AdminAbstractController implements
         return $document;
     }
 
-        /**
+    /**
      * This is used for pages and snippets to change the main document (which is not saved with the normal save button)
-     *
-     *
-     * @throws \Exception
-         */
-        #[Route('/change-main-document', name: 'changemaindocument', methods: ['PUT'])]
+     */
+    #[Route('/change-main-document', name: 'changemaindocument', methods: [Request::METHOD_PUT])]
     public function changeMainDocumentAction(Request $request): JsonResponse
     {
-        $doc = Model\Document\PageSnippet::getById((int) $request->get('id'));
+        $doc = Model\Document\PageSnippet::getById((int)$request->get('id'));
         if ($doc instanceof Model\Document\PageSnippet) {
             $doc->setEditables([]);
             $doc->setContentMainDocumentId($request->get('contentMainDocumentPath'), true);
@@ -356,11 +353,11 @@ abstract class DocumentControllerBase extends AdminAbstractController implements
 
     /**
      * @throws Element\ValidationException
-     * @throws \Exception
+     * @throws Exception
      */
     protected function saveDocument(Model\Document $document, Request $request, bool $latestVersion = false, ?string $task = null): array
     {
-        if ($latestVersion && $document instanceof  Model\Document\PageSnippet) {
+        if ($latestVersion && $document instanceof Model\Document\PageSnippet) {
             $document = $this->getLatestVersion($document);
         }
 
@@ -384,7 +381,7 @@ abstract class DocumentControllerBase extends AdminAbstractController implements
 
                 break;
             case in_array($task, [self::TASK_SAVE, self::TASK_VERSION, self::TASK_AUTOSAVE])
-            && $document->isAllowed(self::TASK_SAVE):
+                && $document->isAllowed(self::TASK_SAVE):
                 if ($document instanceof Model\Document\PageSnippet) {
                     $this->setValuesToDocument($request, $document);
                     if ($task === self::TASK_AUTOSAVE || $document->isPublished()) {

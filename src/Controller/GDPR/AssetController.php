@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -10,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\Controller\GDPR;
@@ -26,15 +27,15 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\ControllerEvent;
 use Symfony\Component\Routing\Attribute\Route;
 
-    /**
+/**
  * Class AssetController
  *
  *
  * @package GDPRDataExtractorBundle\Controller
  *
  * @internal
-     */
-    #[Route('/asset')]
+ */
+#[Route('/asset')]
 class AssetController extends AdminAbstractController implements KernelControllerEventInterface
 {
     public function onKernelControllerEvent(ControllerEvent $event): void
@@ -46,8 +47,11 @@ class AssetController extends AdminAbstractController implements KernelControlle
         $this->checkActionPermission($event, 'gdpr_data_extractor');
     }
 
-        #[Route('/search-assets', name: 'pimcore_admin_gdpr_asset_searchasset', methods: ['GET'])]
-    public function searchAssetAction(Request $request, Assets $service): JsonResponse
+    #[Route('/search-assets', name: 'pimcore_admin_gdpr_asset_searchasset', methods: [Request::METHOD_GET])]
+    public function searchAssetAction(
+        Request $request,
+        Assets  $service
+    ): JsonResponse
     {
         $allParams = array_merge($request->request->all(), $request->query->all());
 
@@ -64,22 +68,19 @@ class AssetController extends AdminAbstractController implements KernelControlle
         return $this->adminJson($result);
     }
 
-        /**
-     *
-     * @throws \Exception
-         */
-        #[Route('/export', name: 'pimcore_admin_gdpr_asset_exportassets', methods: ['GET'])]
-    public function exportAssetsAction(Request $request, Assets $service): Response
+    #[Route('/export', name: 'pimcore_admin_gdpr_asset_exportassets', methods: [Request::METHOD_GET])]
+    public function exportAssetsAction(
+        Request $request,
+        Assets  $service
+    ): Response
     {
-        $asset = Asset::getById((int) $request->get('id'));
+        $asset = Asset::getById((int)$request->get('id'));
         if (!$asset) {
             throw $this->createNotFoundException('Asset not found');
         }
         if (!$asset->isAllowed('view')) {
             throw $this->createAccessDeniedException('Export denied');
         }
-        $exportResult = $service->doExportData($asset);
-
-        return $exportResult;
+        return $service->doExportData($asset);
     }
 }

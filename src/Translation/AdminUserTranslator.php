@@ -11,13 +11,14 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\Translation;
 
 use Pimcore\Security\User\UserLoader;
+use Pimcore\Tool;
 use Symfony\Contracts\Translation\LocaleAwareInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -45,7 +46,7 @@ class AdminUserTranslator implements TranslatorInterface, LocaleAwareInterface
         return null;
     }
 
-    public function trans(string $id, array $parameters = [], string $domain = null, string $locale = null): string
+    public function trans(string $id, array $parameters = [], ?string $domain = null, ?string $locale = null): string
     {
         $domain = $domain ?? 'admin';
         $locale = $locale ?? $this->getUserLocale();
@@ -66,6 +67,6 @@ class AdminUserTranslator implements TranslatorInterface, LocaleAwareInterface
             return $this->translator->getLocale();
         }
 
-        return \Pimcore\Tool::getDefaultLanguage();
+        return Tool::getDefaultLanguage();
     }
 }

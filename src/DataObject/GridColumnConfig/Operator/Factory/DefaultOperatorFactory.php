@@ -11,14 +11,15 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\DataObject\GridColumnConfig\Operator\Factory;
 
 use Pimcore\Bundle\AdminBundle\DataObject\GridColumnConfig\Operator\OperatorInterface;
 use Pimcore\Logger;
+use stdClass;
 
 class DefaultOperatorFactory implements OperatorFactoryInterface
 {
@@ -29,7 +30,7 @@ class DefaultOperatorFactory implements OperatorFactoryInterface
         $this->className = $className;
     }
 
-    public function build(\stdClass $configElement, array $context = []): ?OperatorInterface
+    public function build(stdClass $configElement, array $context = []): ?OperatorInterface
     {
         if (class_exists($this->className)) {
             return new $this->className($configElement, $context);

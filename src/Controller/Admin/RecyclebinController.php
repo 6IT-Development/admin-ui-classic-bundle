@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -10,14 +11,17 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\Controller\Admin;
 
+use Exception;
 use Pimcore\Bundle\AdminBundle\Controller\AdminAbstractController;
+use Pimcore\Bundle\AdminBundle\Helper\QueryParams;
 use Pimcore\Controller\KernelControllerEventInterface;
+use Pimcore\Db;
 use Pimcore\Model\Element;
 use Pimcore\Model\Element\Recyclebin;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -30,28 +34,26 @@ use Symfony\Component\Routing\Attribute\Route;
  */
 class RecyclebinController extends AdminAbstractController implements KernelControllerEventInterface
 {
-        #[Route('/recyclebin/list', name: 'pimcore_admin_recyclebin_list', methods: ['POST'])]
+    #[Route('/recyclebin/list', name: 'pimcore_admin_recyclebin_list', methods: [Request::METHOD_POST])]
     public function listAction(Request $request): JsonResponse
     {
         if ($request->get('xaction') == 'destroy') {
-            $item = Recyclebin\Item::getById(\Pimcore\Bundle\AdminBundle\Helper\QueryParams::getRecordIdForGridRequest($request->get('data')));
+            $item = Recyclebin\Item::getById(QueryParams::getRecordIdForGridRequest($request->get('data')));
 
-            if ($item) {
-                $item->delete();
-            }
+            $item?->delete();
 
             return $this->adminJson(['success' => true, 'data' => []]);
         } else {
-            $db = \Pimcore\Db::get();
+            $db = Db::get();
 
             $list = new Recyclebin\Item\Listing();
-            $list->setLimit((int) $request->get('limit', 50));
-            $list->setOffset((int) $request->get('start', 0));
+            $list->setLimit((int)$request->get('limit', 50));
+            $list->setOffset((int)$request->get('start', 0));
 
             $list->setOrderKey('date');
             $list->setOrder('DESC');
 
-            $sortingSettings = \Pimcore\Bundle\AdminBundle\Helper\QueryParams::extractSortingSettings(array_merge($request->request->all(), $request->query->all()));
+            $sortingSettings = QueryParams::extractSortingSettings(array_merge($request->request->all(), $request->query->all()));
             if ($sortingSettings['orderKey']) {
                 $list->setOrderKey($sortingSettings['orderKey']);
                 $list->setOrder($sortingSettings['order']);
@@ -60,7 +62,7 @@ class RecyclebinController extends AdminAbstractController implements KernelCont
             $conditionFilters = [];
 
             if ($request->get('filterFullText')) {
-                $conditionFilters[] = '`path` LIKE ' . $list->quote('%'. $list->escapeLike($request->get('filterFullText')) .'%');
+                $conditionFilters[] = '`path` LIKE ' . $list->quote('%' . $list->escapeLike($request->get('filterFullText')) . '%');
             }
 
             $filters = $request->get('filter');
@@ -96,7 +98,7 @@ class RecyclebinController extends AdminAbstractController implements KernelCont
                         $operator = '=';
                     } elseif ($filter['type'] == 'boolean') {
                         $operator = '=';
-                        $filter['value'] = (int) $filter['value'];
+                        $filter['value'] = (int)$filter['value'];
                     }
                     // system field
                     $value = ($filter['value'] ?? '');
@@ -136,10 +138,10 @@ class RecyclebinController extends AdminAbstractController implements KernelCont
         }
     }
 
-        #[Route('/recyclebin/restore', name: 'pimcore_admin_recyclebin_restore', methods: ['POST'])]
+    #[Route('/recyclebin/restore', name: 'pimcore_admin_recyclebin_restore', methods: [Request::METHOD_POST])]
     public function restoreAction(Request $request): JsonResponse
     {
-        $item = Recyclebin\Item::getById((int) $request->get('id'));
+        $item = Recyclebin\Item::getById((int)$request->get('id'));
         if (!$item) {
             throw $this->createNotFoundException();
         }
@@ -148,7 +150,7 @@ class RecyclebinController extends AdminAbstractController implements KernelCont
         return $this->adminJson(['success' => true]);
     }
 
-        #[Route('/recyclebin/flush', name: 'pimcore_admin_recyclebin_flush', methods: ['DELETE'])]
+    #[Route('/recyclebin/flush', name: 'pimcore_admin_recyclebin_flush', methods: [Request::METHOD_DELETE])]
     public function flushAction(): JsonResponse
     {
         $bin = new Element\Recyclebin();
@@ -157,7 +159,7 @@ class RecyclebinController extends AdminAbstractController implements KernelCont
         return $this->adminJson(['success' => true]);
     }
 
-        #[Route('/recyclebin/add', name: 'pimcore_admin_recyclebin_add', methods: ['POST'])]
+    #[Route('/recyclebin/add', name: 'pimcore_admin_recyclebin_add', methods: [Request::METHOD_POST])]
     public function addAction(Request $request): JsonResponse
     {
         try {
@@ -172,7 +174,7 @@ class RecyclebinController extends AdminAbstractController implements KernelCont
                     Recyclebin\Item::create($element, $this->getAdminUser());
                 }
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return $this->adminJson(['success' => false, 'message' => $e->getMessage()]);
         }
 
@@ -187,7 +189,7 @@ class RecyclebinController extends AdminAbstractController implements KernelCont
 
         // recyclebin actions might take some time (save & restore)
         $timeout = 600; // 10 minutes
-        @ini_set('max_execution_time', (string) $timeout);
+        @ini_set('max_execution_time', (string)$timeout);
         set_time_limit($timeout);
 
         // check permissions

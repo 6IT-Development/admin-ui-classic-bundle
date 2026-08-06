@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -10,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\DataObject\GridColumnConfig\Operator;
@@ -20,6 +21,7 @@ use Pimcore\Bundle\AdminBundle\DataObject\GridColumnConfig\ResultContainer;
 use Pimcore\Localization\LocaleServiceInterface;
 use Pimcore\Model\Element\ElementInterface;
 use Pimcore\Tool;
+use stdClass;
 
 /**
  * @internal
@@ -35,7 +37,7 @@ final class LFExpander extends AbstractOperator
 
     private bool $asArray;
 
-    public function __construct(LocaleServiceInterface $localeService, \stdClass $config, array $context = [])
+    public function __construct(LocaleServiceInterface $localeService, stdClass $config, array $context = [])
     {
         parent::__construct($config, $context);
 
@@ -45,7 +47,7 @@ final class LFExpander extends AbstractOperator
         $this->asArray = $config->asArray ?? false;
     }
 
-    public function getLabeledValue(array|ElementInterface $element): ResultContainer|\stdClass|null
+    public function getLabeledValue(array|ElementInterface $element): ResultContainer|stdClass|null
     {
         $children = $this->getChildren();
         if (isset($children[0])) {

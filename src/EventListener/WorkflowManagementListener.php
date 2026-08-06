@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -10,12 +11,13 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\EventListener;
 
+use Exception;
 use Pimcore\Bundle\AdminBundle\Event\AdminEvents;
 use Pimcore\Bundle\AdminBundle\Service\Workflow\ActionsButtonService;
 use Pimcore\Model\DataObject;
@@ -36,11 +38,12 @@ class WorkflowManagementListener implements EventSubscriberInterface
     protected bool $enabled = true;
 
     public function __construct(
-        private Manager $workflowManager,
-        private Place\StatusInfo $placeStatusInfo,
-        private RequestStack $requestStack,
-        private ActionsButtonService $actionsButtonService
-    ) {
+        private readonly Manager              $workflowManager,
+        private readonly Place\StatusInfo     $placeStatusInfo,
+        private readonly RequestStack         $requestStack,
+        private readonly ActionsButtonService $actionsButtonService
+    )
+    {
     }
 
     public static function getSubscribedEvents(): array
@@ -56,7 +59,7 @@ class WorkflowManagementListener implements EventSubscriberInterface
      * Fired before information is sent back to the admin UI about an element
      *
      *
-     * @throws \Exception
+     * @throws Exception
      */
     public function onAdminElementGetPreSendData(GenericEvent $e): void
     {
@@ -109,10 +112,9 @@ class WorkflowManagementListener implements EventSubscriberInterface
 
                     if ($element instanceof ConcreteObject) {
                         $workflowLayoutId = $placeConfig->getObjectLayout($workflow, $element);
-                        $hasSelectedCustomLayout = $this->requestStack->getMainRequest(
-                        ) && $this->requestStack->getMainRequest()->query->has(
-                            'layoutId'
-                        ) && $this->requestStack->getMainRequest()->query->get('layoutId') !== '';
+                        $hasSelectedCustomLayout = $this->requestStack->getMainRequest() && $this->requestStack->getMainRequest()->query->has(
+                                'layoutId'
+                            ) && $this->requestStack->getMainRequest()->query->get('layoutId') !== '';
 
                         if (!is_null($workflowLayoutId) && !$hasSelectedCustomLayout) {
                             //load the new layout into the object container
@@ -144,7 +146,7 @@ class WorkflowManagementListener implements EventSubscriberInterface
     }
 
     /**
-     * @throws \Exception
+     * @throws Exception
      */
     private static function extractElementFromEvent(GenericEvent $e): ElementInterface
     {
@@ -157,7 +159,7 @@ class WorkflowManagementListener implements EventSubscriberInterface
         }
 
         if (empty($element)) {
-            throw new \Exception('No element found in event');
+            throw new Exception('No element found in event');
         }
 
         return $element;

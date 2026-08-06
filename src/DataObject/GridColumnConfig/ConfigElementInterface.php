@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -10,13 +11,14 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\DataObject\GridColumnConfig;
 
 use Pimcore\Model\Element\ElementInterface;
+use stdClass;
 
 interface ConfigElementInterface
 {
@@ -25,7 +27,7 @@ interface ConfigElementInterface
     /**
      * @param ElementInterface|ElementInterface[] $element
      */
-    public function getLabeledValue(array|ElementInterface $element): ResultContainer|\stdClass|null;
+    public function getLabeledValue(array|ElementInterface $element): ResultContainer|stdClass|null;
 
     public function getRenderer(): ?string;
 }

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -10,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\Controller\Admin\Document;
@@ -26,19 +27,18 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Serializer\SerializerInterface;
 
-    /**
+/**
  *
  * @internal
-     */
-    #[Route('/link', name: 'pimcore_admin_document_link_')]
+ */
+#[Route('/link', name: 'pimcore_admin_document_link_')]
 class LinkController extends DocumentControllerBase
 {
-        /**
-     *
-     * @throws \Exception
-         */
-        #[Route('/get-data-by-id', name: 'getdatabyid', methods: ['GET'])]
-    public function getDataByIdAction(Request $request, SerializerInterface $serializer): JsonResponse
+    #[Route('/get-data-by-id', name: 'getdatabyid', methods: [Request::METHOD_GET])]
+    public function getDataByIdAction(
+        Request             $request,
+        SerializerInterface $serializer
+    ): JsonResponse
     {
         $link = Document\Link::getById((int)$request->get('id'));
 
@@ -55,7 +55,7 @@ class LinkController extends DocumentControllerBase
         $link->setElement(null);
         $link->setParent(null);
 
-        $data = $serializer->serialize($link->getObjectVars(), 'json', []);
+        $data = $serializer->serialize($link->getObjectVars(), 'json');
         $data = json_decode($data, true);
         $data['locked'] = $link->isLocked();
         $data['rawHref'] = $link->getRawHref();
@@ -73,14 +73,10 @@ class LinkController extends DocumentControllerBase
         return $this->preSendDataActions($data, $link);
     }
 
-        /**
-     *
-     * @throws \Exception
-         */
-        #[Route('/save', name: 'save', methods: ['POST', 'PUT'])]
+    #[Route('/save', name: 'save', methods: [Request::METHOD_POST, Request::METHOD_PUT])]
     public function saveAction(Request $request): JsonResponse
     {
-        $link = Document\Link::getById((int) $request->get('id'));
+        $link = Document\Link::getById((int)$request->get('id'));
         if (!$link) {
             throw $this->createNotFoundException('Link not found');
         }

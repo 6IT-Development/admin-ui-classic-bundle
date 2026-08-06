@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -10,12 +11,13 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\Controller\Admin\DataObject;
 
+use Exception;
 use Pimcore\Bundle\AdminBundle\Event\AdminEvents;
 use Pimcore\Bundle\AdminBundle\Helper\GridHelperService;
 use Pimcore\Bundle\AdminBundle\Service\GridData;
@@ -36,28 +38,29 @@ trait DataObjectActionsTrait
     {
         try {
             if (!$object instanceof DataObject) {
-                throw new \Exception('No Object found for given id.');
+                throw new Exception('No Object found for given id.');
             }
 
             $object->setKey($key);
             $object->save();
 
             return ['success' => true];
-        } catch (\Exception $e) {
-            Logger::error((string) $e);
+        } catch (Exception $e) {
+            Logger::error((string)$e);
 
             return ['success' => false, 'message' => $e->getMessage()];
         }
     }
 
     protected function gridProxy(
-        array $allParams,
-        string $objectType,
-        Request $request,
+        array                    $allParams,
+        string                   $objectType,
+        Request                  $request,
         EventDispatcherInterface $eventDispatcher,
-        GridHelperService $gridHelperService,
-        LocaleServiceInterface $localeService
-    ): array {
+        GridHelperService        $gridHelperService,
+        LocaleServiceInterface   $localeService
+    ): array
+    {
         $action = $allParams['xaction'] ?? 'list';
         $csvMode = $allParams['csvMode'] ?? false;
 
@@ -86,7 +89,7 @@ trait DataObjectActionsTrait
                 $objectData = $this->prepareObjectData($data, $object, $requestedLanguage, $localeService);
                 $object->setValues($objectData);
 
-                if ($object->getPublished() == false) {
+                if (!$object->getPublished()) {
                     $object->setOmitMandatoryCheck(true);
                 }
                 $object->save();
@@ -95,7 +98,7 @@ trait DataObjectActionsTrait
                     'success' => true,
                     'data' => GridData\DataObject::getData($object, $allParams['fields'], $requestedLanguage),
                 ];
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 return [
                     'success' => false,
                     'message' => $e->getMessage(),
@@ -157,14 +160,15 @@ trait DataObjectActionsTrait
     }
 
     /**
-     * @throws \Exception
+     * @throws Exception
      */
     private function prepareObjectData(
-        array $data,
-        DataObject\Concrete $object,
-        string $requestedLanguage,
+        array                  $data,
+        DataObject\Concrete    $object,
+        string                 $requestedLanguage,
         LocaleServiceInterface $localeService
-    ): array {
+    ): array
+    {
         $user = Tool\Admin::getCurrentUser();
         $languagePermissions = [];
         if (!$user->isAdmin()) {
@@ -179,7 +183,7 @@ trait DataObjectActionsTrait
         $objectData = [];
         foreach ($data as $key => $value) {
             $parts = explode('~', $key);
-            if (substr($key, 0, 1) == '~') {
+            if (str_starts_with($key, '~')) {
                 [, $type, $field, $keyId] = $parts;
 
                 if ($type == 'classificationstore') {
@@ -205,7 +209,7 @@ trait DataObjectActionsTrait
                                 $keyConfig->getType()
                             );
                             if ($fieldDefinition && method_exists($fieldDefinition, 'getDataFromGridEditor')) {
-                                $value = $fieldDefinition->getDataFromGridEditor($value, $object, []);
+                                $value = $fieldDefinition->getDataFromGridEditor($value, $object);
                             }
                         }
 
@@ -221,7 +225,7 @@ trait DataObjectActionsTrait
                 $brickType = $parts[0];
                 $brickDescriptor = null;
 
-                if (strpos($brickType, '?') !== false) {
+                if (str_contains($brickType, '?')) {
                     $brickDescriptor = substr($brickType, 1);
                     $brickDescriptor = json_decode($brickDescriptor, true);
                     $brickType = $brickDescriptor['containerKey'];
@@ -250,7 +254,7 @@ trait DataObjectActionsTrait
                 }
 
                 if ($fieldDefinition && method_exists($fieldDefinition, 'getDataFromGridEditor')) {
-                    $value = $fieldDefinition->getDataFromGridEditor($value, $object, []);
+                    $value = $fieldDefinition->getDataFromGridEditor($value, $object);
                 }
 
                 if ($brickDescriptor) {
@@ -280,7 +284,7 @@ trait DataObjectActionsTrait
 
                 $fieldDefinition = $this->getFieldDefinition($class, $key);
                 if ($fieldDefinition && method_exists($fieldDefinition, 'getDataFromGridEditor')) {
-                    $value = $fieldDefinition->getDataFromGridEditor($value, $object, []);
+                    $value = $fieldDefinition->getDataFromGridEditor($value, $object);
                 }
 
                 $objectData[$key] = $value;
@@ -302,12 +306,6 @@ trait DataObjectActionsTrait
 
     protected function getFieldDefinitionFromBrick(string $brickType, string $key): ?DataObject\ClassDefinition\Data
     {
-        $brickDefinition = DataObject\Objectbrick\Definition::getByKey($brickType);
-        $fieldDefinition = null;
-        if ($brickDefinition) {
-            $fieldDefinition = $brickDefinition->getFieldDefinition($key);
-        }
-
-        return $fieldDefinition;
+        return DataObject\Objectbrick\Definition::getByKey($brickType)?->getFieldDefinition($key);
     }
 }

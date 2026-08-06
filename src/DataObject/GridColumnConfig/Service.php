@@ -11,17 +11,19 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- *  @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
- *  @license    http://www.pimcore.org/license     GPLv3 and PCL
+ * @copyright  Copyright (c) Pimcore GmbH (http://www.pimcore.org)
+ * @license    http://www.pimcore.org/license GPLv3 and PCL
  */
 
 namespace Pimcore\Bundle\AdminBundle\DataObject\GridColumnConfig;
 
+use InvalidArgumentException;
 use Pimcore\Bundle\AdminBundle\DataObject\GridColumnConfig\Operator\Factory\OperatorFactoryInterface;
 use Pimcore\Bundle\AdminBundle\DataObject\GridColumnConfig\Operator\OperatorInterface;
 use Pimcore\Bundle\AdminBundle\DataObject\GridColumnConfig\Value\Factory\ValueFactoryInterface;
 use Pimcore\Bundle\AdminBundle\DataObject\GridColumnConfig\Value\ValueInterface;
 use Psr\Container\ContainerInterface;
+use stdClass;
 
 /**
  * @internal
@@ -35,13 +37,14 @@ final class Service
     public function __construct(
         ContainerInterface $operatorFactories,
         ContainerInterface $valueFactories
-    ) {
+    )
+    {
         $this->operatorFactories = $operatorFactories;
         $this->valueFactories = $valueFactories;
     }
 
     /**
-     * @param \stdClass[] $jsonConfigs
+     * @param stdClass[] $jsonConfigs
      *
      * @return ConfigElementInterface[]
      */
@@ -51,7 +54,7 @@ final class Service
     }
 
     /**
-     * @param \stdClass[] $jsonConfigs
+     * @param stdClass[] $jsonConfigs
      *
      * @return ConfigElementInterface[]
      */
@@ -79,10 +82,10 @@ final class Service
         return $config;
     }
 
-    private function buildOperator(string $name, \stdClass $configElement, array $context = []): ?OperatorInterface
+    private function buildOperator(string $name, stdClass $configElement, array $context = []): ?OperatorInterface
     {
         if (!$this->operatorFactories->has($name)) {
-            throw new \InvalidArgumentException(sprintf('Operator "%s" is not supported', $name));
+            throw new InvalidArgumentException(sprintf('Operator "%s" is not supported', $name));
         }
 
         /** @var OperatorFactoryInterface $factory */
@@ -91,10 +94,10 @@ final class Service
         return $factory->build($configElement, $context);
     }
 
-    private function buildValue(string $name, \stdClass $configElement, mixed $context = null): ValueInterface
+    private function buildValue(string $name, stdClass $configElement, mixed $context = null): ValueInterface
     {
         if (!$this->valueFactories->has($name)) {
-            throw new \InvalidArgumentException(sprintf('Value "%s" is not supported', $name));
+            throw new InvalidArgumentException(sprintf('Value "%s" is not supported', $name));
         }
 
         /** @var ValueFactoryInterface $factory */
