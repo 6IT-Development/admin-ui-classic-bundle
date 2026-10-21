@@ -1,8 +1,10 @@
 parameters:
     level: 6
     reportUnmatchedIgnoredErrors: false
-    checkMissingIterableValueType: false
-    checkGenericClassInNonGenericObjectType: false
+    ignoreErrors:
+        # replaces checkMissingIterableValueType / checkGenericClassInNonGenericObjectType (removed in PHPStan 2)
+        - identifier: missingType.iterableValue
+        - identifier: missingType.generics
     paths:
         - src
     bootstrapFiles:
