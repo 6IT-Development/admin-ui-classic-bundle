@@ -46,6 +46,7 @@ use Pimcore\Tool;
 use Pimcore\Tool\Admin;
 use Pimcore\Version;
 use Pimcore\Video;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -65,6 +66,7 @@ class IndexController extends AdminAbstractController implements KernelResponseE
     public function __construct(
         protected EventDispatcherInterface $eventDispatcher,
         protected TranslatorInterface      $translator,
+        #[Autowire(service: 'pimcore.http_client')]
         protected ClientInterface          $httpClient
     )
     {

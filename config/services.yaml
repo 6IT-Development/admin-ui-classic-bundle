@@ -18,12 +18,6 @@ services:
         public: true
         tags: ['controller.service_arguments']
 
-    Pimcore\Bundle\AdminBundle\Controller\Admin\IndexController:
-        public: true
-        arguments:
-            $httpClient: '@pimcore.http_client'
-        tags: [ 'controller.service_arguments' ]
-
     #
     # COMMANDS
     #
@@ -31,7 +25,6 @@ services:
     # auto-register all commands as services
     Pimcore\Bundle\AdminBundle\Command\:
         resource: '../src/Command'
-        tags: [ 'console.command' ]
 
     #
     # TRANSLATIONS
