@@ -19,7 +19,7 @@ namespace Pimcore\Bundle\AdminBundle\EventListener;
 
 use Pimcore\Bundle\CoreBundle\EventListener\Traits\PimcoreContextAwareTrait;
 use Pimcore\Http\Request\Resolver\PimcoreContextResolver;
-use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\KernelEvents;
@@ -27,7 +27,7 @@ use Symfony\Component\HttpKernel\KernelEvents;
 /**
  * @internal
  */
-class CustomAdminEntryPointCheckListener implements EventSubscriberInterface
+class CustomAdminEntryPointCheckListener
 {
     use PimcoreContextAwareTrait;
 
@@ -38,13 +38,7 @@ class CustomAdminEntryPointCheckListener implements EventSubscriberInterface
         $this->customAdminPathIdentifier = $customAdminPathIdentifier;
     }
 
-    public static function getSubscribedEvents(): array
-    {
-        return [
-            KernelEvents::REQUEST => ['onKernelRequest', 560],
-        ];
-    }
-
+    #[AsEventListener(event: KernelEvents::REQUEST, priority: 560)]
     public function onKernelRequest(RequestEvent $event): void
     {
         $request = $event->getRequest();

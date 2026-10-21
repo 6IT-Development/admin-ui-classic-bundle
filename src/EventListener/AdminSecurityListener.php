@@ -22,14 +22,14 @@ use Pimcore\Bundle\CoreBundle\EventListener\Traits\PimcoreContextAwareTrait;
 use Pimcore\Config;
 use Pimcore\Http\Request\Resolver\PimcoreContextResolver;
 use Pimcore\Http\RequestHelper;
-use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\HttpKernel\Event\ResponseEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 
 /**
  * @internal
  */
-class AdminSecurityListener implements EventSubscriberInterface
+class AdminSecurityListener
 {
     use PimcoreContextAwareTrait;
 
@@ -41,13 +41,7 @@ class AdminSecurityListener implements EventSubscriberInterface
     {
     }
 
-    public static function getSubscribedEvents(): array
-    {
-        return [
-            KernelEvents::RESPONSE => 'onKernelResponse',
-        ];
-    }
-
+    #[AsEventListener(event: KernelEvents::RESPONSE)]
     public function onKernelResponse(ResponseEvent $event): void
     {
         if (!$this->config['admin_csp_header']['enabled']) {

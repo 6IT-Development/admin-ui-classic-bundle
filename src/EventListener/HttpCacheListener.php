@@ -22,14 +22,14 @@ use Pimcore\Bundle\CoreBundle\EventListener\Traits\PimcoreContextAwareTrait;
 use Pimcore\Http\Request\Resolver\PimcoreContextResolver;
 use Pimcore\Http\RequestHelper;
 use Pimcore\Http\ResponseHelper;
-use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\HttpKernel\Event\ResponseEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 
 /**
  * @internal
  */
-class HttpCacheListener implements EventSubscriberInterface
+class HttpCacheListener
 {
     use PimcoreContextAwareTrait;
 
@@ -43,13 +43,7 @@ class HttpCacheListener implements EventSubscriberInterface
         $this->responseHelper = $responseHelper;
     }
 
-    public static function getSubscribedEvents(): array
-    {
-        return [
-            KernelEvents::RESPONSE => 'onKernelResponse',
-        ];
-    }
-
+    #[AsEventListener(event: KernelEvents::RESPONSE)]
     public function onKernelResponse(ResponseEvent $event): void
     {
         $request = $event->getRequest();

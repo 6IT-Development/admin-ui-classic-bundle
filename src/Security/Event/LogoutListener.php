@@ -25,7 +25,7 @@ use Pimcore\Tool\Authentication;
 use Pimcore\Tool\Session;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
-use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -44,16 +44,9 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
  *
  * @internal
  */
-class LogoutListener implements EventSubscriberInterface, LoggerAwareInterface
+class LogoutListener implements LoggerAwareInterface
 {
     use LoggerAwareTrait;
-
-    public static function getSubscribedEvents(): array
-    {
-        return [
-            LogoutEvent::class => 'onLogout',
-        ];
-    }
 
     public function __construct(
         protected TokenStorageInterface    $tokenStorage,
@@ -63,6 +56,7 @@ class LogoutListener implements EventSubscriberInterface, LoggerAwareInterface
     {
     }
 
+    #[AsEventListener(event: LogoutEvent::class, dispatcher: 'security.event_dispatcher.pimcore_admin')]
     public function onLogout(LogoutEvent $event): void
     {
         $request = $event->getRequest();

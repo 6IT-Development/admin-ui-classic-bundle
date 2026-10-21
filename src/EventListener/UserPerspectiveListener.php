@@ -25,7 +25,7 @@ use Pimcore\Model\User;
 use Pimcore\Security\User\TokenStorageUserResolver;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
-use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
@@ -33,7 +33,7 @@ use Symfony\Component\HttpKernel\KernelEvents;
 /**
  * @internal
  */
-class UserPerspectiveListener implements EventSubscriberInterface, LoggerAwareInterface
+class UserPerspectiveListener implements LoggerAwareInterface
 {
     use LoggerAwareTrait;
     use PimcoreContextAwareTrait;
@@ -45,13 +45,7 @@ class UserPerspectiveListener implements EventSubscriberInterface, LoggerAwareIn
         $this->userResolver = $userResolver;
     }
 
-    public static function getSubscribedEvents(): array
-    {
-        return [
-            KernelEvents::REQUEST => 'onKernelRequest',
-        ];
-    }
-
+    #[AsEventListener(event: KernelEvents::REQUEST)]
     public function onKernelRequest(RequestEvent $event): void
     {
         $request = $event->getRequest();

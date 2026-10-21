@@ -24,7 +24,7 @@ use Pimcore\Bundle\CoreBundle\EventListener\Traits\PimcoreContextAwareTrait;
 use Pimcore\Http\Request\Resolver\PimcoreContextResolver;
 use Pimcore\Model\Element\ValidationException;
 use Pimcore\Model\Exception\ConfigWriteException;
-use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\ExceptionEvent;
@@ -35,17 +35,11 @@ use Throwable;
 /**
  * @internal
  */
-class AdminExceptionListener implements EventSubscriberInterface
+class AdminExceptionListener
 {
     use PimcoreContextAwareTrait;
 
-    public static function getSubscribedEvents(): array
-    {
-        return [
-            KernelEvents::EXCEPTION => 'onKernelException',
-        ];
-    }
-
+    #[AsEventListener(event: KernelEvents::EXCEPTION)]
     public function onKernelException(ExceptionEvent $event): void
     {
         $request = $event->getRequest();

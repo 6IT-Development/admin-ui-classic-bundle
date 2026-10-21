@@ -20,7 +20,7 @@ namespace Pimcore\Bundle\AdminBundle\EventListener;
 use Pimcore\Bundle\AdminBundle\Security\CsrfProtectionHandler;
 use Pimcore\Bundle\CoreBundle\EventListener\Traits\PimcoreContextAwareTrait;
 use Pimcore\Http\Request\Resolver\PimcoreContextResolver;
-use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Twig\Environment;
@@ -28,7 +28,7 @@ use Twig\Environment;
 /**
  * @internal
  */
-class CsrfProtectionListener implements EventSubscriberInterface
+class CsrfProtectionListener
 {
     use PimcoreContextAwareTrait;
 
@@ -41,13 +41,7 @@ class CsrfProtectionListener implements EventSubscriberInterface
         $this->csrfProtectionHandler = $csrfProtectionHandler;
     }
 
-    public static function getSubscribedEvents(): array
-    {
-        return [
-            KernelEvents::REQUEST => ['handleRequest', 11],
-        ];
-    }
-
+    #[AsEventListener(event: KernelEvents::REQUEST, priority: 11)]
     public function handleRequest(RequestEvent $event): void
     {
         $request = $event->getRequest();

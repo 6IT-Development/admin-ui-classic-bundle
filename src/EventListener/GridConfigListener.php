@@ -24,22 +24,15 @@ use Pimcore\Event\Model\DataObject\ClassDefinitionEvent;
 use Pimcore\Event\Model\DataObjectEvent;
 use Pimcore\Event\Model\UserRoleEvent;
 use Pimcore\Event\UserRoleEvents;
-use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 
 /**
  * @internal
  */
-class GridConfigListener implements EventSubscriberInterface
+class GridConfigListener
 {
-    public static function getSubscribedEvents(): array
-    {
-        return [
-            DataObjectClassDefinitionEvents::POST_DELETE => 'onClassDelete',
-            UserRoleEvents::POST_DELETE => 'onUserDelete',
-            DataObjectEvents::POST_DELETE => 'onObjectDelete',
-        ];
-    }
 
+    #[AsEventListener(event: DataObjectEvents::POST_DELETE)]
     public function onObjectDelete(DataObjectEvent $event): void
     {
         $object = $event->getObject();
@@ -48,6 +41,7 @@ class GridConfigListener implements EventSubscriberInterface
         $this->cleanupGridConfigFavourites('objectId = ' . $objectId);
     }
 
+    #[AsEventListener(event: DataObjectClassDefinitionEvents::POST_DELETE)]
     public function onClassDelete(ClassDefinitionEvent $event): void
     {
         $class = $event->getClassDefinition();
@@ -64,6 +58,7 @@ class GridConfigListener implements EventSubscriberInterface
         $this->cleanupGridConfigFavourites('classId = ' . $db->quote($classId));
     }
 
+    #[AsEventListener(event: UserRoleEvents::POST_DELETE)]
     public function onUserDelete(UserRoleEvent $event): void
     {
         $user = $event->getUserRole();

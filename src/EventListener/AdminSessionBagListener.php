@@ -19,7 +19,7 @@ namespace Pimcore\Bundle\AdminBundle\EventListener;
 
 use Pimcore\Config;
 use Pimcore\Session\Attribute\LockableAttributeBag;
-use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
@@ -27,20 +27,14 @@ use Symfony\Component\HttpKernel\KernelEvents;
 /**
  * @internal
  */
-class AdminSessionBagListener implements EventSubscriberInterface
+class AdminSessionBagListener
 {
     public function __construct(protected Config $config)
     {
     }
 
-    public static function getSubscribedEvents(): array
-    {
-        return [
-            //run after Symfony\Component\HttpKernel\EventListener\SessionListener
-            KernelEvents::REQUEST => ['onKernelRequest', 127],
-        ];
-    }
-
+    //run after Symfony\Component\HttpKernel\EventListener\SessionListener
+    #[AsEventListener(event: KernelEvents::REQUEST, priority: 127)]
     public function onKernelRequest(RequestEvent $event): void
     {
         if (!$event->isMainRequest()) {

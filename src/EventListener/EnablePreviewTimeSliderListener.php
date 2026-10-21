@@ -22,14 +22,14 @@ use Pimcore\Http\Request\Resolver\DocumentResolver;
 use Pimcore\Http\Request\Resolver\EditmodeResolver;
 use Pimcore\Http\Request\Resolver\OutputTimestampResolver;
 use Pimcore\Http\RequestHelper;
-use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\HttpKernel\Event\ResponseEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 
 /**
  * @internal
  */
-class EnablePreviewTimeSliderListener implements EventSubscriberInterface
+class EnablePreviewTimeSliderListener
 {
     use ResponseInjectionTrait;
 
@@ -49,13 +49,7 @@ class EnablePreviewTimeSliderListener implements EventSubscriberInterface
         $this->documentResolver = $documentResolver;
     }
 
-    public static function getSubscribedEvents(): array
-    {
-        return [
-            KernelEvents::RESPONSE => 'onKernelResponse',
-        ];
-    }
-
+    #[AsEventListener(event: KernelEvents::RESPONSE)]
     public function onKernelResponse(ResponseEvent $event): void
     {
         if (!$event->isMainRequest()) {

@@ -19,21 +19,16 @@ namespace Pimcore\Bundle\AdminBundle\EventListener;
 
 use Pimcore;
 use Pimcore\Event\SystemEvents;
-use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\EventDispatcher\GenericEvent;
 
 /**
  * @internal
  */
-class AdminConfigListener implements EventSubscriberInterface
+class AdminConfigListener
 {
-    public static function getSubscribedEvents(): array
-    {
-        return [
-            SystemEvents::GET_SYSTEM_CONFIGURATION => 'updateSystemConfiguration',
-        ];
-    }
 
+    #[AsEventListener(event: SystemEvents::GET_SYSTEM_CONFIGURATION)]
     public function updateSystemConfiguration(GenericEvent $event): void
     {
         $arguments = $event->getArguments();

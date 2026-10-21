@@ -26,14 +26,14 @@ use Pimcore\Model\DataObject\Concrete as ConcreteObject;
 use Pimcore\Model\Element\ElementInterface;
 use Pimcore\Workflow\Manager;
 use Pimcore\Workflow\Place;
-use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\EventDispatcher\GenericEvent;
 use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
  * @internal
  */
-class WorkflowManagementListener implements EventSubscriberInterface
+class WorkflowManagementListener
 {
     protected bool $enabled = true;
 
@@ -46,21 +46,15 @@ class WorkflowManagementListener implements EventSubscriberInterface
     {
     }
 
-    public static function getSubscribedEvents(): array
-    {
-        return [
-            AdminEvents::OBJECT_GET_PRE_SEND_DATA => 'onAdminElementGetPreSendData',
-            AdminEvents::ASSET_GET_PRE_SEND_DATA => 'onAdminElementGetPreSendData',
-            AdminEvents::DOCUMENT_GET_PRE_SEND_DATA => 'onAdminElementGetPreSendData',
-        ];
-    }
-
     /**
      * Fired before information is sent back to the admin UI about an element
      *
      *
      * @throws Exception
      */
+    #[AsEventListener(event: AdminEvents::OBJECT_GET_PRE_SEND_DATA)]
+    #[AsEventListener(event: AdminEvents::ASSET_GET_PRE_SEND_DATA)]
+    #[AsEventListener(event: AdminEvents::DOCUMENT_GET_PRE_SEND_DATA)]
     public function onAdminElementGetPreSendData(GenericEvent $e): void
     {
         $element = self::extractElementFromEvent($e);

@@ -22,21 +22,15 @@ use Pimcore\Event\DataObjectClassDefinitionEvents;
 use Pimcore\Event\Model\DataObject\ClassDefinitionEvent;
 use Pimcore\Event\Model\UserRoleEvent;
 use Pimcore\Event\UserRoleEvents;
-use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 
 /**
  * @internal
  */
-class ImportConfigListener implements EventSubscriberInterface
+class ImportConfigListener
 {
-    public static function getSubscribedEvents(): array
-    {
-        return [
-            DataObjectClassDefinitionEvents::POST_DELETE => 'onClassDelete',
-            UserRoleEvents::POST_DELETE => 'onUserDelete',
-        ];
-    }
 
+    #[AsEventListener(event: DataObjectClassDefinitionEvents::POST_DELETE)]
     public function onClassDelete(ClassDefinitionEvent $event): void
     {
         $class = $event->getClassDefinition();
@@ -52,6 +46,7 @@ class ImportConfigListener implements EventSubscriberInterface
         $this->cleanupImportConfigs('classId = ' . $db->quote($classId));
     }
 
+    #[AsEventListener(event: UserRoleEvents::POST_DELETE)]
     public function onUserDelete(UserRoleEvent $event): void
     {
         $user = $event->getUserRole();
