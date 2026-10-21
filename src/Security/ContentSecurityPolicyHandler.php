@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace Pimcore\Bundle\AdminBundle\Security;
 
+use Monolog\Attribute\WithMonologChannel;
 use Pimcore\Config;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
@@ -25,6 +26,7 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 /**
  * @internal
  */
+#[WithMonologChannel('security')]
 class ContentSecurityPolicyHandler implements LoggerAwareInterface
 {
     use LoggerAwareTrait;

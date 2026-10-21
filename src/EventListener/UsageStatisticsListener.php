@@ -17,10 +17,12 @@ declare(strict_types=1);
 
 namespace Pimcore\Bundle\AdminBundle\EventListener;
 
+use Monolog\Attribute\WithMonologChannel;
 use Pimcore\Bundle\CoreBundle\EventListener\Traits\PimcoreContextAwareTrait;
 use Pimcore\Config;
 use Pimcore\Http\Request\Resolver\PimcoreContextResolver;
 use Pimcore\Security\User\TokenStorageUserResolver;
+use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\HttpFoundation\Request;
@@ -30,7 +32,8 @@ use Symfony\Component\HttpKernel\KernelEvents;
 /**
  * @internal
  */
-class UsageStatisticsListener
+#[WithMonologChannel('admin_statistics')]
+class UsageStatisticsListener implements LoggerAwareInterface
 {
     use LoggerAwareTrait;
     use PimcoreContextAwareTrait;

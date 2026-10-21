@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace Pimcore\Bundle\AdminBundle\EventListener;
 
+use Monolog\Attribute\WithMonologChannel;
 use Pimcore\Bundle\AdminBundle\Helper\RequestParams;
 use Pimcore\Bundle\AdminBundle\Perspective\Config;
 use Pimcore\Bundle\CoreBundle\EventListener\Traits\PimcoreContextAwareTrait;
@@ -33,6 +34,7 @@ use Symfony\Component\HttpKernel\KernelEvents;
 /**
  * @internal
  */
+#[WithMonologChannel('admin')]
 class UserPerspectiveListener implements LoggerAwareInterface
 {
     use LoggerAwareTrait;

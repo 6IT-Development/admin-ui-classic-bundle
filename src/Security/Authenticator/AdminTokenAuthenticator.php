@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace Pimcore\Bundle\AdminBundle\Security\Authenticator;
 
+use Monolog\Attribute\WithMonologChannel;
 use Pimcore\Bundle\AdminBundle\Helper\RequestParams;
 use Pimcore\Security\User\User;
 use Pimcore\Tool\Authentication;
@@ -31,6 +32,7 @@ use Symfony\Component\Security\Http\Authenticator\Passport\SelfValidatingPasspor
 /**
  * @internal
  */
+#[WithMonologChannel('security')]
 class AdminTokenAuthenticator extends AdminAbstractAuthenticator
 {
     public function supports(Request $request): ?bool

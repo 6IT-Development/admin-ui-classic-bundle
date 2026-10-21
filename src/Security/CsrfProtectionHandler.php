@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace Pimcore\Bundle\AdminBundle\Security;
 
+use Monolog\Attribute\WithMonologChannel;
 use Pimcore\Bundle\AdminBundle\Helper\RequestParams;
 use Pimcore\Tool\Session;
 use Psr\Log\LoggerAwareInterface;
@@ -30,6 +31,7 @@ use Twig\Environment;
 /**
  * @internal
  */
+#[WithMonologChannel('security')]
 class CsrfProtectionHandler implements LoggerAwareInterface
 {
     use LoggerAwareTrait;
