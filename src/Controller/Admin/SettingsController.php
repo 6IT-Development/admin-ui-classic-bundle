@@ -208,15 +208,10 @@ class SettingsController extends AdminAbstractController
             $list = new Metadata\Predefined\Listing();
 
             if ($filter = RequestParams::get($request, 'filter')) {
-                $list->setFilter(function (Metadata\Predefined $predefined) use ($filter) {
-                    foreach ($predefined->getObjectVars() as $value) {
-                        if (stripos((string)$value, $filter) !== false) {
-                            return true;
-                        }
-                    }
-
-                    return false;
-                });
+                $list->setFilter(fn(Metadata\Predefined $predefined) => array_any(
+                    $predefined->getObjectVars(),
+                    fn($value) => stripos((string)$value, $filter) !== false
+                ));
             }
 
             $properties = [];
@@ -312,21 +307,13 @@ class SettingsController extends AdminAbstractController
             $list = new Property\Predefined\Listing();
 
             if ($filter = RequestParams::get($request, 'filter')) {
-                $list->setFilter(function (Property\Predefined $predefined) use ($filter) {
-                    foreach ($predefined->getObjectVars() as $value) {
-                        if ($value) {
-                            $cellValues = is_array($value) ? $value : [$value];
-
-                            foreach ($cellValues as $cellValue) {
-                                if (stripos((string)$cellValue, $filter) !== false) {
-                                    return true;
-                                }
-                            }
-                        }
-                    }
-
-                    return false;
-                });
+                $list->setFilter(fn(Property\Predefined $predefined) => array_any(
+                    $predefined->getObjectVars(),
+                    fn($value) => $value && array_any(
+                        is_array($value) ? $value : [$value],
+                        fn($cellValue) => stripos((string)$cellValue, $filter) !== false
+                    )
+                ));
             }
 
             $properties = [];

@@ -34,9 +34,9 @@ class AdminSecurityListener implements EventSubscriberInterface
     use PimcoreContextAwareTrait;
 
     public function __construct(
-        protected RequestHelper                $requestHelper,
-        protected ContentSecurityPolicyHandler $contentSecurityPolicyHandler,
-        protected Config                       $config
+        protected readonly RequestHelper                $requestHelper,
+        protected readonly ContentSecurityPolicyHandler $contentSecurityPolicyHandler,
+        protected readonly Config                       $config
     )
     {
     }

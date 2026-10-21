@@ -56,16 +56,7 @@ class ElementService implements ElementServiceInterface
      */
     public function getCustomViewById(string $id): ?array
     {
-        $customViews = CustomView\Config::get();
-        if ($customViews) {
-            foreach ($customViews as $customView) {
-                if ($customView['id'] == $id) {
-                    return $customView;
-                }
-            }
-        }
-
-        return null;
+        return array_find(CustomView\Config::get(), fn($customView) => $customView['id'] == $id);
     }
 
     /**
