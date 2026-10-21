@@ -25,14 +25,13 @@ use Pimcore\Http\Request\Resolver\EditmodeResolver;
 use Pimcore\Security\User\UserLoader;
 use Pimcore\Tool\Admin;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
-use Twig\Extension\AbstractExtension;
-use Twig\TwigFilter;
-use Twig\TwigFunction;
+use Twig\Attribute\AsTwigFilter;
+use Twig\Attribute\AsTwigFunction;
 
 /**
  * @internal
  */
-class AdminExtension extends AbstractExtension
+class AdminExtension
 {
     public function __construct(
         private readonly UrlGeneratorInterface $generator,
@@ -42,25 +41,13 @@ class AdminExtension extends AbstractExtension
     {
     }
 
-    public function getFunctions(): array
+    #[AsTwigFunction('pimcore_language_flag')]
+    public function getLanguageFlagFile(string $language, bool $absolutePath = true, bool $includeUnknown = true): string
     {
-        return [
-            new TwigFunction('pimcore_language_flag', [Tool::class, 'getLanguageFlagFile']),
-            new TwigFunction('pimcore_minimize_scripts', [$this, 'minimize']),
-            new TwigFunction('pimcore_editmode_admin_language', [$this, 'getAdminLanguage']),
-            new TwigFunction('pimcore_login_background_image', [$this, 'getLoginBackgroundImage']),
-        ];
+        return Tool::getLanguageFlagFile($language, $absolutePath, $includeUnknown);
     }
 
-    public function getFilters(): array
-    {
-        return [
-            new TwigFilter('pimcore_inline_icon', [$this, 'inlineIcon']),
-            new TwigFilter('pimcore_lazy_icon', [$this, 'lazyIcon']),
-            new TwigFilter('pimcore_twemoji_variant_icon', [$this, 'twemojiVariantIcon']),
-        ];
-    }
-
+    #[AsTwigFunction('pimcore_editmode_admin_language')]
     public function getAdminLanguage(): ?string
     {
         $pimcoreUser = null;
@@ -71,6 +58,7 @@ class AdminExtension extends AbstractExtension
         return $pimcoreUser?->getLanguage();
     }
 
+    #[AsTwigFunction('pimcore_minimize_scripts')]
     public function minimize(array $paths): string
     {
         $returnHtml = '';
@@ -105,6 +93,7 @@ class AdminExtension extends AbstractExtension
         return '<script src="' . $url . '"></script>' . "\n";
     }
 
+    #[AsTwigFunction('pimcore_login_background_image')]
     public function getLoginBackgroundImage(string $overwrite = ''): string
     {
         $possibleDefaultImages = [
@@ -152,6 +141,7 @@ class AdminExtension extends AbstractExtension
         return $backgroundImageUrl;
     }
 
+    #[AsTwigFilter('pimcore_inline_icon')]
     public function inlineIcon(string $icon): string
     {
         $content = file_get_contents($icon);
@@ -165,6 +155,7 @@ class AdminExtension extends AbstractExtension
         );
     }
 
+    #[AsTwigFilter('pimcore_lazy_icon')]
     public function lazyIcon(string $icon): string
     {
         return sprintf(
@@ -175,6 +166,7 @@ class AdminExtension extends AbstractExtension
         );
     }
 
+    #[AsTwigFilter('pimcore_twemoji_variant_icon')]
     public function twemojiVariantIcon(string $icon): string
     {
         return sprintf(
