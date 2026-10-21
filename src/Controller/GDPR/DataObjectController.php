@@ -71,7 +71,7 @@ class DataObjectController extends AdminAbstractController implements KernelCont
         DataObjects $service
     ): JsonResponse
     {
-        $object = DataObject::getById((int)$request->get('id'));
+        $object = DataObject::getById((int)$request->query->get('id'));
         if (!$object) {
             throw $this->createNotFoundException('Object not found');
         }

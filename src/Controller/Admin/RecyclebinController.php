@@ -20,6 +20,7 @@ namespace Pimcore\Bundle\AdminBundle\Controller\Admin;
 use Exception;
 use Pimcore\Bundle\AdminBundle\Controller\AdminAbstractController;
 use Pimcore\Bundle\AdminBundle\Helper\QueryParams;
+use Pimcore\Bundle\AdminBundle\Helper\RequestParams;
 use Pimcore\Controller\KernelControllerEventInterface;
 use Pimcore\Db;
 use Pimcore\Model\Element;
@@ -37,8 +38,8 @@ class RecyclebinController extends AdminAbstractController implements KernelCont
     #[Route('/recyclebin/list', name: 'pimcore_admin_recyclebin_list', methods: [Request::METHOD_POST])]
     public function listAction(Request $request): JsonResponse
     {
-        if ($request->get('xaction') == 'destroy') {
-            $item = Recyclebin\Item::getById(QueryParams::getRecordIdForGridRequest($request->get('data')));
+        if (RequestParams::get($request, 'xaction') == 'destroy') {
+            $item = Recyclebin\Item::getById(QueryParams::getRecordIdForGridRequest(RequestParams::get($request, 'data')));
 
             $item?->delete();
 
@@ -47,8 +48,8 @@ class RecyclebinController extends AdminAbstractController implements KernelCont
             $db = Db::get();
 
             $list = new Recyclebin\Item\Listing();
-            $list->setLimit((int)$request->get('limit', 50));
-            $list->setOffset((int)$request->get('start', 0));
+            $list->setLimit((int)RequestParams::get($request, 'limit', 50));
+            $list->setOffset((int)RequestParams::get($request, 'start', 0));
 
             $list->setOrderKey('date');
             $list->setOrder('DESC');
@@ -61,11 +62,11 @@ class RecyclebinController extends AdminAbstractController implements KernelCont
 
             $conditionFilters = [];
 
-            if ($request->get('filterFullText')) {
-                $conditionFilters[] = '`path` LIKE ' . $list->quote('%' . $list->escapeLike($request->get('filterFullText')) . '%');
+            if (RequestParams::get($request, 'filterFullText')) {
+                $conditionFilters[] = '`path` LIKE ' . $list->quote('%' . $list->escapeLike(RequestParams::get($request, 'filterFullText')) . '%');
             }
 
-            $filters = $request->get('filter');
+            $filters = RequestParams::get($request, 'filter');
             if ($filters) {
                 $filters = $this->decodeJson($filters);
 
@@ -141,7 +142,7 @@ class RecyclebinController extends AdminAbstractController implements KernelCont
     #[Route('/recyclebin/restore', name: 'pimcore_admin_recyclebin_restore', methods: [Request::METHOD_POST])]
     public function restoreAction(Request $request): JsonResponse
     {
-        $item = Recyclebin\Item::getById((int)$request->get('id'));
+        $item = Recyclebin\Item::getById((int)RequestParams::get($request, 'id'));
         if (!$item) {
             throw $this->createNotFoundException();
         }

@@ -26,6 +26,7 @@ use Pimcore\Bundle\AdminBundle\Controller\AdminAbstractController;
 use Pimcore\Bundle\AdminBundle\Event\AdminEvents;
 use Pimcore\Bundle\AdminBundle\Event\Login\LoginRedirectEvent;
 use Pimcore\Bundle\AdminBundle\Event\Login\LostPasswordEvent;
+use Pimcore\Bundle\AdminBundle\Helper\RequestParams;
 use Pimcore\Bundle\AdminBundle\Security\CsrfProtectionHandler;
 use Pimcore\Bundle\AdminBundle\System\AdminConfig;
 use Pimcore\Config;
@@ -109,7 +110,7 @@ class LoginController extends AdminAbstractController implements KernelControlle
     ): RedirectResponse|Response
     {
         $queryParams = $request->query->all();
-        if ($request->get('_route') === 'pimcore_admin_login_fallback') {
+        if (RequestParams::get($request, '_route') === 'pimcore_admin_login_fallback') {
             return $this->redirectToRoute('pimcore_admin_login', $queryParams, Response::HTTP_MOVED_PERMANENTLY);
         }
 
@@ -137,16 +138,16 @@ class LoginController extends AdminAbstractController implements KernelControlle
 
         $params['csrfTokenRefreshInterval'] = ((int)$session_gc_maxlifetime - 60) * 1000;
 
-        if ($request->get('too_many_attempts')) {
-            $params['error'] = SecurityHelper::convertHtmlSpecialChars($request->get('too_many_attempts'));
+        if (RequestParams::get($request, 'too_many_attempts')) {
+            $params['error'] = SecurityHelper::convertHtmlSpecialChars(RequestParams::get($request, 'too_many_attempts'));
         }
-        if ($request->get('auth_failed')) {
+        if (RequestParams::get($request, 'auth_failed')) {
             $params['error'] = 'error_auth_failed';
         }
-        if ($request->get('session_expired')) {
+        if (RequestParams::get($request, 'session_expired')) {
             $params['error'] = 'error_session_expired';
         }
-        if ($request->get('deeplink')) {
+        if (RequestParams::get($request, 'deeplink')) {
             $params['deeplink'] = true;
         }
 
@@ -197,7 +198,7 @@ class LoginController extends AdminAbstractController implements KernelControlle
     public function loginCheckAction(Request $request): RedirectResponse
     {
         // just in case the authenticator didn't redirect
-        return new RedirectResponse($this->generateUrl('pimcore_admin_login', ['perspective' => strip_tags($request->get('perspective', ''))]));
+        return new RedirectResponse($this->generateUrl('pimcore_admin_login', ['perspective' => strip_tags(RequestParams::get($request, 'perspective', ''))]));
     }
 
     #[Route('/login/lostpassword', name: 'pimcore_admin_login_lostpassword')]
@@ -212,7 +213,7 @@ class LoginController extends AdminAbstractController implements KernelControlle
         $params = $this->buildLoginPageViewParams($config);
         $error = null;
 
-        if ($request->getMethod() === 'POST' && $username = $request->get('username')) {
+        if ($request->getMethod() === 'POST' && $username = RequestParams::get($request, 'username')) {
             $user = User::getByName($username);
             if (!$user instanceof User) {
                 $error = 'user_unknown';
@@ -294,7 +295,7 @@ class LoginController extends AdminAbstractController implements KernelControlle
 
         if (preg_match('/(document|asset|object)_([0-9]+)_([a-z]+)/', $queryString, $deeplink)) {
             $deeplink = $deeplink[0];
-            $perspective = strip_tags($request->get('perspective', ''));
+            $perspective = strip_tags(RequestParams::get($request, 'perspective', ''));
 
             if (strpos($queryString, 'token')) {
                 $url = $this->dispatchLoginRedirect([

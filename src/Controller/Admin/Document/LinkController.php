@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace Pimcore\Bundle\AdminBundle\Controller\Admin\Document;
 
+use Pimcore\Bundle\AdminBundle\Helper\RequestParams;
 use Pimcore\Model\Asset;
 use Pimcore\Model\DataObject\Concrete;
 use Pimcore\Model\Document;
@@ -40,7 +41,7 @@ class LinkController extends DocumentControllerBase
         SerializerInterface $serializer
     ): JsonResponse
     {
-        $link = Document\Link::getById((int)$request->get('id'));
+        $link = Document\Link::getById((int)$request->query->get('id'));
 
         if (!$link) {
             throw $this->createNotFoundException('Link not found');
@@ -76,7 +77,7 @@ class LinkController extends DocumentControllerBase
     #[Route('/save', name: 'save', methods: [Request::METHOD_POST, Request::METHOD_PUT])]
     public function saveAction(Request $request): JsonResponse
     {
-        $link = Document\Link::getById((int)$request->get('id'));
+        $link = Document\Link::getById((int)RequestParams::get($request, 'id'));
         if (!$link) {
             throw $this->createNotFoundException('Link not found');
         }
@@ -102,8 +103,8 @@ class LinkController extends DocumentControllerBase
     protected function setValuesToDocument(Request $request, Document $document): void
     {
         // data
-        if ($request->get('data')) {
-            $data = $this->decodeJson($request->get('data'));
+        if (RequestParams::get($request, 'data')) {
+            $data = $this->decodeJson(RequestParams::get($request, 'data'));
 
             $path = $data['path'];
 

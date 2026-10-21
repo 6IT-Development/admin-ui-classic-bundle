@@ -24,6 +24,7 @@ use Pimcore;
 use Pimcore\Bundle\AdminBundle\Controller\AdminAbstractController;
 use Pimcore\Bundle\AdminBundle\Event\AdminEvents;
 use Pimcore\Bundle\AdminBundle\Helper\GridHelperService;
+use Pimcore\Bundle\AdminBundle\Helper\RequestParams;
 use Pimcore\Bundle\AdminBundle\Model\GridConfig;
 use Pimcore\Bundle\AdminBundle\Model\GridConfigFavourite;
 use Pimcore\Bundle\AdminBundle\Model\GridConfigShare;
@@ -131,7 +132,7 @@ class AssetHelperController extends AdminAbstractController
     #[Route('/grid-delete-column-config', name: 'pimcore_admin_asset_assethelper_griddeletecolumnconfig', methods: [Request::METHOD_DELETE])]
     public function gridDeleteColumnConfigAction(Request $request): JsonResponse
     {
-        $gridConfigId = (int)$request->get('gridConfigId');
+        $gridConfigId = (int)RequestParams::get($request, 'gridConfigId');
         $gridConfig = GridConfig::getById($gridConfigId);
         $success = false;
         if ($gridConfig) {
@@ -161,22 +162,22 @@ class AssetHelperController extends AdminAbstractController
     {
         $gridConfigId = null;
 
-        $classId = $request->get('id');
+        $classId = RequestParams::get($request, 'id');
 
         $context = ['purpose' => 'gridconfig'];
 
         $types = [];
-        if ($request->get('types')) {
-            $types = explode(',', $request->get('types'));
+        if (RequestParams::get($request, 'types')) {
+            $types = explode(',', RequestParams::get($request, 'types'));
         }
 
         $userId = $this->getAdminUser()->getId();
 
-        $requestedGridConfigId = $isDelete ? '' : $request->get('gridConfigId', '');
+        $requestedGridConfigId = $isDelete ? '' : RequestParams::get($request, 'gridConfigId', '');
 
         // grid config
         $gridConfig = [];
-        $searchType = $request->get('searchType');
+        $searchType = RequestParams::get($request, 'searchType');
 
         if (strlen($requestedGridConfigId) == 0) {
             // check if there is a favourite view
@@ -358,7 +359,7 @@ class AssetHelperController extends AdminAbstractController
     {
         $helperColumns = [];
         $newData = [];
-        $data = json_decode($request->get('columns'));
+        $data = json_decode(RequestParams::get($request, 'columns'));
         /** @var stdClass $item */
         foreach ($data as $item) {
             if (!empty($item->isOperator)) {
@@ -384,13 +385,13 @@ class AssetHelperController extends AdminAbstractController
     #[Route('/grid-mark-favourite-column-config', name: 'pimcore_admin_asset_assethelper_gridmarkfavouritecolumnconfig', methods: [Request::METHOD_POST])]
     public function gridMarkFavouriteColumnConfigAction(Request $request): JsonResponse
     {
-        $classId = $request->get('classId');
+        $classId = RequestParams::get($request, 'classId');
         $asset = Asset::getById($classId);
 
         if ($asset->isAllowed('list')) {
-            $gridConfigId = (int)$request->get('gridConfigId');
-            $searchType = $request->get('searchType');
-            $type = $request->get('type');
+            $gridConfigId = (int)RequestParams::get($request, 'gridConfigId');
+            $searchType = RequestParams::get($request, 'searchType');
+            $type = RequestParams::get($request, 'type');
             $user = $this->getAdminUser();
 
             $favourite = new GridConfigFavourite();
@@ -448,7 +449,7 @@ class AssetHelperController extends AdminAbstractController
     #[Route('/grid-save-column-config', name: 'pimcore_admin_asset_assethelper_gridsavecolumnconfig', methods: [Request::METHOD_POST])]
     public function gridSaveColumnConfigAction(Request $request): JsonResponse
     {
-        $asset = Asset::getById((int)$request->get('id'));
+        $asset = Asset::getById((int)RequestParams::get($request, 'id'));
 
         if (!$asset) {
             throw $this->createNotFoundException();
@@ -456,20 +457,20 @@ class AssetHelperController extends AdminAbstractController
 
         if ($asset->isAllowed('list')) {
             try {
-                $classId = $request->get('class_id');
-                $context = $request->get('context');
+                $classId = RequestParams::get($request, 'class_id');
+                $context = RequestParams::get($request, 'context');
 
-                $searchType = $request->get('searchType');
-                $type = $request->get('type');
+                $searchType = RequestParams::get($request, 'searchType');
+                $type = RequestParams::get($request, 'type');
 
                 // grid config
-                $gridConfigData = $this->decodeJson($request->get('gridconfig'));
+                $gridConfigData = $this->decodeJson(RequestParams::get($request, 'gridconfig'));
                 $gridConfigData['pimcore_version'] = Version::getVersion();
                 $gridConfigData['pimcore_revision'] = Version::getRevision();
                 $gridConfigData['context'] = $context;
                 unset($gridConfigData['settings']['isShared']);
 
-                $metadata = $request->get('settings');
+                $metadata = RequestParams::get($request, 'settings');
                 $metadata = json_decode($metadata, true);
 
                 $gridConfigId = $metadata['gridConfigId'];
@@ -670,11 +671,11 @@ class AssetHelperController extends AdminAbstractController
     #[Route('/do-export', name: 'pimcore_admin_asset_assethelper_doexport', methods: [Request::METHOD_POST])]
     public function doExportAction(Request $request): JsonResponse
     {
-        $fileHandle = File::getValidFilename($request->get('fileHandle'));
-        $ids = $request->get('ids');
-        $settings = json_decode($request->get('settings'), true);
+        $fileHandle = File::getValidFilename(RequestParams::get($request, 'fileHandle'));
+        $ids = RequestParams::get($request, 'ids');
+        $settings = json_decode(RequestParams::get($request, 'settings'), true);
         $delimiter = $settings['delimiter'] ?? ';';
-        $language = str_replace('default', '', $request->get('language'));
+        $language = str_replace('default', '', RequestParams::get($request, 'language'));
         $header = $settings['header'] ?? 'title';
 
         $list = new Asset\Listing();
@@ -687,9 +688,9 @@ class AssetHelperController extends AdminAbstractController
         $list->setCondition('id IN (' . implode(',', $quotedIds) . ')');
         $list->setOrderKey(' FIELD(id, ' . implode(',', $quotedIds) . ')', false);
 
-        $fields = json_decode($request->get('fields')[0], true);
+        $fields = json_decode(RequestParams::get($request, 'fields')[0], true);
 
-        $addTitles = (bool)$request->get('initial');
+        $addTitles = (bool)RequestParams::get($request, 'initial');
 
         $csv = $this->getCsvData($language, $list, $fields, $header, $addTitles);
 
@@ -704,7 +705,7 @@ class AssetHelperController extends AdminAbstractController
             stream_copy_to_stream($fileStream, $temp);
 
             $firstLine = true;
-            if ($request->get('initial') && $header === 'no_header') {
+            if (RequestParams::get($request, 'initial') && $header === 'no_header') {
                 $firstLine = false;
             }
 
@@ -805,7 +806,7 @@ class AssetHelperController extends AdminAbstractController
 
     protected function extractLanguage(Request $request): string
     {
-        $requestedLanguage = $request->get('language');
+        $requestedLanguage = RequestParams::get($request, 'language');
         if ($requestedLanguage) {
             if ($requestedLanguage != 'default') {
                 $request->setLocale($requestedLanguage);
@@ -826,7 +827,7 @@ class AssetHelperController extends AdminAbstractController
     public function downloadCsvFileAction(Request $request): Response
     {
         $storage = Storage::get('temp');
-        $fileHandle = File::getValidFilename($request->get('fileHandle'));
+        $fileHandle = File::getValidFilename($request->query->get('fileHandle'));
         $csvFile = $this->getCsvFile($fileHandle);
 
         try {
@@ -855,7 +856,7 @@ class AssetHelperController extends AdminAbstractController
     ): BinaryFileResponse
     {
         $storage = Storage::get('temp');
-        $fileHandle = File::getValidFilename($request->get('fileHandle'));
+        $fileHandle = File::getValidFilename($request->query->get('fileHandle'));
         $csvFile = $this->getCsvFile($fileHandle);
 
         try {
@@ -925,8 +926,8 @@ class AssetHelperController extends AdminAbstractController
         GridHelperService $gridHelperService
     ): JsonResponse
     {
-        if ($request->get('language')) {
-            $request->setLocale($request->get('language'));
+        if (RequestParams::get($request, 'language')) {
+            $request->setLocale(RequestParams::get($request, 'language'));
         }
 
         $allParams = array_merge($request->request->all(), $request->query->all());
@@ -944,10 +945,10 @@ class AssetHelperController extends AdminAbstractController
     ): JsonResponse
     {
         try {
-            if ($request->get('data')) {
+            if (RequestParams::get($request, 'data')) {
                 $loader = Pimcore::getContainer()->get('pimcore.implementation_loader.asset.metadata.data');
 
-                $data = $this->decodeJson($request->get('data'));
+                $data = $this->decodeJson(RequestParams::get($request, 'data'));
 
                 $updateEvent = new GenericEvent($this, [
                     'data' => $data,

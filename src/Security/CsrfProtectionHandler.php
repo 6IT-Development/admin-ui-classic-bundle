@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace Pimcore\Bundle\AdminBundle\Security;
 
+use Pimcore\Bundle\AdminBundle\Helper\RequestParams;
 use Pimcore\Tool\Session;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
@@ -50,7 +51,7 @@ class CsrfProtectionHandler implements LoggerAwareInterface
         $csrfToken = $this->getCsrfToken($request->getSession());
         $requestCsrfToken = $request->headers->get('x_pimcore_csrf_token');
         if (!$requestCsrfToken) {
-            $requestCsrfToken = $request->get('csrfToken');
+            $requestCsrfToken = RequestParams::get($request, 'csrfToken');
         }
 
         if (!$csrfToken || $csrfToken !== $requestCsrfToken) {

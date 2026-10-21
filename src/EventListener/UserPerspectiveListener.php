@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace Pimcore\Bundle\AdminBundle\EventListener;
 
+use Pimcore\Bundle\AdminBundle\Helper\RequestParams;
 use Pimcore\Bundle\AdminBundle\Perspective\Config;
 use Pimcore\Bundle\CoreBundle\EventListener\Traits\PimcoreContextAwareTrait;
 use Pimcore\Http\Request\Resolver\PimcoreContextResolver;
@@ -71,7 +72,7 @@ class UserPerspectiveListener implements EventSubscriberInterface, LoggerAwareIn
     protected function setRequestedPerspective(User $user, Request $request): void
     {
         // update perspective settings
-        $requestedPerspective = $request->get('perspective');
+        $requestedPerspective = RequestParams::get($request, 'perspective');
 
         if ($requestedPerspective) {
             if ($requestedPerspective !== $user->getActivePerspective()) {

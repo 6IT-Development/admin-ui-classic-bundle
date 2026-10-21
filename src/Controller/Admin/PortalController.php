@@ -20,6 +20,7 @@ namespace Pimcore\Bundle\AdminBundle\Controller\Admin;
 use DateTime;
 use Pimcore\Bundle\AdminBundle\Controller\AdminAbstractController;
 use Pimcore\Bundle\AdminBundle\Helper\Dashboard;
+use Pimcore\Bundle\AdminBundle\Helper\RequestParams;
 use Pimcore\Controller\KernelControllerEventInterface;
 use Pimcore\Db;
 use Pimcore\Model\Asset;
@@ -41,12 +42,12 @@ class PortalController extends AdminAbstractController implements KernelControll
 
     protected function getCurrentConfiguration(Request $request): array
     {
-        return $this->dashboardHelper->getDashboard($request->get('key'));
+        return $this->dashboardHelper->getDashboard(RequestParams::get($request, 'key'));
     }
 
     protected function saveConfiguration(Request $request, array $config): void
     {
-        $this->dashboardHelper->saveDashboard($request->get('key'), $config);
+        $this->dashboardHelper->saveDashboard(RequestParams::get($request, 'key'), $config);
     }
 
     #[Route('/dashboard-list', name: 'pimcore_admin_portal_dashboardlist', methods: [Request::METHOD_GET])]
@@ -84,7 +85,7 @@ class PortalController extends AdminAbstractController implements KernelControll
     #[Route('/delete-dashboard', name: 'pimcore_admin_portal_deletedashboard', methods: [Request::METHOD_DELETE])]
     public function deleteDashboardAction(Request $request): JsonResponse
     {
-        $key = $request->get('key');
+        $key = RequestParams::get($request, 'key');
         $this->dashboardHelper->deleteDashboard($key);
 
         return $this->adminJson(['success' => true]);
@@ -105,7 +106,7 @@ class PortalController extends AdminAbstractController implements KernelControll
 
         foreach ($config['positions'] as $col) {
             foreach ($col as $row) {
-                if ($row['id'] != $request->get('id')) {
+                if ($row['id'] != RequestParams::get($request, 'id')) {
                     $newConfig[$colCount][] = $row;
                 }
             }
@@ -131,7 +132,7 @@ class PortalController extends AdminAbstractController implements KernelControll
         }
 
         $nextId = $nextId + 1;
-        $config['positions'][0][] = ['id' => $nextId, 'type' => $request->get('type'), 'config' => null];
+        $config['positions'][0][] = ['id' => $nextId, 'type' => RequestParams::get($request, 'type'), 'config' => null];
 
         $this->saveConfiguration($request, $config);
 
@@ -148,7 +149,7 @@ class PortalController extends AdminAbstractController implements KernelControll
 
         foreach ($config['positions'] as $col) {
             foreach ($col as $row) {
-                if ($row['id'] != $request->get('id')) {
+                if ($row['id'] != RequestParams::get($request, 'id')) {
                     $newConfig[$colCount][] = $row;
                 } else {
                     $toMove = $row;
@@ -157,7 +158,7 @@ class PortalController extends AdminAbstractController implements KernelControll
             $colCount++;
         }
 
-        array_splice($newConfig[$request->get('column')], $request->request->getInt('row'), 0, [$toMove]);
+        array_splice($newConfig[RequestParams::get($request, 'column')], $request->request->getInt('row'), 0, [$toMove]);
 
         $config['positions'] = $newConfig;
         $this->saveConfiguration($request, $config);
@@ -168,9 +169,9 @@ class PortalController extends AdminAbstractController implements KernelControll
     #[Route('/update-portlet-config', name: 'pimcore_admin_portal_updateportletconfig', methods: [Request::METHOD_PUT])]
     public function updatePortletConfigAction(Request $request): JsonResponse
     {
-        $key = $request->get('key');
-        $id = $request->get('id');
-        $configuration = $request->get('config');
+        $key = RequestParams::get($request, 'key');
+        $id = RequestParams::get($request, 'id');
+        $configuration = RequestParams::get($request, 'config');
 
         $dashboard = $this->dashboardHelper->getDashboard($key);
         foreach ($dashboard['positions'] as &$col) {

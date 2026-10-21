@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace Pimcore\Bundle\AdminBundle\Controller\Admin\Document;
 
+use Pimcore\Bundle\AdminBundle\Helper\RequestParams;
 use Pimcore\Model\Document;
 use Pimcore\Model\Schedule\Task;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -33,7 +34,7 @@ class HardlinkController extends DocumentControllerBase
     #[Route('/get-data-by-id', name: 'getdatabyid', methods: [Request::METHOD_GET])]
     public function getDataByIdAction(Request $request): JsonResponse
     {
-        $link = Document\Hardlink::getById((int)$request->get('id'));
+        $link = Document\Hardlink::getById((int)$request->query->get('id'));
 
         if (!$link) {
             throw $this->createNotFoundException('Hardlink not found');
@@ -69,7 +70,7 @@ class HardlinkController extends DocumentControllerBase
     #[Route('/save', name: 'save', methods: [Request::METHOD_POST, Request::METHOD_PUT])]
     public function saveAction(Request $request): JsonResponse
     {
-        $link = Document\Hardlink::getById((int)$request->get('id'));
+        $link = Document\Hardlink::getById((int)RequestParams::get($request, 'id'));
         if (!$link) {
             throw $this->createNotFoundException('Hardlink not found');
         }
@@ -95,8 +96,8 @@ class HardlinkController extends DocumentControllerBase
     protected function setValuesToDocument(Request $request, Document $document): void
     {
         // data
-        if ($request->get('data')) {
-            $data = $this->decodeJson($request->get('data'));
+        if (RequestParams::get($request, 'data')) {
+            $data = $this->decodeJson(RequestParams::get($request, 'data'));
 
             $sourceId = null;
             if ($sourceDocument = Document::getByPath($data['sourcePath'])) {

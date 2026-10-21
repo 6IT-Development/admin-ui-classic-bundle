@@ -18,6 +18,7 @@ declare(strict_types=1);
 namespace Pimcore\Bundle\AdminBundle\Controller\Admin\Document;
 
 use Pimcore\Bundle\AdminBundle\Controller\AdminAbstractController;
+use Pimcore\Bundle\AdminBundle\Helper\RequestParams;
 use Pimcore\Document\Editable\EditableHandler;
 use Pimcore\Event\DocumentEvents;
 use Pimcore\Localization\LocaleServiceInterface;
@@ -62,10 +63,10 @@ class RenderletController extends AdminAbstractController
         ]);
         $eventDispatcher->dispatch($event, DocumentEvents::EDITABLE_RENDERLET_PRE_RENDER);
 
-        $controller = $request->get('controller');
+        $controller = RequestParams::get($request, 'controller');
 
         // set document if set in request
-        if ($documentId = $request->get('pimcore_parentDocument')) {
+        if ($documentId = RequestParams::get($request, 'pimcore_parentDocument')) {
             $document = Document\PageSnippet::getById((int)$documentId);
             if ($document) {
                 $attributes = $actionRenderer->addDocumentAttributes($document, $attributes);
@@ -74,7 +75,7 @@ class RenderletController extends AdminAbstractController
         }
 
         // override template if set
-        if ($template = $request->get('template')) {
+        if ($template = RequestParams::get($request, 'template')) {
             $attributes[DynamicRouter::CONTENT_TEMPLATE] = $template;
         }
 
@@ -99,8 +100,8 @@ class RenderletController extends AdminAbstractController
     {
         $element = null;
 
-        $id = $request->get('id');
-        $type = $request->get('type');
+        $id = RequestParams::get($request, 'id');
+        $type = RequestParams::get($request, 'type');
 
         if ($id && $type) {
             $element = Service::getElementById($type, (int)$id);

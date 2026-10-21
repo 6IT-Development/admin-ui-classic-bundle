@@ -24,6 +24,7 @@ use League\Flysystem\UnableToReadFile;
 use Pimcore\Bundle\AdminBundle\Controller\AdminAbstractController;
 use Pimcore\Bundle\AdminBundle\Event\AdminEvents;
 use Pimcore\Bundle\AdminBundle\Helper\GridHelperService;
+use Pimcore\Bundle\AdminBundle\Helper\RequestParams;
 use Pimcore\Bundle\AdminBundle\Model\GridConfig;
 use Pimcore\Bundle\AdminBundle\Model\GridConfigFavourite;
 use Pimcore\Bundle\AdminBundle\Model\GridConfigShare;
@@ -66,11 +67,11 @@ class DataObjectHelperController extends AdminAbstractController
     #[Route('/load-object-data', name: 'loadobjectdata', methods: [Request::METHOD_GET])]
     public function loadObjectDataAction(Request $request): JsonResponse
     {
-        $object = DataObject::getById((int)$request->get('id'));
+        $object = DataObject::getById((int)$request->query->get('id'));
         $result = [];
         if ($object) {
             $result['success'] = true;
-            $fields = $request->get('fields');
+            $fields = RequestParams::get($request, 'fields');
             $result['fields'] = GridData\DataObject::getData($object, $fields);
         } else {
             $result['success'] = false;
@@ -145,7 +146,7 @@ class DataObjectHelperController extends AdminAbstractController
     #[Route('/get-export-configs', name: 'getexportconfigs', methods: [Request::METHOD_GET])]
     public function getExportConfigsAction(Request $request): JsonResponse
     {
-        $classId = $request->get('classId');
+        $classId = $request->query->get('classId');
         $list = $this->getMyOwnGridColumnConfigs($this->getAdminUser()->getId(), $classId);
         if (!is_array($list)) {
             $list = [];
@@ -178,7 +179,7 @@ class DataObjectHelperController extends AdminAbstractController
         Config                   $config
     ): JsonResponse
     {
-        $gridConfigId = (int)$request->get('gridConfigId');
+        $gridConfigId = (int)RequestParams::get($request, 'gridConfigId');
         $gridConfig = GridConfig::getById($gridConfigId);
         $success = false;
         if ($gridConfig) {
@@ -233,19 +234,19 @@ class DataObjectHelperController extends AdminAbstractController
         $class = null;
         $fields = null;
 
-        if ($request->get('id')) {
-            $class = DataObject\ClassDefinition::getById($request->get('id'));
-        } elseif ($request->get('name')) {
-            $class = DataObject\ClassDefinition::getByName($request->get('name'));
+        if (RequestParams::get($request, 'id')) {
+            $class = DataObject\ClassDefinition::getById(RequestParams::get($request, 'id'));
+        } elseif (RequestParams::get($request, 'name')) {
+            $class = DataObject\ClassDefinition::getByName(RequestParams::get($request, 'name'));
         }
 
         $gridConfigId = null;
         $gridType = 'search';
-        if ($request->get('gridtype')) {
-            $gridType = $request->get('gridtype');
+        if (RequestParams::get($request, 'gridtype')) {
+            $gridType = RequestParams::get($request, 'gridtype');
         }
 
-        $objectId = (int)$request->get('objectId');
+        $objectId = (int)RequestParams::get($request, 'objectId');
 
         if ($objectId) {
             $fields = DataObject\Service::getCustomGridFieldDefinitions($class->getId(), $objectId);
@@ -266,17 +267,17 @@ class DataObjectHelperController extends AdminAbstractController
         }
 
         $types = [];
-        if ($request->get('types')) {
-            $types = explode(',', $request->get('types'));
+        if (RequestParams::get($request, 'types')) {
+            $types = explode(',', RequestParams::get($request, 'types'));
         }
 
         $userId = $this->getAdminUser()->getId();
 
-        $requestedGridConfigId = $isDelete ? null : $request->get('gridConfigId');
+        $requestedGridConfigId = $isDelete ? null : RequestParams::get($request, 'gridConfigId');
 
         // grid config
         $gridConfig = [];
-        $searchType = $request->get('searchType');
+        $searchType = RequestParams::get($request, 'searchType');
 
         if (strlen($requestedGridConfigId ?? '') == 0 && $class) {
             // check if there is a favourite view
@@ -699,7 +700,7 @@ class DataObjectHelperController extends AdminAbstractController
         $helperColumns = [];
         $newData = [];
         /** @var stdClass[] $data */
-        $data = json_decode($request->get('columns'));
+        $data = json_decode(RequestParams::get($request, 'columns'));
         foreach ($data as $item) {
             if (!empty($item->isOperator)) {
                 $itemKey = '#' . uniqid();
@@ -728,8 +729,8 @@ class DataObjectHelperController extends AdminAbstractController
         $object = DataObject::getById($objectId);
 
         if ($object->isAllowed('list')) {
-            $classId = $request->get('classId');
-            $searchType = $request->get('searchType');
+            $classId = RequestParams::get($request, 'classId');
+            $searchType = RequestParams::get($request, 'searchType');
             $user = $this->getAdminUser();
             $db = Db::get();
             $db->executeQuery('delete from gridconfig_favourites where '
@@ -747,16 +748,16 @@ class DataObjectHelperController extends AdminAbstractController
     #[Route('/grid-mark-favourite-column-config', name: 'gridmarkfavouritecolumnconfig', methods: [Request::METHOD_POST])]
     public function gridMarkFavouriteColumnConfigAction(Request $request): JsonResponse
     {
-        $objectId = (int)$request->get('objectId');
+        $objectId = (int)RequestParams::get($request, 'objectId');
         $object = DataObject::getById($objectId);
 
         if ($object->isAllowed('list')) {
-            $classId = $request->get('classId');
-            $gridConfigId = $request->get('gridConfigId');
-            $searchType = $request->get('searchType');
-            $global = $request->get('global');
+            $classId = RequestParams::get($request, 'classId');
+            $gridConfigId = RequestParams::get($request, 'gridConfigId');
+            $searchType = RequestParams::get($request, 'searchType');
+            $global = RequestParams::get($request, 'global');
             $user = $this->getAdminUser();
-            $type = $request->get('type');
+            $type = RequestParams::get($request, 'type');
 
             $favourite = new GridConfigFavourite();
             $favourite->setOwnerId($user->getId());
@@ -834,13 +835,13 @@ class DataObjectHelperController extends AdminAbstractController
 
         if ($object->isAllowed('list')) {
             try {
-                $classId = $request->get('class_id');
-                $context = $request->get('context');
+                $classId = RequestParams::get($request, 'class_id');
+                $context = RequestParams::get($request, 'context');
 
-                $searchType = $request->get('searchType');
+                $searchType = RequestParams::get($request, 'searchType');
 
                 // grid config
-                $gridConfigData = $this->decodeJson($request->get('gridconfig'));
+                $gridConfigData = $this->decodeJson(RequestParams::get($request, 'gridconfig'));
                 $gridConfigData['pimcore_version'] = Version::getVersion();
                 $gridConfigData['pimcore_revision'] = Version::getRevision();
 
@@ -848,7 +849,7 @@ class DataObjectHelperController extends AdminAbstractController
 
                 unset($gridConfigData['settings']['isShared']);
 
-                $metadata = $request->get('settings');
+                $metadata = RequestParams::get($request, 'settings');
                 $metadata = json_decode($metadata, true);
 
                 $gridConfigId = $metadata['gridConfigId'];
@@ -1128,7 +1129,7 @@ class DataObjectHelperController extends AdminAbstractController
         $data = file_get_contents($_FILES['Filedata']['tmp_name']);
         $data = Tool\Text::convertToUTF8($data);
 
-        $importId = $request->get('importId');
+        $importId = RequestParams::get($request, 'importId');
         $importId = str_replace('..', '', $importId);
         $importFile = PIMCORE_SYSTEM_TEMP_DIRECTORY . '/import_' . $importId;
         $filesystem->dumpFile($importFile, $data);
@@ -1149,7 +1150,7 @@ class DataObjectHelperController extends AdminAbstractController
 
     protected function extractLanguage(Request $request): string
     {
-        $requestedLanguage = $request->get('language');
+        $requestedLanguage = RequestParams::get($request, 'language');
         if ($requestedLanguage) {
             if ($requestedLanguage != 'default') {
                 $request->setLocale($requestedLanguage);
@@ -1213,9 +1214,9 @@ class DataObjectHelperController extends AdminAbstractController
         EventDispatcherInterface $eventDispatcher
     ): JsonResponse
     {
-        $fileHandle = File::getValidFilename($request->get('fileHandle'));
-        $ids = $request->get('ids');
-        $settings = json_decode($request->get('settings'), true);
+        $fileHandle = File::getValidFilename(RequestParams::get($request, 'fileHandle'));
+        $ids = RequestParams::get($request, 'ids');
+        $settings = json_decode(RequestParams::get($request, 'settings'), true);
         $delimiter = $settings['delimiter'] ?? ';';
         $header = $settings['header'] ?? 'title';
         Tool\UserTimezone::setUserTimezone($request->request->get('userTimezone'));
@@ -1225,7 +1226,7 @@ class DataObjectHelperController extends AdminAbstractController
         $enableInheritance = $settings['enableInheritance'] ?? false;
         DataObject\Concrete::setGetInheritedValues($enableInheritance);
 
-        $class = DataObject\ClassDefinition::getById($request->get('classId'));
+        $class = DataObject\ClassDefinition::getById(RequestParams::get($request, 'classId'));
 
         if (!$class) {
             throw new InvalidArgumentException('No class definition found');
@@ -1254,9 +1255,9 @@ class DataObjectHelperController extends AdminAbstractController
 
         $list = $beforeListExportEvent->getArgument('list');
 
-        $fields = json_decode($request->get('fields')[0], true);
+        $fields = json_decode(RequestParams::get($request, 'fields')[0], true);
 
-        $addTitles = (bool)$request->get('initial');
+        $addTitles = (bool)RequestParams::get($request, 'initial');
 
         $requestedLanguage = $this->extractLanguage($request);
 
@@ -1264,7 +1265,7 @@ class DataObjectHelperController extends AdminAbstractController
             'source' => 'pimcore-export',
         ];
 
-        $contextFromRequest = $request->get('context');
+        $contextFromRequest = RequestParams::get($request, 'context');
         if ($contextFromRequest) {
             $contextFromRequest = json_decode($contextFromRequest, true);
             $context = array_merge($context, $contextFromRequest);
@@ -1292,7 +1293,7 @@ class DataObjectHelperController extends AdminAbstractController
 
             $firstLine = true;
 
-            if ($request->get('initial') && $header === 'no_header') {
+            if (RequestParams::get($request, 'initial') && $header === 'no_header') {
                 array_shift($csv);
                 $firstLine = false;
             }
@@ -1347,7 +1348,7 @@ class DataObjectHelperController extends AdminAbstractController
     public function downloadCsvFileAction(Request $request): Response
     {
         $storage = Storage::get('temp');
-        $fileHandle = File::getValidFilename($request->get('fileHandle'));
+        $fileHandle = File::getValidFilename($request->query->get('fileHandle'));
         $csvFile = $this->getCsvFile($fileHandle);
 
         try {
@@ -1376,7 +1377,7 @@ class DataObjectHelperController extends AdminAbstractController
     ): BinaryFileResponse
     {
         $storage = Storage::get('temp');
-        $fileHandle = File::getValidFilename($request->get('fileHandle'));
+        $fileHandle = File::getValidFilename($request->query->get('fileHandle'));
         $csvFile = $this->getCsvFile($fileHandle);
 
         try {
@@ -1410,8 +1411,8 @@ class DataObjectHelperController extends AdminAbstractController
         GridHelperService $gridHelperService
     ): JsonResponse
     {
-        if ($request->get('language')) {
-            $request->setLocale($request->get('language'));
+        if (RequestParams::get($request, 'language')) {
+            $request->setLocale(RequestParams::get($request, 'language'));
         }
 
         $allParams = array_merge($request->request->all(), $request->query->all());
@@ -1428,8 +1429,8 @@ class DataObjectHelperController extends AdminAbstractController
         $success = true;
 
         try {
-            if ($request->get('data')) {
-                $params = $this->decodeJson($request->get('data'));
+            if (RequestParams::get($request, 'data')) {
+                $params = $this->decodeJson(RequestParams::get($request, 'data'));
                 $object = DataObject\Concrete::getById($params['job']);
 
                 if ($object) {
@@ -1586,7 +1587,7 @@ class DataObjectHelperController extends AdminAbstractController
                                             $newData = $field->appendData($existingData, $newData);
                                         }
                                         if ($remove) {
-                                            $existingData = $object->$getter($request->get('language'));
+                                            $existingData = $object->$getter(RequestParams::get($request, 'language'));
                                             $newData = $field->removeData($existingData, $newData);
                                         }
 
@@ -1636,8 +1637,8 @@ class DataObjectHelperController extends AdminAbstractController
         $classList = [];
         $classNameList = [];
 
-        if ($request->get('classes')) {
-            $classNameList = $request->get('classes');
+        if ($request->query->get('classes')) {
+            $classNameList = $request->query->get('classes');
             $classNameList = explode(',', $classNameList);
             foreach ($classNameList as $className) {
                 $class = DataObject\ClassDefinition::getByName($className);

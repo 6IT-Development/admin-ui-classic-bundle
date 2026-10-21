@@ -20,6 +20,7 @@ namespace Pimcore\Bundle\AdminBundle\Controller\Admin\DataObject;
 use Exception;
 use Pimcore\Bundle\AdminBundle\Controller\AdminAbstractController;
 use Pimcore\Bundle\AdminBundle\Event\AdminEvents;
+use Pimcore\Bundle\AdminBundle\Helper\RequestParams;
 use Pimcore\Controller\KernelControllerEventInterface;
 use Pimcore\Db;
 use Pimcore\Logger;
@@ -96,7 +97,7 @@ class ClassController extends AdminAbstractController implements KernelControlle
         $classes = $classesList->load();
 
         // filter classes
-        if ($request->get('createAllowed')) {
+        if (RequestParams::get($request, 'createAllowed')) {
             $tmpClasses = [];
             foreach ($classes as $class) {
                 if ($this->getAdminUser()->isAllowed($class->getId(), 'class')) {
@@ -106,8 +107,8 @@ class ClassController extends AdminAbstractController implements KernelControlle
             $classes = $tmpClasses;
         }
 
-        $withId = $request->get('withId');
-        $useTitle = $request->get('useTitle');
+        $withId = RequestParams::get($request, 'withId');
+        $useTitle = RequestParams::get($request, 'useTitle');
         $getClassConfig = function ($class) use ($withId, $useTitle) {
             $defaultIcon = '/bundles/pimcoreadmin/img/flat-color-icons/class.svg';
             $text = $class->getName();
@@ -176,7 +177,7 @@ class ClassController extends AdminAbstractController implements KernelControlle
             array_multisort($types, SORT_ASC, array_keys($groups), SORT_ASC, $groups);
         }
 
-        if (!$request->get('grouped')) {
+        if (!RequestParams::get($request, 'grouped')) {
             // list output
             foreach ($groups as $groupName => $groupData) {
                 foreach ($groupData['classes'] as $class) {
@@ -220,7 +221,7 @@ class ClassController extends AdminAbstractController implements KernelControlle
     #[Route('/get', name: 'get', methods: [Request::METHOD_GET])]
     public function getAction(Request $request): JsonResponse
     {
-        $class = DataObject\ClassDefinition::getById($request->get('id'));
+        $class = DataObject\ClassDefinition::getById($request->query->get('id'));
         if (!$class) {
             throw $this->createNotFoundException();
         }
@@ -235,21 +236,21 @@ class ClassController extends AdminAbstractController implements KernelControlle
     #[Route('/get-custom-layout', name: 'getcustomlayout', methods: [Request::METHOD_GET])]
     public function getCustomLayoutAction(Request $request): JsonResponse
     {
-        $customLayout = DataObject\ClassDefinition\CustomLayout::getById($request->get('id'));
+        $customLayout = DataObject\ClassDefinition\CustomLayout::getById($request->query->get('id'));
         if (!$customLayout) {
-            $brickLayoutSeparator = strpos($request->get('id'), '.brick.');
+            $brickLayoutSeparator = strpos($request->query->get('id'), '.brick.');
             if ($brickLayoutSeparator !== false) {
-                $customLayout = DataObject\ClassDefinition\CustomLayout::getById(substr($request->get('id'), 0, $brickLayoutSeparator));
+                $customLayout = DataObject\ClassDefinition\CustomLayout::getById(substr($request->query->get('id'), 0, $brickLayoutSeparator));
                 if ($customLayout instanceof DataObject\ClassDefinition\CustomLayout) {
                     $customLayout = DataObject\ClassDefinition\CustomLayout::create(
                         [
-                            'name' => $customLayout->getName() . ' ' . substr($request->get('id'), $brickLayoutSeparator + strlen('.brick.')),
+                            'name' => $customLayout->getName() . ' ' . substr($request->query->get('id'), $brickLayoutSeparator + strlen('.brick.')),
                             'userOwner' => $this->getAdminUser()->getId(),
                             'classId' => $customLayout->getClassId(),
                         ]
                     );
 
-                    $customLayout->setId($request->get('id'));
+                    $customLayout->setId($request->query->get('id'));
                     if (!$customLayout->isWriteable()) {
                         throw new ConfigWriteException();
                     }
@@ -271,10 +272,10 @@ class ClassController extends AdminAbstractController implements KernelControlle
     #[Route('/add', name: 'add', methods: [Request::METHOD_POST])]
     public function addAction(Request $request): JsonResponse
     {
-        $className = $request->get('className');
+        $className = RequestParams::get($request, 'className');
         $className = $this->correctClassname($className);
 
-        $classId = $request->get('classIdentifier');
+        $classId = RequestParams::get($request, 'classIdentifier');
         $existingClass = DataObject\ClassDefinition::getById($classId);
         if ($existingClass) {
             throw new Exception('Class identifier already exists');
@@ -295,7 +296,7 @@ class ClassController extends AdminAbstractController implements KernelControlle
     #[Route('/add-custom-layout', name: 'addcustomlayout', methods: [Request::METHOD_POST])]
     public function addCustomLayoutAction(Request $request): JsonResponse
     {
-        $layoutId = $request->get('layoutIdentifier');
+        $layoutId = RequestParams::get($request, 'layoutIdentifier');
         $existingLayout = DataObject\ClassDefinition\CustomLayout::getById($layoutId);
         if ($existingLayout) {
             throw new Exception('Custom Layout identifier already exists');
@@ -303,9 +304,9 @@ class ClassController extends AdminAbstractController implements KernelControlle
 
         $customLayout = DataObject\ClassDefinition\CustomLayout::create(
             [
-                'name' => $request->get('layoutName'),
+                'name' => RequestParams::get($request, 'layoutName'),
                 'userOwner' => $this->getAdminUser()->getId(),
-                'classId' => $request->get('classId'),
+                'classId' => RequestParams::get($request, 'classId'),
             ]
         );
 
@@ -326,7 +327,7 @@ class ClassController extends AdminAbstractController implements KernelControlle
     #[Route('/delete', name: 'delete', methods: [Request::METHOD_DELETE])]
     public function deleteAction(Request $request): Response
     {
-        $class = DataObject\ClassDefinition::getById($request->get('id'));
+        $class = DataObject\ClassDefinition::getById(RequestParams::get($request, 'id'));
         $class?->delete();
 
         return new Response();
@@ -336,7 +337,7 @@ class ClassController extends AdminAbstractController implements KernelControlle
     public function deleteCustomLayoutAction(Request $request): JsonResponse
     {
         $customLayouts = new DataObject\ClassDefinition\CustomLayout\Listing();
-        $id = $request->get('id');
+        $id = RequestParams::get($request, 'id');
         $customLayouts->setFilter(function (DataObject\ClassDefinition\CustomLayout $layout) use ($id) {
             $currentLayoutId = $layout->getId();
 
@@ -353,13 +354,13 @@ class ClassController extends AdminAbstractController implements KernelControlle
     #[Route('/save-custom-layout', name: 'savecustomlayout', methods: [Request::METHOD_PUT])]
     public function saveCustomLayoutAction(Request $request): JsonResponse
     {
-        $customLayout = DataObject\ClassDefinition\CustomLayout::getById($request->get('id'));
+        $customLayout = DataObject\ClassDefinition\CustomLayout::getById(RequestParams::get($request, 'id'));
         if (!$customLayout) {
             throw $this->createNotFoundException();
         }
 
-        $configuration = $this->decodeJson($request->get('configuration'));
-        $values = $this->decodeJson($request->get('values'));
+        $configuration = $this->decodeJson(RequestParams::get($request, 'configuration'));
+        $values = $this->decodeJson(RequestParams::get($request, 'values'));
 
         $modificationDate = (int)$values['modificationDate'];
         if ($modificationDate < $customLayout->getModificationDate()) {
@@ -392,13 +393,13 @@ class ClassController extends AdminAbstractController implements KernelControlle
     #[Route('/save', name: 'save', methods: [Request::METHOD_PUT])]
     public function saveAction(Request $request): JsonResponse
     {
-        $class = DataObject\ClassDefinition::getById($request->get('id'));
+        $class = DataObject\ClassDefinition::getById(RequestParams::get($request, 'id'));
         if (!$class) {
             throw $this->createNotFoundException();
         }
 
-        $configuration = $this->decodeJson($request->get('configuration'));
-        $values = $this->decodeJson($request->get('values'));
+        $configuration = $this->decodeJson(RequestParams::get($request, 'configuration'));
+        $values = $this->decodeJson(RequestParams::get($request, 'values'));
 
         // check if the class was changed during editing in the frontend
         if ($class->getModificationDate() != $values['modificationDate']) {
@@ -478,7 +479,7 @@ class ClassController extends AdminAbstractController implements KernelControlle
     #[Route('/import-class', name: 'importclass', methods: [Request::METHOD_POST, Request::METHOD_PUT])]
     public function importClassAction(Request $request): Response
     {
-        $class = DataObject\ClassDefinition::getById($request->get('id'));
+        $class = DataObject\ClassDefinition::getById(RequestParams::get($request, 'id'));
         if (!$class) {
             throw $this->createNotFoundException();
         }
@@ -514,7 +515,7 @@ class ClassController extends AdminAbstractController implements KernelControlle
         }
 
         if (!$existingLayout instanceof DataObject\ClassDefinition\CustomLayout) {
-            $customLayoutId = $request->get('id');
+            $customLayoutId = RequestParams::get($request, 'id');
             $customLayout = DataObject\ClassDefinition\CustomLayout::getById($customLayoutId);
             if ($customLayout) {
                 try {
@@ -549,7 +550,7 @@ class ClassController extends AdminAbstractController implements KernelControlle
     #[Route('/get-custom-layout-definitions', name: 'getcustomlayoutdefinitions', methods: [Request::METHOD_GET])]
     public function getCustomLayoutDefinitionsAction(Request $request): JsonResponse
     {
-        $classIds = explode(',', $request->get('classId'));
+        $classIds = explode(',', $request->query->get('classId'));
         $list = new DataObject\ClassDefinition\CustomLayout\Listing();
 
         $list->setFilter(function (DataObject\ClassDefinition\CustomLayout $layout) use ($classIds) {
@@ -618,7 +619,7 @@ class ClassController extends AdminAbstractController implements KernelControlle
     #[Route('/export-class', name: 'exportclass', methods: [Request::METHOD_GET])]
     public function exportClassAction(Request $request): Response
     {
-        $id = $request->get('id');
+        $id = $request->query->get('id');
         $class = DataObject\ClassDefinition::getById($id);
 
         if (!$class instanceof DataObject\ClassDefinition) {
@@ -640,7 +641,7 @@ class ClassController extends AdminAbstractController implements KernelControlle
     #[Route('/export-custom-layout-definition', name: 'exportcustomlayoutdefinition', methods: [Request::METHOD_GET])]
     public function exportCustomLayoutDefinitionAction(Request $request): Response
     {
-        $id = $request->get('id');
+        $id = $request->query->get('id');
 
         if ($id) {
             $customLayout = DataObject\ClassDefinition\CustomLayout::getById($id);
@@ -669,7 +670,7 @@ class ClassController extends AdminAbstractController implements KernelControlle
     #[Route('/fieldcollection-get', name: 'fieldcollectionget', methods: [Request::METHOD_GET])]
     public function fieldcollectionGetAction(Request $request): JsonResponse
     {
-        $fc = DataObject\Fieldcollection\Definition::getByKey($request->get('id'));
+        $fc = DataObject\Fieldcollection\Definition::getByKey($request->query->get('id'));
 
         $isWriteable = $fc->isWritable();
         $fc = $fc->getObjectVars();
@@ -682,11 +683,11 @@ class ClassController extends AdminAbstractController implements KernelControlle
     public function fieldcollectionUpdateAction(Request $request): JsonResponse
     {
         try {
-            $key = $request->get('key');
-            $title = $request->get('title');
-            $group = $request->get('group');
+            $key = RequestParams::get($request, 'key');
+            $title = RequestParams::get($request, 'title');
+            $group = RequestParams::get($request, 'group');
 
-            if ($request->get('task') == 'add') {
+            if (RequestParams::get($request, 'task') == 'add') {
                 // check for existing fieldcollection with same name with different lower/upper cases
                 $list = new DataObject\Fieldcollection\Definition\Listing();
                 $list = $list->loadNames();
@@ -703,14 +704,14 @@ class ClassController extends AdminAbstractController implements KernelControlle
             $fcDef->setTitle($title);
             $fcDef->setGroup($group);
 
-            if ($request->get('values')) {
-                $values = $this->decodeJson($request->get('values'));
+            if (RequestParams::get($request, 'values')) {
+                $values = $this->decodeJson(RequestParams::get($request, 'values'));
                 $fcDef->setParentClass($values['parentClass']);
                 $fcDef->setImplementsInterfaces($values['implementsInterfaces']);
             }
 
-            if ($request->get('configuration')) {
-                $configuration = $this->decodeJson($request->get('configuration'));
+            if (RequestParams::get($request, 'configuration')) {
+                $configuration = $this->decodeJson(RequestParams::get($request, 'configuration'));
 
                 $configuration['datatype'] = 'layout';
                 $configuration['fieldtype'] = 'panel';
@@ -734,7 +735,7 @@ class ClassController extends AdminAbstractController implements KernelControlle
     {
         $this->checkPermission('fieldcollections');
 
-        $fieldCollection = DataObject\Fieldcollection\Definition::getByKey($request->get('id'));
+        $fieldCollection = DataObject\Fieldcollection\Definition::getByKey(RequestParams::get($request, 'id'));
 
         $data = file_get_contents($_FILES['Filedata']['tmp_name']);
 
@@ -756,10 +757,10 @@ class ClassController extends AdminAbstractController implements KernelControlle
     {
         $this->checkPermission('fieldcollections');
 
-        $fieldCollection = DataObject\Fieldcollection\Definition::getByKey($request->get('id'));
+        $fieldCollection = DataObject\Fieldcollection\Definition::getByKey($request->query->get('id'));
 
         if (!$fieldCollection instanceof DataObject\Fieldcollection\Definition) {
-            $errorMessage = ': Field-Collection with id [ ' . $request->get('id') . ' not found. ]';
+            $errorMessage = ': Field-Collection with id [ ' . $request->query->get('id') . ' not found. ]';
             Logger::error($errorMessage);
 
             throw $this->createNotFoundException($errorMessage);
@@ -778,7 +779,7 @@ class ClassController extends AdminAbstractController implements KernelControlle
     {
         $this->checkPermission('fieldcollections');
 
-        $fc = DataObject\Fieldcollection\Definition::getByKey($request->get('id'));
+        $fc = DataObject\Fieldcollection\Definition::getByKey(RequestParams::get($request, 'id'));
         $fc->delete();
 
         return $this->adminJson(['success' => true]);
@@ -793,7 +794,7 @@ class ClassController extends AdminAbstractController implements KernelControlle
         $list = new DataObject\Fieldcollection\Definition\Listing();
         $list = $list->load();
 
-        $forObjectEditor = $request->get('forObjectEditor');
+        $forObjectEditor = RequestParams::get($request, 'forObjectEditor');
 
         $layoutDefinitions = [];
 
@@ -801,11 +802,11 @@ class ClassController extends AdminAbstractController implements KernelControlle
 
         $allowedTypes = null;
         if ($request->query->has('allowedTypes')) {
-            $allowedTypes = explode(',', $request->get('allowedTypes'));
+            $allowedTypes = explode(',', RequestParams::get($request, 'allowedTypes'));
         }
-        $object = DataObject\Concrete::getById((int)$request->get('object_id'));
+        $object = DataObject\Concrete::getById((int)RequestParams::get($request, 'object_id'));
 
-        $currentLayoutId = $request->get('layoutId');
+        $currentLayoutId = RequestParams::get($request, 'layoutId');
         $user = Admin::getCurrentUser();
 
         $groups = [];
@@ -873,7 +874,7 @@ class ClassController extends AdminAbstractController implements KernelControlle
 
         $event = new GenericEvent($this, [
             'list' => $definitions,
-            'objectId' => $request->get('object_id'),
+            'objectId' => RequestParams::get($request, 'object_id'),
             'layoutDefinitions' => $layoutDefinitions,
         ]);
         $eventDispatcher->dispatch($event, AdminEvents::CLASS_FIELDCOLLECTION_LIST_PRE_SEND_DATA);
@@ -894,14 +895,14 @@ class ClassController extends AdminAbstractController implements KernelControlle
     ): JsonResponse
     {
         $user = Admin::getCurrentUser();
-        $currentLayoutId = $request->get('layoutId');
+        $currentLayoutId = $request->query->get('layoutId');
 
         $list = new DataObject\Fieldcollection\Definition\Listing();
         $list = $list->load();
 
         if ($request->query->has('allowedTypes')) {
             $filteredList = [];
-            $allowedTypes = explode(',', $request->get('allowedTypes'));
+            $allowedTypes = explode(',', $request->query->get('allowedTypes'));
             foreach ($list as $type) {
                 if (in_array($type->getKey(), $allowedTypes)) {
                     $filteredList[] = $type;
@@ -911,10 +912,10 @@ class ClassController extends AdminAbstractController implements KernelControlle
                     $context = [
                         'containerType' => 'fieldcollection',
                         'containerKey' => $type->getKey(),
-                        'outerFieldname' => $request->get('field_name'),
+                        'outerFieldname' => $request->query->get('field_name'),
                     ];
 
-                    $object = DataObject\Concrete::getById((int)$request->get('object_id'));
+                    $object = DataObject\Concrete::getById((int)$request->query->get('object_id'));
 
                     DataObject\Service::enrichLayoutDefinition($layoutDefinitions, $object, $context);
 
@@ -929,7 +930,7 @@ class ClassController extends AdminAbstractController implements KernelControlle
 
         $event = new GenericEvent($this, [
             'list' => $list,
-            'objectId' => $request->get('object_id'),
+            'objectId' => $request->query->get('object_id'),
         ]);
         $eventDispatcher->dispatch($event, AdminEvents::CLASS_FIELDCOLLECTION_LIST_PRE_SEND_DATA);
         $list = $event->getArgument('list');
@@ -940,11 +941,11 @@ class ClassController extends AdminAbstractController implements KernelControlle
     #[Route('/get-class-definition-for-column-config', name: 'getclassdefinitionforcolumnconfig', methods: [Request::METHOD_GET])]
     public function getClassDefinitionForColumnConfigAction(Request $request): JsonResponse
     {
-        $class = DataObject\ClassDefinition::getById($request->get('id'));
+        $class = DataObject\ClassDefinition::getById($request->query->get('id'));
         if (!$class) {
             throw $this->createNotFoundException();
         }
-        $objectId = (int)$request->get('oid');
+        $objectId = (int)$request->query->get('oid');
 
         $filteredDefinitions = DataObject\Service::getCustomLayoutDefinitionForGridColumnConfig($class, $objectId);
 
@@ -1016,7 +1017,7 @@ class ClassController extends AdminAbstractController implements KernelControlle
     #[Route('/objectbrick-get', name: 'objectbrickget', methods: [Request::METHOD_GET])]
     public function objectbrickGetAction(Request $request): JsonResponse
     {
-        $fc = DataObject\Objectbrick\Definition::getByKey($request->get('id'));
+        $fc = DataObject\Objectbrick\Definition::getByKey($request->query->get('id'));
 
         $isWriteable = $fc->isWritable();
         $fc = $fc->getObjectVars();
@@ -1032,11 +1033,11 @@ class ClassController extends AdminAbstractController implements KernelControlle
     ): JsonResponse
     {
         try {
-            $key = $request->get('key');
-            $title = $request->get('title');
-            $group = $request->get('group');
+            $key = RequestParams::get($request, 'key');
+            $title = RequestParams::get($request, 'title');
+            $group = RequestParams::get($request, 'group');
 
-            if ($request->get('task') == 'add') {
+            if (RequestParams::get($request, 'task') == 'add') {
                 // check for existing brick with same name with different lower/upper cases
                 $list = new DataObject\Objectbrick\Definition\Listing();
                 $list = $list->loadNames();
@@ -1054,16 +1055,16 @@ class ClassController extends AdminAbstractController implements KernelControlle
             $brickDef->setTitle($title);
             $brickDef->setGroup($group);
 
-            if ($request->get('values')) {
-                $values = $this->decodeJson($request->get('values'));
+            if (RequestParams::get($request, 'values')) {
+                $values = $this->decodeJson(RequestParams::get($request, 'values'));
 
                 $brickDef->setParentClass($values['parentClass']);
                 $brickDef->setImplementsInterfaces($values['implementsInterfaces']);
                 $brickDef->setClassDefinitions($values['classDefinitions']);
             }
 
-            if ($request->get('configuration')) {
-                $configuration = $this->decodeJson($request->get('configuration'));
+            if (RequestParams::get($request, 'configuration')) {
+                $configuration = $this->decodeJson(RequestParams::get($request, 'configuration'));
 
                 $configuration['datatype'] = 'layout';
                 $configuration['fieldtype'] = 'panel';
@@ -1093,7 +1094,7 @@ class ClassController extends AdminAbstractController implements KernelControlle
     {
         $this->checkPermission('objectbricks');
 
-        $objectBrick = DataObject\Objectbrick\Definition::getByKey($request->get('id'));
+        $objectBrick = DataObject\Objectbrick\Definition::getByKey(RequestParams::get($request, 'id'));
 
         $data = file_get_contents($_FILES['Filedata']['tmp_name']);
         $success = DataObject\ClassDefinition\Service::importObjectBrickFromJson($objectBrick, $data);
@@ -1114,10 +1115,10 @@ class ClassController extends AdminAbstractController implements KernelControlle
     {
         $this->checkPermission('objectbricks');
 
-        $objectBrick = DataObject\Objectbrick\Definition::getByKey($request->get('id'));
+        $objectBrick = DataObject\Objectbrick\Definition::getByKey($request->query->get('id'));
 
         if (!$objectBrick instanceof DataObject\Objectbrick\Definition) {
-            $errorMessage = ': Object-Brick with id [ ' . $request->get('id') . ' not found. ]';
+            $errorMessage = ': Object-Brick with id [ ' . $request->query->get('id') . ' not found. ]';
             Logger::error($errorMessage);
 
             throw $this->createNotFoundException($errorMessage);
@@ -1136,7 +1137,7 @@ class ClassController extends AdminAbstractController implements KernelControlle
     {
         $this->checkPermission('objectbricks');
 
-        $fc = DataObject\Objectbrick\Definition::getByKey($request->get('id'));
+        $fc = DataObject\Objectbrick\Definition::getByKey(RequestParams::get($request, 'id'));
         $fc->delete();
 
         return $this->adminJson(['success' => true]);
@@ -1151,7 +1152,7 @@ class ClassController extends AdminAbstractController implements KernelControlle
         $list = new DataObject\Objectbrick\Definition\Listing();
         $list = $list->load();
 
-        $forObjectEditor = $request->get('forObjectEditor');
+        $forObjectEditor = RequestParams::get($request, 'forObjectEditor');
 
         $context = [];
         $layoutDefinitions = [];
@@ -1160,11 +1161,11 @@ class ClassController extends AdminAbstractController implements KernelControlle
         $fieldname = null;
         $className = null;
 
-        $object = DataObject\Concrete::getById((int)$request->get('object_id'));
+        $object = DataObject\Concrete::getById((int)RequestParams::get($request, 'object_id'));
 
         if ($request->query->has('class_id') && $request->query->has('field_name')) {
-            $classId = $request->get('class_id');
-            $fieldname = $request->get('field_name');
+            $classId = RequestParams::get($request, 'class_id');
+            $fieldname = RequestParams::get($request, 'field_name');
             $classDefinition = DataObject\ClassDefinition::getById($classId);
             $className = $classDefinition->getName();
         }
@@ -1206,7 +1207,7 @@ class ClassController extends AdminAbstractController implements KernelControlle
                     ];
                 }
                 if ($forObjectEditor) {
-                    $layoutId = $request->get('layoutId');
+                    $layoutId = RequestParams::get($request, 'layoutId');
                     $itemLayoutDefinitions = null;
                     if ($layoutId) {
                         $layout = DataObject\ClassDefinition\CustomLayout::getById($layoutId . '.brick.' . $item->getKey());
@@ -1236,7 +1237,7 @@ class ClassController extends AdminAbstractController implements KernelControlle
                 if ($forObjectEditor) {
                     $layout = $item->getLayoutDefinitions();
 
-                    $currentLayoutId = $request->get('layoutId');
+                    $currentLayoutId = RequestParams::get($request, 'layoutId');
 
                     $user = $this->getAdminUser();
                     if ($currentLayoutId == -1 && $user->isAdmin()) {
@@ -1269,10 +1270,10 @@ class ClassController extends AdminAbstractController implements KernelControlle
 
         $event = new GenericEvent($this, [
             'list' => $definitions,
-            'objectId' => $request->get('object_id'),
+            'objectId' => RequestParams::get($request, 'object_id'),
             'forObjectEditor' => $forObjectEditor,
             'layoutDefinitions' => $layoutDefinitions,
-            'fieldName' => $request->get('field_name'),
+            'fieldName' => RequestParams::get($request, 'field_name'),
             'object' => $object,
         ]);
         $eventDispatcher->dispatch($event, AdminEvents::CLASS_OBJECTBRICK_LIST_PRE_SEND_DATA);
@@ -1297,8 +1298,8 @@ class ClassController extends AdminAbstractController implements KernelControlle
 
         if ($request->query->has('class_id') && $request->query->has('field_name')) {
             $filteredList = [];
-            $classId = $request->get('class_id');
-            $fieldname = $request->get('field_name');
+            $classId = $request->query->get('class_id');
+            $fieldname = $request->query->get('field_name');
             $classDefinition = DataObject\ClassDefinition::getById($classId);
             $className = $classDefinition->getName();
 
@@ -1314,7 +1315,7 @@ class ClassController extends AdminAbstractController implements KernelControlle
 
                 $layout = $type->getLayoutDefinitions();
 
-                $currentLayoutId = $request->get('layoutId');
+                $currentLayoutId = $request->query->get('layoutId');
 
                 $user = $this->getAdminUser();
                 if ($currentLayoutId == -1 && $user->isAdmin()) {
@@ -1325,10 +1326,10 @@ class ClassController extends AdminAbstractController implements KernelControlle
                 $context = [
                     'containerType' => 'objectbrick',
                     'containerKey' => $type->getKey(),
-                    'outerFieldname' => $request->get('field_name'),
+                    'outerFieldname' => $request->query->get('field_name'),
                 ];
 
-                $object = DataObject\Concrete::getById((int)$request->get('object_id'));
+                $object = DataObject\Concrete::getById((int)$request->query->get('object_id'));
 
                 DataObject\Service::enrichLayoutDefinition($layout, $object, $context);
                 $type->setLayoutDefinitions($layout);
@@ -1339,7 +1340,7 @@ class ClassController extends AdminAbstractController implements KernelControlle
 
         $event = new GenericEvent($this, [
             'list' => $list,
-            'objectId' => $request->get('object_id'),
+            'objectId' => $request->query->get('object_id'),
         ]);
         $eventDispatcher->dispatch($event, AdminEvents::CLASS_OBJECTBRICK_LIST_PRE_SEND_DATA);
         $list = $event->getArgument('list');
@@ -1414,7 +1415,7 @@ class ClassController extends AdminAbstractController implements KernelControlle
     #[Route('/bulk-commit', name: 'bulkcommit', methods: [Request::METHOD_POST])]
     public function bulkCommitAction(Request $request): JsonResponse
     {
-        $data = json_decode($request->get('data'), true);
+        $data = json_decode(RequestParams::get($request, 'data'), true);
 
         $session = Session::getSessionBag($request->getSession(), 'pimcore_objects');
         $filename = $session->get('class_bulk_import_file');
@@ -1517,7 +1518,7 @@ class ClassController extends AdminAbstractController implements KernelControlle
     #[Route('/bulk-export-prepare', name: 'bulkexportprepare', methods: [Request::METHOD_POST])]
     public function bulkExportPrepareAction(Request $request): Response
     {
-        $data = $request->get('data');
+        $data = RequestParams::get($request, 'data');
 
         Session::useBag($request->getSession(), function (AttributeBagInterface $session) use ($data) {
             $session->set('class_bulk_export_settings', $data);
@@ -1665,7 +1666,7 @@ class ClassController extends AdminAbstractController implements KernelControlle
     #[Route('/get-fieldcollection-usages', name: 'getfieldcollectionusages', methods: [Request::METHOD_GET])]
     public function getFieldcollectionUsagesAction(Request $request): Response
     {
-        $key = $request->get('key');
+        $key = $request->query->get('key');
         $result = [];
 
         $classes = new DataObject\ClassDefinition\Listing();
@@ -1691,7 +1692,7 @@ class ClassController extends AdminAbstractController implements KernelControlle
     #[Route('/get-bricks-usages', name: 'getbrickusages', methods: [Request::METHOD_GET])]
     public function getBrickUsagesAction(Request $request): Response
     {
-        $classId = $request->get('classId');
+        $classId = $request->query->get('classId');
         $myclass = DataObject\ClassDefinition::getById($classId);
 
         $result = [];
@@ -1717,7 +1718,7 @@ class ClassController extends AdminAbstractController implements KernelControlle
     public function getSelectOptionsUsagesAction(Request $request): Response
     {
         $usages = [];
-        $id = $request->get(DataObject\SelectOptions\Config::PROPERTY_ID);
+        $id = $request->query->get(DataObject\SelectOptions\Config::PROPERTY_ID);
         $selectOptionsConfiguration = $this->getSelectOptionsConfig($id);
         foreach ($selectOptionsConfiguration->getFieldsUsedIn() as $className => $fieldNames) {
             foreach ($fieldNames as $fieldName) {
@@ -1848,7 +1849,7 @@ class ClassController extends AdminAbstractController implements KernelControlle
     #[Route('/suggest-custom-layout-identifier', name: 'suggestcustomlayoutidentifier')]
     public function suggestCustomLayoutIdentifierAction(Request $request): Response
     {
-        $classId = $request->get('classId');
+        $classId = RequestParams::get($request, 'classId');
 
         $identifier = DataObject\ClassDefinition\CustomLayout::getIdentifier($classId);
 
@@ -1877,23 +1878,23 @@ class ClassController extends AdminAbstractController implements KernelControlle
     #[Route('/text-layout-preview', name: 'textlayoutpreview')]
     public function textLayoutPreviewAction(Request $request): Response
     {
-        $objPath = $request->get('previewObject', '');
-        $className = '\\Pimcore\\Model\\DataObject\\' . $request->get('className');
+        $objPath = RequestParams::get($request, 'previewObject', '');
+        $className = '\\Pimcore\\Model\\DataObject\\' . RequestParams::get($request, 'className');
         $obj = DataObject::getByPath($objPath) ?? new $className();
 
         $textLayout = new DataObject\ClassDefinition\Layout\Text();
         $textLayout->setName('textLayoutPreview' . $className);
 
         $context = [
-            'data' => $request->get('renderingData'),
+            'data' => RequestParams::get($request, 'renderingData'),
         ];
 
-        if ($renderingClass = $request->get('renderingClass')) {
+        if ($renderingClass = RequestParams::get($request, 'renderingClass')) {
             $textLayout->setRenderingClass($renderingClass);
-            $textLayout->setRenderingData($request->get('renderingData', ''));
+            $textLayout->setRenderingData(RequestParams::get($request, 'renderingData', ''));
         }
 
-        if ($staticHtml = $request->get('html')) {
+        if ($staticHtml = RequestParams::get($request, 'html')) {
             $textLayout->setHtml($staticHtml);
         }
 
@@ -1943,7 +1944,7 @@ class ClassController extends AdminAbstractController implements KernelControlle
     public function selectOptionsGetAction(Request $request): JsonResponse
     {
         $this->checkPermission('selectoptions');
-        $id = $request->get(DataObject\SelectOptions\Config::PROPERTY_ID);
+        $id = $request->query->get(DataObject\SelectOptions\Config::PROPERTY_ID);
         $selectOptionsConfiguration = $this->getSelectOptionsConfig($id);
 
         $data = $selectOptionsConfiguration->getObjectVars();
@@ -1962,18 +1963,18 @@ class ClassController extends AdminAbstractController implements KernelControlle
         $this->checkPermission('selectoptions');
 
         try {
-            $id = $request->get(DataObject\SelectOptions\Config::PROPERTY_ID);
+            $id = RequestParams::get($request, DataObject\SelectOptions\Config::PROPERTY_ID);
 
-            if ($request->get('task') === 'add') {
+            if (RequestParams::get($request, 'task') === 'add') {
                 if (new DataObject\SelectOptions\Config\Listing()->hasConfig($id)) {
                     throw new Exception('Select options with the same ID already exists (lower/upper cases may be different)');
                 }
             }
 
-            $group = $request->get(DataObject\SelectOptions\Config::PROPERTY_GROUP);
-            $useTraits = $request->get(DataObject\SelectOptions\Config::PROPERTY_USE_TRAITS, '');
-            $implementsInterfaces = $request->get(DataObject\SelectOptions\Config::PROPERTY_IMPLEMENTS_INTERFACES, '');
-            $selectOptionsData = $request->get(DataObject\SelectOptions\Config::PROPERTY_SELECT_OPTIONS, 'null');
+            $group = RequestParams::get($request, DataObject\SelectOptions\Config::PROPERTY_GROUP);
+            $useTraits = RequestParams::get($request, DataObject\SelectOptions\Config::PROPERTY_USE_TRAITS, '');
+            $implementsInterfaces = RequestParams::get($request, DataObject\SelectOptions\Config::PROPERTY_IMPLEMENTS_INTERFACES, '');
+            $selectOptionsData = RequestParams::get($request, DataObject\SelectOptions\Config::PROPERTY_SELECT_OPTIONS, 'null');
             $selectOptionsConfiguration = DataObject\SelectOptions\Config::createFromData(
                 [
                     DataObject\SelectOptions\Config::PROPERTY_ID => $id,
@@ -2020,7 +2021,7 @@ class ClassController extends AdminAbstractController implements KernelControlle
                 'iconCls' => 'pimcore_icon_select',
             ];
 
-            if ((int)$request->get('grouped', 0) === 0 || !$selectOptionConfig->hasGroup()) {
+            if ((int)RequestParams::get($request, 'grouped', 0) === 0 || !$selectOptionConfig->hasGroup()) {
                 $configurations[] = $configurationData;
 
                 continue;
@@ -2060,7 +2061,7 @@ class ClassController extends AdminAbstractController implements KernelControlle
         $this->checkPermission('selectoptions');
 
         try {
-            $id = $request->get(DataObject\SelectOptions\Config::PROPERTY_ID);
+            $id = RequestParams::get($request, DataObject\SelectOptions\Config::PROPERTY_ID);
             $this->getSelectOptionsConfig($id)->delete();
 
             return $this->adminJson(['success' => true]);

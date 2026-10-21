@@ -23,6 +23,7 @@ use Pimcore\Bundle\AdminBundle\Controller\Traits\AdminStyleTrait;
 use Pimcore\Bundle\AdminBundle\Controller\Traits\UserNameTrait;
 use Pimcore\Bundle\AdminBundle\Event\AdminEvents;
 use Pimcore\Bundle\AdminBundle\Event\ElementAdminStyleEvent;
+use Pimcore\Bundle\AdminBundle\Helper\RequestParams;
 use Pimcore\Cache\RuntimeCache;
 use Pimcore\Config;
 use Pimcore\Controller\KernelControllerEventInterface;
@@ -96,7 +97,7 @@ class DocumentController extends ElementControllerBase implements KernelControll
         EventDispatcherInterface $eventDispatcher
     ): JsonResponse
     {
-        $document = Document::getById((int)$request->get('id'));
+        $document = Document::getById((int)$request->query->get('id'));
 
         if (!$document) {
             throw $this->createNotFoundException('Document not found');
@@ -142,7 +143,7 @@ class DocumentController extends ElementControllerBase implements KernelControll
     {
         $allParams = array_merge($request->request->all(), $request->query->all());
 
-        $filter = $request->get('filter');
+        $filter = $request->query->get('filter');
         $limit = (int)($allParams['limit'] ?? 100000000);
         $offset = (int)($allParams['start'] ?? 0);
 
@@ -234,8 +235,8 @@ class DocumentController extends ElementControllerBase implements KernelControll
                 'limit' => $limit,
                 'total' => $document->getChildAmount($this->getAdminUser()),
                 'nodes' => $documents,
-                'filter' => $request->get('filter') ? $request->get('filter') : '',
-                'inSearch' => (int)$request->get('inSearch'),
+                'filter' => $request->query->get('filter') ? $request->query->get('filter') : '',
+                'inSearch' => (int)$request->query->get('inSearch'),
             ]);
         } else {
             return $this->adminJson($documents);
@@ -249,10 +250,10 @@ class DocumentController extends ElementControllerBase implements KernelControll
         $errorMessage = '';
 
         // check for permission
-        $parentDocument = Document::getById((int)$request->get('parentId'));
+        $parentDocument = Document::getById((int)RequestParams::get($request, 'parentId'));
         $document = null;
         if ($parentDocument->isAllowed('create')) {
-            $intendedPath = $parentDocument->getRealFullPath() . '/' . $request->get('key');
+            $intendedPath = $parentDocument->getRealFullPath() . '/' . RequestParams::get($request, 'key');
 
             if (!Document\Service::pathExists($intendedPath)) {
                 $createValues = [
@@ -261,34 +262,34 @@ class DocumentController extends ElementControllerBase implements KernelControll
                     'published' => false,
                 ];
 
-                $createValues['key'] = Service::getValidKey($request->get('key'), 'document');
+                $createValues['key'] = Service::getValidKey(RequestParams::get($request, 'key'), 'document');
 
                 // check for a docType
-                $docType = Document\DocType::getById($request->get('docTypeId', ''));
+                $docType = Document\DocType::getById(RequestParams::get($request, 'docTypeId', ''));
 
                 if ($docType) {
                     $createValues['template'] = $docType->getTemplate();
                     $createValues['controller'] = $docType->getController();
                     $createValues['staticGeneratorEnabled'] = $docType->getStaticGeneratorEnabled();
-                } elseif ($translationsBaseDocumentId = $request->get('translationsBaseDocument')) {
+                } elseif ($translationsBaseDocumentId = RequestParams::get($request, 'translationsBaseDocument')) {
                     $translationsBaseDocument = Document::getById((int)$translationsBaseDocumentId);
                     if ($translationsBaseDocument instanceof Document\PageSnippet) {
                         $createValues['template'] = $translationsBaseDocument->getTemplate();
                         $createValues['controller'] = $translationsBaseDocument->getController();
                     }
-                } elseif ($request->get('type') == 'page' || $request->get('type') == 'snippet' || $request->get('type') == 'email') {
+                } elseif (RequestParams::get($request, 'type') == 'page' || RequestParams::get($request, 'type') == 'snippet' || RequestParams::get($request, 'type') == 'email') {
                     $createValues['controller'] = $this->getParameter('pimcore.documents.default_controller');
                 }
 
-                if ($request->get('inheritanceSource')) {
-                    $createValues['contentMainDocumentId'] = $request->get('inheritanceSource');
+                if (RequestParams::get($request, 'inheritanceSource')) {
+                    $createValues['contentMainDocumentId'] = RequestParams::get($request, 'inheritanceSource');
                 }
 
-                switch ($request->get('type')) {
+                switch (RequestParams::get($request, 'type')) {
                     case 'page':
                         $document = Document\Page::create($parentDocument->getId(), $createValues, false);
-                        $document->setTitle($request->get('title'));
-                        $document->setProperty('navigation_name', 'text', $request->get('name'));
+                        $document->setTitle(RequestParams::get($request, 'title'));
+                        $document->setProperty('navigation_name', 'text', RequestParams::get($request, 'name'));
                         $document->save();
                         $success = true;
 
@@ -326,7 +327,7 @@ class DocumentController extends ElementControllerBase implements KernelControll
 
                         break;
                     default:
-                        $classname = Pimcore::getContainer()->get('pimcore.class.resolver.document')->resolve($request->get('type'));
+                        $classname = Pimcore::getContainer()->get('pimcore.class.resolver.document')->resolve(RequestParams::get($request, 'type'));
 
                         if (Tool::classExists($classname)) {
                             $document = $classname::create($parentDocument->getId(), $createValues);
@@ -340,7 +341,7 @@ class DocumentController extends ElementControllerBase implements KernelControll
 
                             break;
                         } else {
-                            Logger::debug("Unknown document type, can't add [ " . $request->get('type') . ' ] ');
+                            Logger::debug("Unknown document type, can't add [ " . RequestParams::get($request, 'type') . ' ] ');
                         }
 
                         break;
@@ -355,13 +356,13 @@ class DocumentController extends ElementControllerBase implements KernelControll
         }
 
         if ($success && $document instanceof Document) {
-            if ($translationsBaseDocumentId = $request->get('translationsBaseDocument')) {
+            if ($translationsBaseDocumentId = RequestParams::get($request, 'translationsBaseDocument')) {
                 $translationsBaseDocument = Document::getById((int)$translationsBaseDocumentId);
 
                 $properties = $translationsBaseDocument->getProperties();
                 $properties = array_merge($properties, $document->getProperties());
                 $document->setProperties($properties);
-                $document->setProperty('language', 'text', $request->get('language'), false, true);
+                $document->setProperty('language', 'text', RequestParams::get($request, 'language'), false, true);
                 $document->save();
 
                 $service = new Document\Service();
@@ -384,14 +385,14 @@ class DocumentController extends ElementControllerBase implements KernelControll
     #[Route('/delete', name: 'pimcore_admin_document_document_delete', methods: [Request::METHOD_DELETE])]
     public function deleteAction(Request $request): JsonResponse
     {
-        $type = $request->get('type');
+        $type = RequestParams::get($request, 'type');
 
         if ($type === 'children') {
-            $parentDocument = Document::getById((int)$request->get('id'));
+            $parentDocument = Document::getById((int)RequestParams::get($request, 'id'));
 
             $list = new Document\Listing();
             $list->setCondition('`path` LIKE ?', [$list->escapeLike($parentDocument->getRealFullPath()) . '/%']);
-            $list->setLimit((int)$request->get('amount'));
+            $list->setLimit((int)RequestParams::get($request, 'amount'));
             $list->setOrderKey('LENGTH(`path`)', false);
             $list->setOrder('DESC');
 
@@ -407,7 +408,7 @@ class DocumentController extends ElementControllerBase implements KernelControll
 
             return $this->adminJson(['success' => true, 'deleted' => $deletedItems]);
         }
-        if ($id = $request->get('id')) {
+        if ($id = RequestParams::get($request, 'id')) {
             $document = Document::getById((int)$id);
             if ($document && $document->isAllowed('delete')) {
                 try {
@@ -434,7 +435,7 @@ class DocumentController extends ElementControllerBase implements KernelControll
         $data = ['success' => false];
         $allowUpdate = true;
 
-        $document = Document::getById((int)$request->get('id'));
+        $document = Document::getById((int)RequestParams::get($request, 'id'));
 
         $oldPath = $document->getDao()->getCurrentFullPath();
         $oldDocument = Document::getById($document->getId(), ['force' => true]);
@@ -456,7 +457,7 @@ class DocumentController extends ElementControllerBase implements KernelControll
 
         if ($document->isAllowed('settings')) {
             // if the position is changed the path must be changed || also from the children
-            if ($parentId = $request->get('parentId')) {
+            if ($parentId = RequestParams::get($request, 'parentId')) {
                 $parentDocument = Document::getById((int)$parentId);
 
                 //check if parent is changed
@@ -486,7 +487,7 @@ class DocumentController extends ElementControllerBase implements KernelControll
             if ($allowUpdate) {
                 $blockedVars = ['controller', 'action', 'module'];
 
-                if (!$document->isAllowed('rename') && $request->get('key')) {
+                if (!$document->isAllowed('rename') && RequestParams::get($request, 'key')) {
                     $blockedVars[] = 'key';
                     Logger::debug('prevented renaming document because of missing permissions ');
                 }
@@ -504,8 +505,8 @@ class DocumentController extends ElementControllerBase implements KernelControll
                 try {
                     $document->save();
 
-                    if ($request->get('index') !== null) {
-                        $this->updateIndexesOfDocumentSiblings($document, $request->get('index'));
+                    if (RequestParams::get($request, 'index') !== null) {
+                        $this->updateIndexesOfDocumentSiblings($document, RequestParams::get($request, 'index'));
                     }
 
                     $data = [
@@ -525,10 +526,10 @@ class DocumentController extends ElementControllerBase implements KernelControll
 
                 return $this->adminJson(['success' => false, 'message' => $msg]);
             }
-        } elseif ($document->isAllowed('rename') && $request->get('key')) {
+        } elseif ($document->isAllowed('rename') && RequestParams::get($request, 'key')) {
             //just rename
             try {
-                $document->setKey($request->get('key'));
+                $document->setKey(RequestParams::get($request, 'key'));
                 $document->setUserModification($this->getAdminUser()->getId());
                 $document->save();
                 $data = [
@@ -608,12 +609,12 @@ class DocumentController extends ElementControllerBase implements KernelControll
     #[Route('/doc-types', name: 'pimcore_admin_document_document_doctypes', methods: [Request::METHOD_PUT, Request::METHOD_POST, Request::METHOD_DELETE])]
     public function docTypesAction(Request $request): JsonResponse
     {
-        if ($request->get('data')) {
+        if (RequestParams::get($request, 'data')) {
             $this->checkPermission('document_types');
 
-            $data = $this->decodeJson($request->get('data'));
+            $data = $this->decodeJson(RequestParams::get($request, 'data'));
 
-            if ($request->get('xaction') === 'destroy') {
+            if (RequestParams::get($request, 'xaction') === 'destroy') {
                 $type = Document\DocType::getById($data['id']);
                 if (!$type->isWriteable()) {
                     throw new ConfigWriteException();
@@ -621,7 +622,7 @@ class DocumentController extends ElementControllerBase implements KernelControll
                 $type->delete();
 
                 return $this->adminJson(['success' => true, 'data' => []]);
-            } elseif ($request->get('xaction') === 'update') {
+            } elseif (RequestParams::get($request, 'xaction') === 'update') {
                 // save type
                 $type = Document\DocType::getById($data['id']);
 
@@ -636,7 +637,7 @@ class DocumentController extends ElementControllerBase implements KernelControll
                 $responseData['writeable'] = $type->isWriteable();
 
                 return $this->adminJson(['data' => $responseData, 'success' => true]);
-            } elseif ($request->get('xaction') === 'create') {
+            } elseif (RequestParams::get($request, 'xaction') === 'create') {
                 if (!new DocType()->isWriteable()) {
                     throw new ConfigWriteException();
                 }
@@ -663,7 +664,7 @@ class DocumentController extends ElementControllerBase implements KernelControll
     public function getDocTypesAction(Request $request): JsonResponse
     {
         $list = new DocType\Listing();
-        if ($type = $request->get('type')) {
+        if ($type = $request->query->get('type')) {
             if (!Document\Service::isValidType($type)) {
                 throw new BadRequestHttpException('Invalid type: ' . $type);
             }
@@ -683,7 +684,7 @@ class DocumentController extends ElementControllerBase implements KernelControll
     #[Route('/version-to-session', name: 'pimcore_admin_document_document_versiontosession', methods: [Request::METHOD_POST])]
     public function versionToSessionAction(Request $request): Response
     {
-        $id = (int)$request->get('id');
+        $id = (int)RequestParams::get($request, 'id');
         $version = Version::getById($id);
         $document = $version?->loadData();
         if (!$document) {
@@ -699,7 +700,7 @@ class DocumentController extends ElementControllerBase implements KernelControll
     {
         $this->versionToSessionAction($request);
 
-        $id = (int)$request->get('id');
+        $id = (int)RequestParams::get($request, 'id');
         $version = Version::getById($id);
         $document = $version?->loadData();
         if (!$document) {
@@ -767,7 +768,7 @@ class DocumentController extends ElementControllerBase implements KernelControll
     #[Route('/remove-site', name: 'pimcore_admin_document_document_removesite', methods: [Request::METHOD_DELETE])]
     public function removeSiteAction(Request $request): JsonResponse
     {
-        $site = Site::getByRootId((int)$request->get('id'));
+        $site = Site::getByRootId((int)RequestParams::get($request, 'id'));
         $site->delete();
 
         return $this->adminJson(['success' => true]);
@@ -783,19 +784,19 @@ class DocumentController extends ElementControllerBase implements KernelControll
             $session->set((string)$transactionId, ['idMapping' => []]);
         }, 'pimcore_copy');
 
-        if ($request->get('type') == 'recursive' || $request->get('type') == 'recursive-update-references') {
-            $document = Document::getById((int)$request->get('sourceId'));
+        if ($request->query->get('type') == 'recursive' || $request->query->get('type') == 'recursive-update-references') {
+            $document = Document::getById((int)$request->query->get('sourceId'));
 
             // first of all the new parent
             $pasteJobs[] = [[
                 'url' => $this->generateUrl('pimcore_admin_document_document_copy'),
                 'method' => 'POST',
                 'params' => [
-                    'sourceId' => $request->get('sourceId'),
-                    'targetId' => $request->get('targetId'),
+                    'sourceId' => $request->query->get('sourceId'),
+                    'targetId' => $request->query->get('targetId'),
                     'type' => 'child',
-                    'language' => $request->get('language'),
-                    'enableInheritance' => $request->get('enableInheritance'),
+                    'language' => $request->query->get('language'),
+                    'enableInheritance' => $request->query->get('enableInheritance'),
                     'transactionId' => $transactionId,
                     'saveParentId' => true,
                     'resetIndex' => true,
@@ -818,11 +819,11 @@ class DocumentController extends ElementControllerBase implements KernelControll
                             'method' => 'POST',
                             'params' => [
                                 'sourceId' => $id,
-                                'targetParentId' => $request->get('targetId'),
-                                'sourceParentId' => $request->get('sourceId'),
+                                'targetParentId' => $request->query->get('targetId'),
+                                'sourceParentId' => $request->query->get('sourceId'),
                                 'type' => 'child',
-                                'language' => $request->get('language'),
-                                'enableInheritance' => $request->get('enableInheritance'),
+                                'language' => $request->query->get('language'),
+                                'enableInheritance' => $request->query->get('enableInheritance'),
                                 'transactionId' => $transactionId,
                             ],
                         ]];
@@ -831,32 +832,32 @@ class DocumentController extends ElementControllerBase implements KernelControll
             }
 
             // add id-rewrite steps
-            if ($request->get('type') == 'recursive-update-references') {
+            if ($request->query->get('type') == 'recursive-update-references') {
                 for ($i = 0; $i < (count($childIds) + 1); $i++) {
                     $pasteJobs[] = [[
                         'url' => $this->generateUrl('pimcore_admin_document_document_copyrewriteids'),
                         'method' => 'PUT',
                         'params' => [
                             'transactionId' => $transactionId,
-                            'enableInheritance' => $request->get('enableInheritance'),
+                            'enableInheritance' => $request->query->get('enableInheritance'),
                             '_dc' => uniqid(),
                         ],
                     ]];
                 }
             }
-        } elseif ($request->get('type') == 'child' || $request->get('type') == 'replace') {
+        } elseif ($request->query->get('type') == 'child' || $request->query->get('type') == 'replace') {
             // the object itself is the last one
             $pasteJobs[] = [[
                 'url' => $this->generateUrl('pimcore_admin_document_document_copy'),
                 'method' => 'POST',
                 'params' => [
-                    'sourceId' => $request->get('sourceId'),
-                    'targetId' => $request->get('targetId'),
-                    'type' => $request->get('type'),
-                    'language' => $request->get('language'),
-                    'enableInheritance' => $request->get('enableInheritance'),
+                    'sourceId' => $request->query->get('sourceId'),
+                    'targetId' => $request->query->get('targetId'),
+                    'type' => $request->query->get('type'),
+                    'language' => $request->query->get('language'),
+                    'enableInheritance' => $request->query->get('enableInheritance'),
                     'transactionId' => $transactionId,
-                    'resetIndex' => ($request->get('type') == 'child'),
+                    'resetIndex' => ($request->query->get('type') == 'child'),
                 ],
             ]];
         }
@@ -929,7 +930,7 @@ class DocumentController extends ElementControllerBase implements KernelControll
                         $source->setPublished(false); //as latest version is used which is not published
                     }
 
-                    if ($request->get('type') == 'child') {
+                    if (RequestParams::get($request, 'type') == 'child') {
                         $enableInheritance = $request->request->getBoolean('enableInheritance');
 
                         $language = $request->request->getString('language') ?: null;
@@ -942,11 +943,11 @@ class DocumentController extends ElementControllerBase implements KernelControll
                         $sessionBag['idMapping'][(int)$source->getId()] = (int)$newDocument->getId();
 
                         // this is because the key can get the prefix "_copy" if the target does already exist
-                        if ($request->get('saveParentId')) {
+                        if (RequestParams::get($request, 'saveParentId')) {
                             $sessionBag['parentId'] = $newDocument->getId();
                         }
-                        $session->set($request->get('transactionId'), $sessionBag);
-                    } elseif ($request->get('type') == 'replace') {
+                        $session->set(RequestParams::get($request, 'transactionId'), $sessionBag);
+                    } elseif (RequestParams::get($request, 'type') == 'replace') {
                         $this->_documentService->copyContents($target, $source);
                     }
 
@@ -1051,7 +1052,7 @@ class DocumentController extends ElementControllerBase implements KernelControll
 
     public function diffVersionsHtmlAction(Request $request): BinaryFileResponse
     {
-        $file = PIMCORE_SYSTEM_TEMP_DIRECTORY . '/' . basename($request->get('id'));
+        $file = PIMCORE_SYSTEM_TEMP_DIRECTORY . '/' . basename(RequestParams::get($request, 'id'));
         if (file_exists($file)) {
             return new BinaryFileResponse($file);
         }
@@ -1062,7 +1063,7 @@ class DocumentController extends ElementControllerBase implements KernelControll
     #[Route('/get-id-for-path', name: 'pimcore_admin_document_document_getidforpath', methods: [Request::METHOD_GET])]
     public function getIdForPathAction(Request $request): JsonResponse
     {
-        if ($doc = Document::getByPath($request->get('path'))) {
+        if ($doc = Document::getByPath($request->query->get('path'))) {
             return $this->adminJson([
                 'id' => $doc->getId(),
                 'type' => $doc->getType(),
@@ -1077,7 +1078,7 @@ class DocumentController extends ElementControllerBase implements KernelControll
     {
         $document = Document::getById((int)$request->query->get('node'));
 
-        $languages = explode(',', $request->get('languages'));
+        $languages = explode(',', $request->query->get('languages'));
 
         $result = [];
         foreach ($document->getChildren() as $child) {
@@ -1180,12 +1181,12 @@ class DocumentController extends ElementControllerBase implements KernelControll
     #[Route('/convert', name: 'pimcore_admin_document_document_convert', methods: [Request::METHOD_PUT])]
     public function convertAction(Request $request): JsonResponse
     {
-        $document = Document::getById((int)$request->get('id'));
+        $document = Document::getById((int)RequestParams::get($request, 'id'));
         if (!$document) {
             throw $this->createNotFoundException();
         }
 
-        $type = $request->get('type');
+        $type = RequestParams::get($request, 'type');
         $class = '\\Pimcore\\Model\\Document\\' . ucfirst($type);
         if (Tool::classExists($class)) {
             $new = new $class();
@@ -1221,14 +1222,14 @@ class DocumentController extends ElementControllerBase implements KernelControll
         $success = false;
         $targetDocument = null;
 
-        $document = Document::getById((int)$request->get('id'));
+        $document = Document::getById((int)$request->query->get('id'));
         if ($document) {
             $service = new Document\Service();
             $document = $document->getId() === 1 ? $document : $document->getParent();
 
             $translations = $service->getTranslations($document);
-            if (isset($translations[$request->get('language')])) {
-                $targetDocument = Document::getById($translations[$request->get('language')]);
+            if (isset($translations[$request->query->get('language')])) {
+                $targetDocument = Document::getById($translations[$request->query->get('language')]);
                 $success = true;
             }
         }
@@ -1243,8 +1244,8 @@ class DocumentController extends ElementControllerBase implements KernelControll
     #[Route('/translation-add', name: 'pimcore_admin_document_document_translationadd', methods: [Request::METHOD_POST])]
     public function translationAddAction(Request $request): JsonResponse
     {
-        $sourceDocument = Document::getById((int)$request->get('sourceId'));
-        $targetDocument = Document::getByPath($request->get('targetPath'));
+        $sourceDocument = Document::getById((int)RequestParams::get($request, 'sourceId'));
+        $targetDocument = Document::getByPath(RequestParams::get($request, 'targetPath'));
 
         if ($sourceDocument && $targetDocument) {
             if (empty($sourceDocument->getProperty('language'))) {
@@ -1270,8 +1271,8 @@ class DocumentController extends ElementControllerBase implements KernelControll
     #[Route('/translation-remove', name: 'pimcore_admin_document_document_translationremove', methods: [Request::METHOD_DELETE])]
     public function translationRemoveAction(Request $request): JsonResponse
     {
-        $sourceDocument = Document::getById((int)$request->get('sourceId'));
-        $targetDocument = Document::getById((int)$request->get('targetId'));
+        $sourceDocument = Document::getById((int)RequestParams::get($request, 'sourceId'));
+        $targetDocument = Document::getById((int)RequestParams::get($request, 'targetId'));
         if ($sourceDocument && $targetDocument) {
             $service = new Document\Service();
             $service->removeTranslationLink($sourceDocument, $targetDocument);
@@ -1289,7 +1290,7 @@ class DocumentController extends ElementControllerBase implements KernelControll
         $language = null;
         $translationLinks = null;
 
-        $document = Document::getByPath($request->get('path'));
+        $document = Document::getByPath($request->query->get('path'));
         if ($document) {
             $language = $document->getProperty('language');
             if ($language) {

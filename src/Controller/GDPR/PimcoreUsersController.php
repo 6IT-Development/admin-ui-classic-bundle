@@ -71,7 +71,7 @@ class PimcoreUsersController extends AdminAbstractController implements KernelCo
     ): JsonResponse
     {
         $this->checkPermission('users');
-        $userData = $pimcoreUsers->getExportData((int)$request->get('id'));
+        $userData = $pimcoreUsers->getExportData((int)$request->query->get('id'));
 
         $json = $this->encodeJson($userData, [], JsonResponse::DEFAULT_ENCODING_OPTIONS | JSON_PRETTY_PRINT);
         return new JsonResponse($json, 200, [

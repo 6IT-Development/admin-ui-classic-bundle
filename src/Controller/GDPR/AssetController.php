@@ -74,7 +74,7 @@ class AssetController extends AdminAbstractController implements KernelControlle
         Assets  $service
     ): Response
     {
-        $asset = Asset::getById((int)$request->get('id'));
+        $asset = Asset::getById((int)$request->query->get('id'));
         if (!$asset) {
             throw $this->createNotFoundException('Asset not found');
         }

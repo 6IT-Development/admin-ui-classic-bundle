@@ -20,6 +20,7 @@ namespace Pimcore\Bundle\AdminBundle\Controller\Admin;
 use Exception;
 use Pimcore\Bundle\AdminBundle\Controller\AdminAbstractController;
 use Pimcore\Bundle\AdminBundle\Event\AdminEvents;
+use Pimcore\Bundle\AdminBundle\Helper\RequestParams;
 use Pimcore\Model\Asset;
 use Pimcore\Model\DataObject;
 use Pimcore\Model\DataObject\AbstractObject;
@@ -46,8 +47,8 @@ class TagsController extends AdminAbstractController
 
         try {
             $tag = new Tag();
-            $tag->setName(strip_tags($request->get('text', '')));
-            $tag->setParentId((int)$request->get('parentId'));
+            $tag->setName(strip_tags(RequestParams::get($request, 'text', '')));
+            $tag->setParentId((int)RequestParams::get($request, 'parentId'));
             $tag->save();
 
             return $this->adminJson(['success' => true, 'id' => $tag->getId()]);
@@ -61,13 +62,13 @@ class TagsController extends AdminAbstractController
     {
         $this->checkPermission('tags_configuration');
 
-        $tag = Tag::getById((int)$request->get('id'));
+        $tag = Tag::getById((int)RequestParams::get($request, 'id'));
         if ($tag) {
             $tag->delete();
 
             return $this->adminJson(['success' => true]);
         } else {
-            throw $this->createNotFoundException('Tag with ID ' . $request->get('id') . ' not found.');
+            throw $this->createNotFoundException('Tag with ID ' . RequestParams::get($request, 'id') . ' not found.');
         }
     }
 
@@ -76,30 +77,30 @@ class TagsController extends AdminAbstractController
     {
         $this->checkPermission('tags_configuration');
 
-        $tag = Tag::getById((int)$request->get('id'));
+        $tag = Tag::getById((int)RequestParams::get($request, 'id'));
         if ($tag) {
-            $parentId = $request->get('parentId');
+            $parentId = RequestParams::get($request, 'parentId');
             if ($parentId || $parentId === '0') {
                 $tag->setParentId((int)$parentId);
             }
-            if ($request->get('text')) {
-                $tag->setName(strip_tags($request->get('text', '')));
+            if (RequestParams::get($request, 'text')) {
+                $tag->setName(strip_tags(RequestParams::get($request, 'text', '')));
             }
 
             $tag->save();
 
             return $this->adminJson(['success' => true]);
         } else {
-            throw $this->createNotFoundException('Tag with ID ' . $request->get('id') . ' not found.');
+            throw $this->createNotFoundException('Tag with ID ' . RequestParams::get($request, 'id') . ' not found.');
         }
     }
 
     #[Route('/tree-get-children-by-id', name: 'pimcore_admin_tags_treegetchildrenbyid', methods: [Request::METHOD_GET])]
     public function treeGetChildrenByIdAction(Request $request): JsonResponse
     {
-        $showSelection = $request->get('showSelection') == 'true';
-        $assignmentCId = (int)$request->get('assignmentCId');
-        $assignmentCType = strip_tags($request->get('assignmentCType', ''));
+        $showSelection = $request->query->get('showSelection') == 'true';
+        $assignmentCId = (int)$request->query->get('assignmentCId');
+        $assignmentCType = strip_tags($request->query->get('assignmentCType', ''));
 
         $recursiveChildren = false;
         $assignedTagIds = [];
@@ -112,17 +113,17 @@ class TagsController extends AdminAbstractController
         }
 
         $tagList = new Tag\Listing();
-        if ($request->get('node')) {
-            $tagList->setCondition('parentId = ?', (int)$request->get('node'));
+        if ($request->query->get('node')) {
+            $tagList->setCondition('parentId = ?', (int)$request->query->get('node'));
         } else {
             $tagList->setCondition('ISNULL(parentId) OR parentId = 0');
         }
         $tagList->setOrderKey('name');
 
-        if (!empty($request->get('filter'))) {
+        if (!empty($request->query->get('filter'))) {
             $filterIds = [0];
             $filterTagList = new Tag\Listing();
-            $filterTagList->setCondition('LOWER(`name`) LIKE ?', ['%' . $filterTagList->escapeLike(mb_strtolower($request->get('filter'))) . '%']);
+            $filterTagList->setCondition('LOWER(`name`) LIKE ?', ['%' . $filterTagList->escapeLike(mb_strtolower($request->query->get('filter'))) . '%']);
             foreach ($filterTagList->load() as $filterTag) {
                 if ($filterTag->getParentId() === 0) {
                     $filterIds[] = $filterTag->getId();
@@ -181,8 +182,8 @@ class TagsController extends AdminAbstractController
     #[Route('/load-tags-for-element', name: 'pimcore_admin_tags_loadtagsforelement', methods: [Request::METHOD_GET])]
     public function loadTagsForElementAction(Request $request): JsonResponse
     {
-        $assginmentCId = (int)$request->get('assignmentCId');
-        $assginmentCType = strip_tags($request->get('assignmentCType', ''));
+        $assginmentCId = (int)$request->query->get('assignmentCId');
+        $assginmentCType = strip_tags($request->query->get('assignmentCType', ''));
 
         $assignedTagArray = [];
         if ($assginmentCId && $assginmentCType) {
@@ -199,9 +200,9 @@ class TagsController extends AdminAbstractController
     #[Route('/add-tag-to-element', name: 'pimcore_admin_tags_addtagtoelement', methods: [Request::METHOD_PUT])]
     public function addTagToElementAction(Request $request): JsonResponse
     {
-        $assginmentCId = (int)$request->get('assignmentElementId');
-        $assginmentCType = strip_tags($request->get('assignmentElementType', ''));
-        $tagId = (int)$request->get('tagId');
+        $assginmentCId = (int)RequestParams::get($request, 'assignmentElementId');
+        $assginmentCType = strip_tags(RequestParams::get($request, 'assignmentElementType', ''));
+        $tagId = (int)RequestParams::get($request, 'tagId');
 
         $tag = Tag::getById($tagId);
         if ($tag) {
@@ -216,9 +217,9 @@ class TagsController extends AdminAbstractController
     #[Route('/remove-tag-from-element', name: 'pimcore_admin_tags_removetagfromelement', methods: [Request::METHOD_DELETE])]
     public function removeTagFromElementAction(Request $request): JsonResponse
     {
-        $assginmentCId = (int)$request->get('assignmentElementId');
-        $assginmentCType = strip_tags($request->get('assignmentElementType', ''));
-        $tagId = (int)$request->get('tagId');
+        $assginmentCId = (int)RequestParams::get($request, 'assignmentElementId');
+        $assginmentCType = strip_tags(RequestParams::get($request, 'assignmentElementType', ''));
+        $tagId = (int)RequestParams::get($request, 'tagId');
 
         $tag = Tag::getById($tagId);
         if ($tag) {
@@ -236,8 +237,8 @@ class TagsController extends AdminAbstractController
         EventDispatcherInterface $eventDispatcher
     ): JsonResponse
     {
-        $elementId = (int)$request->get('elementId');
-        $elementType = strip_tags($request->get('elementType', ''));
+        $elementId = (int)$request->query->get('elementId');
+        $elementType = strip_tags($request->query->get('elementType', ''));
 
         $idList = [];
         switch ($elementType) {
@@ -368,10 +369,10 @@ class TagsController extends AdminAbstractController
     #[Route('/do-batch-assignment', name: 'pimcore_admin_tags_dobatchassignment', methods: [Request::METHOD_PUT])]
     public function doBatchAssignmentAction(Request $request): JsonResponse
     {
-        $cType = strip_tags($request->get('elementType', ''));
-        $assignedTags = json_decode($request->get('assignedTags'));
-        $elementIds = json_decode($request->get('childrenIds'));
-        $doCleanupTags = $request->get('removeAndApply') == 'true';
+        $cType = strip_tags(RequestParams::get($request, 'elementType', ''));
+        $assignedTags = json_decode(RequestParams::get($request, 'assignedTags'));
+        $elementIds = json_decode(RequestParams::get($request, 'childrenIds'));
+        $doCleanupTags = RequestParams::get($request, 'removeAndApply') == 'true';
 
         Tag::batchAssignTagsToElement($cType, $elementIds, $assignedTags, $doCleanupTags);
 

@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace Pimcore\Bundle\AdminBundle\Security\Authenticator;
 
+use Pimcore\Bundle\AdminBundle\Helper\RequestParams;
 use Pimcore\Security\User\User;
 use Pimcore\Tool\Authentication;
 use Pimcore\Tool\Session;
@@ -35,12 +36,12 @@ class AdminTokenAuthenticator extends AdminAbstractAuthenticator
     public function supports(Request $request): ?bool
     {
         return $request->attributes->get('_route') === self::PIMCORE_ADMIN_LOGIN_CHECK
-            && $request->get('token');
+            && RequestParams::get($request, 'token');
     }
 
     public function authenticate(Request $request): Passport
     {
-        $pimcoreUser = Authentication::authenticateToken($request->get('token'));
+        $pimcoreUser = Authentication::authenticateToken(RequestParams::get($request, 'token'));
 
         if ($pimcoreUser) {
             $pimcoreUser->setTwoFactorAuthentication('required', false);
@@ -49,7 +50,7 @@ class AdminTokenAuthenticator extends AdminAbstractAuthenticator
                 return new User($pimcoreUser);
             });
 
-            if ($request->get('reset', false)) {
+            if (RequestParams::get($request, 'reset', false)) {
                 // save the information to session when the user want's to reset the password
                 // this is because otherwise the old password is required => see also PIMCORE-1468
 

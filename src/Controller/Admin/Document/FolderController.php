@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace Pimcore\Bundle\AdminBundle\Controller\Admin\Document;
 
+use Pimcore\Bundle\AdminBundle\Helper\RequestParams;
 use Pimcore\Model\Document;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -28,7 +29,7 @@ class FolderController extends DocumentControllerBase
     #[Route('/get-data-by-id', name: 'getdatabyid', methods: [Request::METHOD_GET])]
     public function getDataByIdAction(Request $request): JsonResponse
     {
-        $folder = Document\Folder::getById((int)$request->get('id'));
+        $folder = Document\Folder::getById((int)$request->query->get('id'));
         if (!$folder) {
             throw $this->createNotFoundException('Folder not found');
         }
@@ -49,7 +50,7 @@ class FolderController extends DocumentControllerBase
     #[Route('/save', name: 'save', methods: [Request::METHOD_PUT, Request::METHOD_POST])]
     public function saveAction(Request $request): JsonResponse
     {
-        $folder = Document\Folder::getById((int)$request->get('id'));
+        $folder = Document\Folder::getById((int)RequestParams::get($request, 'id'));
         if (!$folder) {
             throw $this->createNotFoundException('Folder not found');
         }

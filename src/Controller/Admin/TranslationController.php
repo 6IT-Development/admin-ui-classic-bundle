@@ -24,6 +24,7 @@ use InvalidArgumentException;
 use Locale;
 use Pimcore\Bundle\AdminBundle\Controller\AdminAbstractController;
 use Pimcore\Bundle\AdminBundle\Helper\QueryParams;
+use Pimcore\Bundle\AdminBundle\Helper\RequestParams;
 use Pimcore\Cache;
 use Pimcore\Db;
 use Pimcore\Localization\LocaleServiceInterface;
@@ -55,10 +56,10 @@ class TranslationController extends AdminAbstractController
         LocaleServiceInterface $localeService
     ): JsonResponse
     {
-        $domain = $request->get('domain', Translation::DOMAIN_DEFAULT);
+        $domain = RequestParams::get($request, 'domain', Translation::DOMAIN_DEFAULT);
         $admin = $domain == Translation::DOMAIN_ADMIN;
 
-        $dialect = $request->get('csvSettings');
+        $dialect = RequestParams::get($request, 'csvSettings');
         $session = Session::getSessionBag($request->getSession(), 'pimcore_importconfig');
         $tmpFile = $session->get('translation_import_file');
 
@@ -68,7 +69,7 @@ class TranslationController extends AdminAbstractController
 
         $this->checkPermission(($admin ? 'admin_' : '') . 'translations');
 
-        $merge = $request->get('merge');
+        $merge = RequestParams::get($request, 'merge');
         $overwrite = !$merge;
 
         $allowedLanguages = $this->getAdminUser()->getAllowedLanguagesForEditingWebsiteTranslations();
@@ -150,7 +151,7 @@ class TranslationController extends AdminAbstractController
     #[Route('/export', name: 'pimcore_admin_translation_export', methods: [Request::METHOD_GET])]
     public function exportAction(Request $request): Response
     {
-        $domain = $request->get('domain', Translation::DOMAIN_DEFAULT);
+        $domain = $request->query->get('domain', Translation::DOMAIN_DEFAULT);
         $admin = $domain == Translation::DOMAIN_ADMIN;
 
         $this->checkPermission(($admin ? 'admin_' : '') . 'translations');
@@ -281,7 +282,7 @@ class TranslationController extends AdminAbstractController
     #[Route('/add-admin-translation-keys', name: 'pimcore_admin_translation_addadmintranslationkeys', methods: [Request::METHOD_POST])]
     public function addAdminTranslationKeysAction(Request $request): JsonResponse
     {
-        $keys = $request->get('keys');
+        $keys = RequestParams::get($request, 'keys');
         if ($keys) {
             $availableLanguages = Tool\Admin::getLanguages();
             $data = $this->decodeJson($keys);
@@ -319,7 +320,7 @@ class TranslationController extends AdminAbstractController
     #[Route('/translations', name: 'pimcore_admin_translation_translations', methods: [Request::METHOD_POST])]
     public function translationsAction(Request $request): JsonResponse
     {
-        $domain = $request->get('domain', Translation::DOMAIN_DEFAULT);
+        $domain = RequestParams::get($request, 'domain', Translation::DOMAIN_DEFAULT);
         $admin = $domain === Translation::DOMAIN_ADMIN;
 
         $this->checkPermission(($admin ? 'admin_' : '') . 'translations');
@@ -331,17 +332,17 @@ class TranslationController extends AdminAbstractController
         // clear translation cache
         Translation::clearDependentCache();
 
-        if ($request->get('data')) {
-            $data = $this->decodeJson($request->get('data'));
+        if (RequestParams::get($request, 'data')) {
+            $data = $this->decodeJson(RequestParams::get($request, 'data'));
 
-            if ($request->get('xaction') == 'destroy') {
+            if (RequestParams::get($request, 'xaction') == 'destroy') {
                 $t = Translation::getByKey($data['key'], $domain);
                 if ($t instanceof Translation) {
                     $t->delete();
                 }
 
                 return $this->adminJson(['success' => true, 'data' => []]);
-            } elseif ($request->get('xaction') == 'update') {
+            } elseif (RequestParams::get($request, 'xaction') == 'update') {
                 $t = Translation::getByKey($data['key'], $domain);
 
                 foreach ($data as $key => $value) {
@@ -372,7 +373,7 @@ class TranslationController extends AdminAbstractController
                 );
 
                 return $this->adminJson(['data' => $return, 'success' => true]);
-            } elseif ($request->get('xaction') == 'create') {
+            } elseif (RequestParams::get($request, 'xaction') == 'create') {
                 $t = Translation::getByKey($data['key'], $domain);
                 if ($t) {
                     return $this->adminJson([
@@ -437,8 +438,8 @@ class TranslationController extends AdminAbstractController
                 $list->setOrder($sortingSettings['order']);
             }
 
-            $list->setLimit((int)$request->get('limit', 50));
-            $list->setOffset((int)$request->get('start', 0));
+            $list->setLimit((int)RequestParams::get($request, 'limit', 50));
+            $list->setOffset((int)RequestParams::get($request, 'start', 0));
 
             $conditions = $this->getGridFilterCondition($request, $tableName, false, $admin);
             $filters = $this->getGridFilterCondition($request, $tableName, true, $admin);
@@ -456,7 +457,7 @@ class TranslationController extends AdminAbstractController
             $list->load();
 
             $translations = [];
-            $searchString = $request->get('searchString');
+            $searchString = RequestParams::get($request, 'searchString');
             foreach ($list->getTranslations() as $t) {
                 //Reload translation to get complete data,
                 //if translation fetched based on the text not key
@@ -550,7 +551,7 @@ class TranslationController extends AdminAbstractController
         $db = Db::get();
         $conditionFilters = [];
 
-        $filterJson = $request->get('filter');
+        $filterJson = RequestParams::get($request, 'filter');
         if ($filterJson) {
             $propertyField = 'property';
             $operatorField = 'operator';
@@ -618,11 +619,11 @@ class TranslationController extends AdminAbstractController
             }
         }
 
-        if ($request->get('searchString')) {
+        if (RequestParams::get($request, 'searchString')) {
             $conditionFilters[] = [
                 'condition' => '(lower(' . $tableName . '.key) LIKE :filterTerm OR lower(' . $tableName . '.text) LIKE :filterTerm)',
                 'field' => 'filterTerm',
-                'value' => '%' . mb_strtolower($request->get('searchString')) . '%',
+                'value' => '%' . mb_strtolower(RequestParams::get($request, 'searchString')) . '%',
             ];
         }
 
@@ -653,7 +654,7 @@ class TranslationController extends AdminAbstractController
     #[Route('/cleanup', name: 'pimcore_admin_translation_cleanup', methods: [Request::METHOD_DELETE])]
     public function cleanupAction(Request $request): JsonResponse
     {
-        $domain = $request->get('domain', Translation::DOMAIN_DEFAULT);
+        $domain = RequestParams::get($request, 'domain', Translation::DOMAIN_DEFAULT);
         $list = new Translation\Listing();
         $list->setDomain($domain);
         $list->cleanup();
@@ -673,14 +674,14 @@ class TranslationController extends AdminAbstractController
     #[Route('/content-export-jobs', name: 'pimcore_admin_translation_contentexportjobs', methods: [Request::METHOD_POST])]
     public function contentExportJobsAction(Request $request): JsonResponse
     {
-        $data = $this->decodeJson($request->get('data'));
+        $data = $this->decodeJson(RequestParams::get($request, 'data'));
         $elements = [];
         $jobs = [];
         $exportId = uniqid();
-        $source = $request->get('source', '');
-        $target = $request->get('target', '');
-        $type = $request->get('type');
-        $jobUrl = $request->get('job_url', $request->getBaseUrl() . '/admin/translation/' . $type . '-export');
+        $source = RequestParams::get($request, 'source', '');
+        $target = RequestParams::get($request, 'target', '');
+        $type = RequestParams::get($request, 'type');
+        $jobUrl = RequestParams::get($request, 'job_url', $request->getBaseUrl() . '/admin/translation/' . $type . '-export');
 
         $source = str_replace('_', '-', $source);
         $target = str_replace('_', '-', $target);
@@ -749,7 +750,7 @@ class TranslationController extends AdminAbstractController
 
         $elements = array_values($elements);
 
-        $elementsPerJob = (int)$request->get('elements_per_job', 10);
+        $elementsPerJob = (int)RequestParams::get($request, 'elements_per_job', 10);
 
         // make sure elements per job is not 0
         if (!$elementsPerJob) {
@@ -783,9 +784,9 @@ class TranslationController extends AdminAbstractController
     #[Route('/merge-item', name: 'pimcore_admin_translation_mergeitem', methods: [Request::METHOD_PUT])]
     public function mergeItemAction(Request $request): JsonResponse
     {
-        $domain = $request->get('domain', Translation::DOMAIN_DEFAULT);
+        $domain = RequestParams::get($request, 'domain', Translation::DOMAIN_DEFAULT);
 
-        $dataList = json_decode($request->get('data'), true);
+        $dataList = json_decode(RequestParams::get($request, 'data'), true);
 
         foreach ($dataList as $data) {
             $t = Translation::getByKey($data['key'], $domain, true);

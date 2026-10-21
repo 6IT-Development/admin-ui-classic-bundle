@@ -19,6 +19,7 @@ namespace Pimcore\Bundle\AdminBundle\Controller\Admin;
 
 use Exception;
 use Pimcore\Bundle\AdminBundle\Controller\AdminAbstractController;
+use Pimcore\Bundle\AdminBundle\Helper\RequestParams;
 use Pimcore\Bundle\AdminBundle\Helper\User as UserHelper;
 use Pimcore\Bundle\AdminBundle\Perspective\Config;
 use Pimcore\Controller\KernelControllerEventInterface;
@@ -53,7 +54,7 @@ class UserController extends AdminAbstractController implements KernelController
     public function treeGetChildrenByIdAction(Request $request): JsonResponse
     {
         $list = new User\Listing();
-        $list->setCondition('parentId = ?', (int)$request->get('node'));
+        $list->setCondition('parentId = ?', (int)$request->query->get('node'));
         $list->setOrder('ASC');
         $list->setOrderKey('name');
         $list->load();
@@ -121,8 +122,8 @@ class UserController extends AdminAbstractController implements KernelController
                 'active' => $request->request->getBoolean('active'),
             ]);
 
-            if ($request->get('rid')) {
-                $rid = (int)$request->get('rid');
+            if (RequestParams::get($request, 'rid')) {
+                $rid = (int)RequestParams::get($request, 'rid');
                 $rObject = $className::getById($rid);
                 if ($rObject) {
                     if ($type == 'user' || $type == 'role') {
@@ -225,7 +226,7 @@ class UserController extends AdminAbstractController implements KernelController
     #[Route('/user/delete', name: 'pimcore_admin_user_delete', methods: [Request::METHOD_DELETE])]
     public function deleteAction(Request $request): JsonResponse
     {
-        $user = User\AbstractUser::getById((int)$request->get('id'));
+        $user = User\AbstractUser::getById((int)RequestParams::get($request, 'id'));
 
         // only admins are allowed to delete admins and folders
         // because a folder might contain an admin user, so it is simply not allowed for users with the "users" permission
@@ -269,8 +270,8 @@ class UserController extends AdminAbstractController implements KernelController
             throw $this->createAccessDeniedHttpException('Only admin users are allowed to modify admin users');
         }
 
-        if ($request->get('data')) {
-            $values = $this->decodeJson($request->get('data'));
+        if (RequestParams::get($request, 'data')) {
+            $values = $this->decodeJson(RequestParams::get($request, 'data'));
 
             if (!empty($values['password'])) {
                 if (strlen($values['password']) < 10) {
@@ -313,9 +314,9 @@ class UserController extends AdminAbstractController implements KernelController
             }
 
             // check for workspaces
-            if ($request->get('workspaces')) {
+            if (RequestParams::get($request, 'workspaces')) {
                 $processedPaths = ['object' => [], 'asset' => [], 'document' => []]; //array to find if there are multiple entries for a path
-                $workspaces = $this->decodeJson($request->get('workspaces'));
+                $workspaces = $this->decodeJson(RequestParams::get($request, 'workspaces'));
                 foreach ($workspaces as $type => $spaces) {
                     $newWorkspaces = [];
                     foreach ($spaces as $space) {
@@ -342,8 +343,8 @@ class UserController extends AdminAbstractController implements KernelController
             }
         }
 
-        if ($user instanceof User && $request->get('keyBindings')) {
-            $keyBindings = json_decode($request->get('keyBindings'), true);
+        if ($user instanceof User && RequestParams::get($request, 'keyBindings')) {
+            $keyBindings = json_decode(RequestParams::get($request, 'keyBindings'), true);
             $tmpArray = [];
             foreach ($keyBindings as $item) {
                 $tmpArray[] = json_decode($item, true);
@@ -362,7 +363,7 @@ class UserController extends AdminAbstractController implements KernelController
     #[Route('/user/get', name: 'pimcore_admin_user_get', methods: [Request::METHOD_GET])]
     public function getAction(Request $request): JsonResponse
     {
-        $userId = (int)$request->get('id');
+        $userId = (int)$request->query->get('id');
         if ($userId < 1) {
             throw $this->createNotFoundException();
         }
@@ -465,7 +466,7 @@ class UserController extends AdminAbstractController implements KernelController
     #[Route('/user/get-minimal', name: 'pimcore_admin_user_getminimal', methods: [Request::METHOD_GET])]
     public function getMinimalAction(Request $request): JsonResponse
     {
-        $user = User::getById((int)$request->get('id'));
+        $user = User::getById((int)$request->query->get('id'));
 
         if (!$user) {
             throw $this->createNotFoundException();
@@ -486,7 +487,7 @@ class UserController extends AdminAbstractController implements KernelController
     {
         $user = $this->getAdminUser();
         if ($user != null) {
-            if ($user->getId() == $request->get('id')) {
+            if ($user->getId() == RequestParams::get($request, 'id')) {
                 return $this->uploadImageAction($request);
             } else {
                 Logger::warn('prevented save current user, because ids do not match. ');
@@ -516,8 +517,8 @@ class UserController extends AdminAbstractController implements KernelController
         });
 
         if ($user != null) {
-            if ($user->getId() == $request->get('id')) {
-                $values = $this->decodeJson($request->get('data'));
+            if ($user->getId() == RequestParams::get($request, 'id')) {
+                $values = $this->decodeJson(RequestParams::get($request, 'data'));
 
                 unset($values['name']);
                 unset($values['id']);
@@ -562,8 +563,8 @@ class UserController extends AdminAbstractController implements KernelController
 
                 $user->setValues($values);
 
-                if ($request->get('keyBindings')) {
-                    $keyBindings = json_decode($request->get('keyBindings'), true);
+                if (RequestParams::get($request, 'keyBindings')) {
+                    $keyBindings = json_decode(RequestParams::get($request, 'keyBindings'), true);
                     $tmpArray = [];
                     foreach ($keyBindings as $item) {
                         $tmpArray[] = json_decode($item, true);
@@ -629,7 +630,7 @@ class UserController extends AdminAbstractController implements KernelController
     public function roleTreeGetChildrenByIdAction(Request $request): JsonResponse
     {
         $list = new User\Role\Listing();
-        $list->setCondition('parentId = ?', (int)$request->get('node'));
+        $list->setCondition('parentId = ?', (int)$request->query->get('node'));
         $list->load();
 
         $roles = [];
@@ -677,7 +678,7 @@ class UserController extends AdminAbstractController implements KernelController
     #[Route('/user/role-get', name: 'pimcore_admin_user_roleget', methods: [Request::METHOD_GET])]
     public function roleGetAction(Request $request): JsonResponse
     {
-        $role = User\Role::getById((int)$request->get('id'));
+        $role = User\Role::getById((int)$request->query->get('id'));
 
         if (!$role) {
             throw $this->createNotFoundException();
@@ -802,7 +803,7 @@ class UserController extends AdminAbstractController implements KernelController
     #[Route('/user/reset-2fa-secret', name: 'pimcore_admin_user_reset2fasecret', methods: [Request::METHOD_PUT])]
     public function reset2FaSecretAction(Request $request): JsonResponse
     {
-        $user = User::getById((int)$request->get('id'));
+        $user = User::getById((int)RequestParams::get($request, 'id'));
         if (!$user) {
             throw $this->createNotFoundException();
         }
@@ -851,7 +852,7 @@ class UserController extends AdminAbstractController implements KernelController
         TranslatorInterface $translator
     ): JsonResponse
     {
-        $user = User::getById((int)$request->get('id'));
+        $user = User::getById((int)$request->query->get('id'));
 
         if (!$user) {
             return $this->adminJson([
@@ -888,10 +889,10 @@ class UserController extends AdminAbstractController implements KernelController
     #[Route('/user/search', name: 'pimcore_admin_user_search', methods: [Request::METHOD_GET])]
     public function searchAction(Request $request): JsonResponse
     {
-        $q = '%' . $request->get('query') . '%';
+        $q = '%' . $request->query->get('query') . '%';
 
         $list = new User\Listing();
-        $list->setCondition('name LIKE ? OR firstname LIKE ? OR lastname LIKE ? OR email LIKE ? OR id = ?', [$q, $q, $q, $q, (int)$request->get('query')]);
+        $list->setCondition('name LIKE ? OR firstname LIKE ? OR lastname LIKE ? OR email LIKE ? OR id = ?', [$q, $q, $q, $q, (int)$request->query->get('query')]);
         $list->setOrder('ASC');
         $list->setOrderKey('name');
         $list->load();
@@ -959,7 +960,7 @@ class UserController extends AdminAbstractController implements KernelController
 
         $conditions = ['type = "user"'];
 
-        if (!$request->get('include_current_user')) {
+        if (!$request->query->get('include_current_user')) {
             $conditions[] = 'id != ' . $this->getAdminUser()->getId();
         }
 
@@ -969,7 +970,7 @@ class UserController extends AdminAbstractController implements KernelController
         $userList = $list->getUsers();
 
         foreach ($userList as $user) {
-            if (!$request->get('permission') || $user->isAllowed($request->get('permission'))) {
+            if (!$request->query->get('permission') || $user->isAllowed($request->query->get('permission'))) {
                 $users[] = [
                     'id' => $user->getId(),
                     'label' => $user->getUsername(),
@@ -991,7 +992,7 @@ class UserController extends AdminAbstractController implements KernelController
         $roleList = $list->getRoles();
 
         foreach ($roleList as $role) {
-            if (!$request->get('permission') || in_array($request->get('permission'), $role->getPermissions())) {
+            if (!$request->query->get('permission') || in_array($request->query->get('permission'), $role->getPermissions())) {
                 $roles[] = [
                     'id' => $role->getId(),
                     'label' => $role->getName(),
@@ -1018,7 +1019,7 @@ class UserController extends AdminAbstractController implements KernelController
         $success = false;
         $message = '';
 
-        if ($username = $request->get('username')) {
+        if ($username = RequestParams::get($request, 'username')) {
             $user = User::getByName($username);
             if ($user instanceof User) {
                 if (!$user->isActive()) {
@@ -1076,12 +1077,12 @@ class UserController extends AdminAbstractController implements KernelController
 
     protected function getUserId(Request $request): int
     {
-        if ($request->get('id')) {
-            if ($this->getAdminUser()->getId() != $request->get('id')) {
+        if (RequestParams::get($request, 'id')) {
+            if ($this->getAdminUser()->getId() != RequestParams::get($request, 'id')) {
                 $this->checkPermission('users');
             }
 
-            return (int)$request->get('id');
+            return (int)RequestParams::get($request, 'id');
         }
 
         return $this->getAdminUser()->getId();

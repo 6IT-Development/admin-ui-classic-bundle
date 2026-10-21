@@ -18,6 +18,7 @@ declare(strict_types=1);
 namespace Pimcore\Bundle\AdminBundle\Security\Authenticator;
 
 use Exception;
+use Pimcore\Bundle\AdminBundle\Helper\RequestParams;
 use Pimcore\Bundle\AdminBundle\Security\Authentication\Token\TwoFactorRequiredToken;
 use Pimcore\Cache\RuntimeCache;
 use Pimcore\Model\User as UserModel;
@@ -115,13 +116,13 @@ abstract class AdminAbstractAuthenticator extends AbstractAuthenticator implemen
             return null;
         }
 
-        if ($request->get('deeplink') && $request->get('deeplink') !== 'true') {
+        if (RequestParams::get($request, 'deeplink') && RequestParams::get($request, 'deeplink') !== 'true') {
             $url = $this->router->generate('pimcore_admin_login_deeplink');
-            $url .= '?' . $request->get('deeplink');
+            $url .= '?' . RequestParams::get($request, 'deeplink');
         } else {
             $url = $this->router->generate('pimcore_admin_index', [
                 '_dc' => time(),
-                'perspective' => strip_tags($request->get('perspective', '')),
+                'perspective' => strip_tags(RequestParams::get($request, 'perspective', '')),
             ]);
         }
 

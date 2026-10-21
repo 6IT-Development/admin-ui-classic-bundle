@@ -48,7 +48,7 @@ class SentMailController extends AdminAbstractController implements KernelContro
     {
         $this->checkPermission('emails');
 
-        $sentMail = Log::getById((int)$request->get('id'));
+        $sentMail = Log::getById((int)$request->query->get('id'));
         if (!$sentMail) {
             throw $this->createNotFoundException();
         }

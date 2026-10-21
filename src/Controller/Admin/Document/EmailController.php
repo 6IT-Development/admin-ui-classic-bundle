@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace Pimcore\Bundle\AdminBundle\Controller\Admin\Document;
 
+use Pimcore\Bundle\AdminBundle\Helper\RequestParams;
 use Pimcore\Model\Document;
 use Pimcore\Model\Element;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -29,7 +30,7 @@ class EmailController extends DocumentControllerBase
     #[Route('/get-data-by-id', name: 'getdatabyid', methods: [Request::METHOD_GET])]
     public function getDataByIdAction(Request $request): JsonResponse
     {
-        $email = Document\Email::getById((int)$request->get('id'));
+        $email = Document\Email::getById((int)$request->query->get('id'));
 
         if (!$email) {
             throw $this->createNotFoundException('Email not found');
@@ -66,7 +67,7 @@ class EmailController extends DocumentControllerBase
     #[Route('/save', name: 'save', methods: [Request::METHOD_PUT, Request::METHOD_POST])]
     public function saveAction(Request $request): JsonResponse
     {
-        $page = Document\Email::getById((int)$request->get('id'));
+        $page = Document\Email::getById((int)RequestParams::get($request, 'id'));
         if (!$page) {
             throw $this->createNotFoundException('Email not found');
         }

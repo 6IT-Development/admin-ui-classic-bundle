@@ -19,6 +19,7 @@ namespace Pimcore\Bundle\AdminBundle\Controller\Admin\Document;
 
 use Endroid\QrCode\Builder\Builder;
 use Endroid\QrCode\Writer\PngWriter;
+use Pimcore\Bundle\AdminBundle\Helper\RequestParams;
 use Pimcore\Document\Editable\Block\BlockStateStack;
 use Pimcore\Document\Editable\EditmodeEditableDefinitionCollector;
 use Pimcore\Document\StaticPageGenerator;
@@ -58,7 +59,7 @@ class PageController extends DocumentControllerBase
         StaticPageGenerator $staticPageGenerator
     ): JsonResponse
     {
-        $page = Document\Page::getById((int)$request->get('id'));
+        $page = Document\Page::getById((int)$request->query->get('id'));
 
         if (!$page) {
             throw $this->createNotFoundException('Page not found');
@@ -204,7 +205,7 @@ class PageController extends DocumentControllerBase
     #[Route('/display-preview-image', name: 'display_preview_image', methods: [Request::METHOD_GET])]
     public function displayPreviewImageAction(Request $request): BinaryFileResponse
     {
-        $document = Document\Page::getById((int)$request->get('id'));
+        $document = Document\Page::getById((int)$request->query->get('id'));
         if ($document instanceof Document\Page) {
             return new BinaryFileResponse($document->getPreviewImageFilesystemPath(), 200, [
                 'Content-Type' => 'image/jpg',
@@ -349,10 +350,10 @@ class PageController extends DocumentControllerBase
         LocaleServiceInterface              $localeService
     ): JsonResponse
     {
-        $blockStateStackData = json_decode($request->get('blockStateStack'), true);
+        $blockStateStackData = json_decode(RequestParams::get($request, 'blockStateStack'), true);
         $blockStateStack->loadArray($blockStateStackData);
 
-        $document = Document\PageSnippet::getById((int)$request->get('documentId'));
+        $document = Document\PageSnippet::getById((int)RequestParams::get($request, 'documentId'));
         if (!$document) {
             throw $this->createNotFoundException();
         }
@@ -371,14 +372,14 @@ class PageController extends DocumentControllerBase
         // setting locale manually here before rendering, to make sure editables use the right locale from document
         $localeService->setLocale($document->getProperty('language'));
 
-        $areaBlockConfig = json_decode($request->get('areablockConfig'), true);
+        $areaBlockConfig = json_decode(RequestParams::get($request, 'areablockConfig'), true);
         /** @var Document\Editable\Areablock $areablock */
-        $areablock = $editableRenderer->getEditable($document, 'areablock', $request->get('realName'), $areaBlockConfig, true);
-        $areablock->setRealName($request->get('realName'));
+        $areablock = $editableRenderer->getEditable($document, 'areablock', RequestParams::get($request, 'realName'), $areaBlockConfig, true);
+        $areablock->setRealName(RequestParams::get($request, 'realName'));
         $areablock->setEditmode(true);
-        $areaBrickData = json_decode($request->get('areablockData'), true);
+        $areaBrickData = json_decode(RequestParams::get($request, 'areablockData'), true);
         $areablock->setDataFromEditmode($areaBrickData);
-        $htmlCode = trim($areablock->renderIndex((int)$request->get('index'), true));
+        $htmlCode = trim($areablock->renderIndex((int)RequestParams::get($request, 'index'), true));
 
         return new JsonResponse([
             'editableDefinitions' => $definitionCollector->getDefinitions(),

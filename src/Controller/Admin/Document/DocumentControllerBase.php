@@ -23,6 +23,7 @@ use Pimcore\Bundle\AdminBundle\Controller\Traits\ApplySchedulerDataTrait;
 use Pimcore\Bundle\AdminBundle\Controller\Traits\UserNameTrait;
 use Pimcore\Bundle\AdminBundle\Event\AdminEvents;
 use Pimcore\Bundle\AdminBundle\Event\ElementAdminStyleEvent;
+use Pimcore\Bundle\AdminBundle\Helper\RequestParams;
 use Pimcore\Bundle\AdminBundle\Service\ElementServiceInterface;
 use Pimcore\Bundle\PersonalizationBundle\Model\Document\Targeting\TargetingDocumentInterface;
 use Pimcore\Controller\KernelControllerEventInterface;
@@ -112,7 +113,7 @@ abstract class DocumentControllerBase extends AdminAbstractController implements
     protected function addPropertiesToDocument(Request $request, Model\Document $document): void
     {
         // properties
-        if ($request->get('properties')) {
+        if (RequestParams::get($request, 'properties')) {
             $properties = [];
             // assign inherited properties
             foreach ($document->getProperties() as $p) {
@@ -121,7 +122,7 @@ abstract class DocumentControllerBase extends AdminAbstractController implements
                 }
             }
 
-            $propertiesData = $this->decodeJson($request->get('properties'));
+            $propertiesData = $this->decodeJson(RequestParams::get($request, 'properties'));
 
             if (is_array($propertiesData)) {
                 foreach ($propertiesData as $propertyName => $propertyData) {
@@ -157,9 +158,9 @@ abstract class DocumentControllerBase extends AdminAbstractController implements
     protected function addSettingsToDocument(Request $request, Model\Document $document): void
     {
         // settings
-        if ($request->get('settings')) {
+        if (RequestParams::get($request, 'settings')) {
             if ($document->isAllowed('settings')) {
-                $settings = $this->decodeJson($request->get('settings'));
+                $settings = $this->decodeJson(RequestParams::get($request, 'settings'));
 
                 if (array_key_exists('prettyUrl', $settings)) {
                     $settings['prettyUrl'] = htmlspecialchars($settings['prettyUrl']);
@@ -178,15 +179,15 @@ abstract class DocumentControllerBase extends AdminAbstractController implements
                 && $document instanceof TargetingDocumentInterface
                 && $document->hasTargetGroupSpecificEditables();
 
-            if ($request->get('appendEditables') || $isTargetSpecificEditable) {
+            if (RequestParams::get($request, 'appendEditables') || $isTargetSpecificEditable) {
                 $document->getEditables();
             } else {
                 // ensure no editables (e.g. from session, version, ...) are still referenced
                 $document->setEditables(null);
             }
 
-            if ($request->get('data')) {
-                $data = $this->decodeJson($request->get('data'));
+            if (RequestParams::get($request, 'data')) {
+                $data = $this->decodeJson(RequestParams::get($request, 'data'));
                 foreach ($data as $name => $value) {
                     $data = $value['data'] ?? null;
                     $type = $value['type'];
@@ -210,7 +211,7 @@ abstract class DocumentControllerBase extends AdminAbstractController implements
     #[Route('/save-to-session', name: 'savetosession', methods: [Request::METHOD_POST])]
     public function saveToSessionAction(Request $request): JsonResponse
     {
-        if ($documentId = (int)$request->get('id')) {
+        if ($documentId = (int)RequestParams::get($request, 'id')) {
             if (!$document = Model\Document\Service::getElementFromSession('document', $documentId, $request->getSession()->getId())) {
                 $document = Model\Document\PageSnippet::getById($documentId);
                 if (!$document) {
@@ -259,7 +260,7 @@ abstract class DocumentControllerBase extends AdminAbstractController implements
     #[Route('/remove-from-session', name: 'removefromsession', methods: [Request::METHOD_DELETE])]
     public function removeFromSessionAction(Request $request): JsonResponse
     {
-        Model\Document\Service::removeElementFromSession('document', $request->get('id'), $request->getSession()->getId());
+        Model\Document\Service::removeElementFromSession('document', RequestParams::get($request, 'id'), $request->getSession()->getId());
 
         return $this->adminJson(['success' => true]);
     }
@@ -306,10 +307,10 @@ abstract class DocumentControllerBase extends AdminAbstractController implements
     #[Route('/change-main-document', name: 'changemaindocument', methods: [Request::METHOD_PUT])]
     public function changeMainDocumentAction(Request $request): JsonResponse
     {
-        $doc = Model\Document\PageSnippet::getById((int)$request->get('id'));
+        $doc = Model\Document\PageSnippet::getById((int)RequestParams::get($request, 'id'));
         if ($doc instanceof Model\Document\PageSnippet) {
             $doc->setEditables([]);
-            $doc->setContentMainDocumentId($request->get('contentMainDocumentPath'), true);
+            $doc->setContentMainDocumentId(RequestParams::get($request, 'contentMainDocumentPath'), true);
             $doc->saveVersion();
         }
 
@@ -365,7 +366,7 @@ abstract class DocumentControllerBase extends AdminAbstractController implements
         $document->setModificationDate(time());
         $document->setUserModification($this->getAdminUser()->getId());
 
-        $task = strtolower($task ?? $request->get('task'));
+        $task = strtolower($task ?? RequestParams::get($request, 'task'));
         $version = null;
         switch ($task) {
             case $task === self::TASK_PUBLISH && $document->isAllowed($task):

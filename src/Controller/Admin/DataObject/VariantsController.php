@@ -20,6 +20,7 @@ namespace Pimcore\Bundle\AdminBundle\Controller\Admin\DataObject;
 use Exception;
 use Pimcore\Bundle\AdminBundle\Controller\AdminAbstractController;
 use Pimcore\Bundle\AdminBundle\Helper\GridHelperService;
+use Pimcore\Bundle\AdminBundle\Helper\RequestParams;
 use Pimcore\Bundle\AdminBundle\Security\CsrfProtectionHandler;
 use Pimcore\Localization\LocaleServiceInterface;
 use Pimcore\Model\DataObject;
@@ -56,9 +57,9 @@ class VariantsController extends AdminAbstractController
         CsrfProtectionHandler    $csrfProtection
     ): JsonResponse
     {
-        $parentObject = DataObject\Concrete::getById((int)$request->get('objectId'));
+        $parentObject = DataObject\Concrete::getById((int)RequestParams::get($request, 'objectId'));
         if (empty($parentObject)) {
-            throw new Exception('No Object found with id ' . $request->get('objectId'));
+            throw new Exception('No Object found with id ' . RequestParams::get($request, 'objectId'));
         }
 
         if (!$parentObject->isAllowed('view')) {

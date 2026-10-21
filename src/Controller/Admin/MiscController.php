@@ -20,6 +20,7 @@ namespace Pimcore\Bundle\AdminBundle\Controller\Admin;
 use InvalidArgumentException;
 use Locale;
 use Pimcore\Bundle\AdminBundle\Controller\AdminAbstractController;
+use Pimcore\Bundle\AdminBundle\Helper\RequestParams;
 use Pimcore\Bundle\AdminBundle\System\AdminConfig;
 use Pimcore\Bundle\AdminBundle\Tool as AdminTool;
 use Pimcore\Config;
@@ -90,7 +91,7 @@ class MiscController extends AdminAbstractController
         TranslatorInterface $translator
     ): Response
     {
-        $language = $request->get('language');
+        $language = $request->query->get('language');
 
         /** @var Translator $translator */
         $translator->lazyInitialize('admin', $language);
@@ -129,7 +130,7 @@ class MiscController extends AdminAbstractController
     #[Route('/script-proxy', name: 'pimcore_admin_misc_scriptproxy', methods: [Request::METHOD_GET])]
     public function scriptProxyAction(Request $request): Response
     {
-        $storageFile = $request->get('storageFile');
+        $storageFile = $request->query->get('storageFile');
         if (!$storageFile) {
             throw new InvalidArgumentException('The parameter storageFile is required');
         }
@@ -206,7 +207,7 @@ class MiscController extends AdminAbstractController
     public function getValidFilenameAction(Request $request): JsonResponse
     {
         return $this->adminJson([
-            'filename' => Service::getValidKey($request->get('value'), $request->get('type')),
+            'filename' => Service::getValidKey($request->query->get('value'), $request->query->get('type')),
         ]);
     }
 
@@ -218,11 +219,11 @@ class MiscController extends AdminAbstractController
     {
         $this->checkPermission('maintenance_mode');
 
-        if ($request->get('activate')) {
+        if (RequestParams::get($request, 'activate')) {
             $maintenanceModeHelper->activate($request->getSession()->getId());
         }
 
-        if ($request->get('deactivate')) {
+        if (RequestParams::get($request, 'deactivate')) {
             if (Admin::isInMaintenanceMode()) {
                 Admin::deactivateMaintenanceMode();
             }
@@ -272,7 +273,7 @@ class MiscController extends AdminAbstractController
     #[Route('/get-language-flag', name: 'pimcore_admin_misc_getlanguageflag', methods: [Request::METHOD_GET])]
     public function getLanguageFlagAction(Request $request): BinaryFileResponse
     {
-        $iconPath = AdminTool::getLanguageFlagFile($request->get('language'));
+        $iconPath = AdminTool::getLanguageFlagFile($request->query->get('language'));
         $response = new BinaryFileResponse($iconPath);
         $response->headers->set('Content-Type', 'image/svg+xml');
 
@@ -287,7 +288,7 @@ class MiscController extends AdminAbstractController
     {
         $profiler?->disable();
 
-        $type = $request->get('type');
+        $type = $request->query->get('type');
         $publicDir = PIMCORE_WEB_ROOT . '/bundles/pimcoreadmin';
         $iconDir = $publicDir . '/img';
         $extraInfo = null;

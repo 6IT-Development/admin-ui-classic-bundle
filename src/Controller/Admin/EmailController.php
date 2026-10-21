@@ -20,6 +20,7 @@ namespace Pimcore\Bundle\AdminBundle\Controller\Admin;
 use Exception;
 use Pimcore\Bundle\AdminBundle\Controller\AdminAbstractController;
 use Pimcore\Bundle\AdminBundle\Helper\QueryParams;
+use Pimcore\Bundle\AdminBundle\Helper\RequestParams;
 use Pimcore\Http\RequestHelper;
 use Pimcore\Logger;
 use Pimcore\Mail;
@@ -50,15 +51,15 @@ class EmailController extends AdminAbstractController
         }
 
         $list = new Tool\Email\Log\Listing();
-        if ($request->get('documentId')) {
-            $list->setCondition('documentId = ' . (int)$request->get('documentId'));
+        if (RequestParams::get($request, 'documentId')) {
+            $list->setCondition('documentId = ' . (int)RequestParams::get($request, 'documentId'));
         }
-        $list->setLimit((int)$request->get('limit', 50));
-        $list->setOffset((int)$request->get('start', 0));
+        $list->setLimit((int)RequestParams::get($request, 'limit', 50));
+        $list->setOffset((int)RequestParams::get($request, 'start', 0));
         $list->setOrderKey('sentDate');
 
-        if ($request->get('filter')) {
-            $filterTerm = $request->get('filter');
+        if (RequestParams::get($request, 'filter')) {
+            $filterTerm = RequestParams::get($request, 'filter');
             if ($filterTerm == '*') {
                 $filterTerm = '';
             }
@@ -84,8 +85,8 @@ class EmailController extends AdminAbstractController
 
             $condition = '( MATCH (`from`,`to`,`cc`,`bcc`,`subject`,`params`) AGAINST (' . $list->quote($filterTerm) . ' IN BOOLEAN MODE) )';
 
-            if ($request->get('documentId')) {
-                $condition .= 'AND documentId = ' . (int)$request->get('documentId');
+            if (RequestParams::get($request, 'documentId')) {
+                $condition .= 'AND documentId = ' . (int)RequestParams::get($request, 'documentId');
             }
 
             $list->setCondition($condition);
@@ -124,8 +125,8 @@ class EmailController extends AdminAbstractController
             throw $this->createAccessDeniedHttpException("Permission denied, user needs 'emails' permission.");
         }
 
-        $type = $request->get('type');
-        $emailLog = Tool\Email\Log::getById((int)$request->get('id'));
+        $type = $request->query->get('type');
+        $emailLog = Tool\Email\Log::getById((int)$request->query->get('id'));
 
         if (!$emailLog) {
             throw $this->createNotFoundException();
@@ -233,7 +234,7 @@ class EmailController extends AdminAbstractController
         }
 
         $success = false;
-        $emailLog = Tool\Email\Log::getById((int)$request->get('id'));
+        $emailLog = Tool\Email\Log::getById((int)RequestParams::get($request, 'id'));
         if ($emailLog instanceof Tool\Email\Log) {
             $emailLog->delete();
             $success = true;
@@ -252,14 +253,14 @@ class EmailController extends AdminAbstractController
         }
 
         $success = false;
-        $emailLog = Tool\Email\Log::getById((int)$request->get('id'));
+        $emailLog = Tool\Email\Log::getById((int)RequestParams::get($request, 'id'));
 
         if ($emailLog instanceof Tool\Email\Log) {
             $mail = new Mail();
             $mail->preventDebugInformationAppending();
             $mail->setIgnoreDebugMode(true);
 
-            if (!empty($request->get('to'))) {
+            if (!empty(RequestParams::get($request, 'to'))) {
                 $emailLog->setTo(null);
                 $emailLog->setCc(null);
                 $emailLog->setBcc(null);
@@ -276,7 +277,7 @@ class EmailController extends AdminAbstractController
             }
 
             foreach (['From', 'To', 'Cc', 'Bcc', 'ReplyTo'] as $field) {
-                if (!$values = $request->get(strtolower($field))) {
+                if (!$values = RequestParams::get($request, strtolower($field))) {
                     $getter = 'get' . $field;
                     $values = $emailLog->{$getter}();
                 }
@@ -343,18 +344,18 @@ class EmailController extends AdminAbstractController
 
         $mail = new Mail();
 
-        if ($request->get('emailType') == 'text') {
-            $mail->text(strip_tags($request->get('content')));
-        } elseif ($request->get('emailType') == 'html') {
-            $mail->html($request->get('content'));
-        } elseif ($request->get('emailType') == 'document') {
-            $doc = Document::getByPath($request->get('documentPath'));
+        if (RequestParams::get($request, 'emailType') == 'text') {
+            $mail->text(strip_tags(RequestParams::get($request, 'content')));
+        } elseif (RequestParams::get($request, 'emailType') == 'html') {
+            $mail->html(RequestParams::get($request, 'content'));
+        } elseif (RequestParams::get($request, 'emailType') == 'document') {
+            $doc = Document::getByPath(RequestParams::get($request, 'documentPath'));
 
             if ($doc instanceof Email) {
                 $mail->setDocument($doc);
 
-                if ($request->get('mailParamaters')) {
-                    if ($mailParamsArray = json_decode($request->get('mailParamaters'), true)) {
+                if (RequestParams::get($request, 'mailParamaters')) {
+                    if ($mailParamsArray = json_decode(RequestParams::get($request, 'mailParamaters'), true)) {
                         foreach ($mailParamsArray as $mailParam) {
                             if ($mailParam['key']) {
                                 $mail->setParam($mailParam['key'], $mailParam['value']);
@@ -367,7 +368,7 @@ class EmailController extends AdminAbstractController
             }
         }
 
-        if ($from = $request->get('from')) {
+        if ($from = RequestParams::get($request, 'from')) {
             $addressArray = \Pimcore\Helper\Mail::parseEmailAddressField($from);
             if ($addressArray) {
                 //use the first address only
@@ -376,12 +377,12 @@ class EmailController extends AdminAbstractController
             }
         }
 
-        $toAddresses = \Pimcore\Helper\Mail::parseEmailAddressField($request->get('to'));
+        $toAddresses = \Pimcore\Helper\Mail::parseEmailAddressField(RequestParams::get($request, 'to'));
         foreach ($toAddresses as $cleanedToAddress) {
             $mail->addTo($cleanedToAddress['email'], $cleanedToAddress['name']);
         }
 
-        $mail->subject($request->get('subject'));
+        $mail->subject(RequestParams::get($request, 'subject'));
         $mail->setIgnoreDebugMode(true);
 
         $mail->send();
@@ -398,8 +399,8 @@ class EmailController extends AdminAbstractController
             throw new Exception("Permission denied, user needs 'emails' permission.");
         }
 
-        if ($request->get('data')) {
-            $data = $this->decodeJson($request->get('data'));
+        if (RequestParams::get($request, 'data')) {
+            $data = $this->decodeJson(RequestParams::get($request, 'data'));
 
             if (is_array($data)) {
                 foreach ($data as $key => &$value) {
@@ -413,18 +414,18 @@ class EmailController extends AdminAbstractController
                 }
             }
 
-            if ($request->get('xaction') == 'destroy') {
+            if (RequestParams::get($request, 'xaction') == 'destroy') {
                 $address = Tool\Email\Blocklist::getByAddress($data['address']);
                 $address->delete();
 
                 return $this->adminJson(['success' => true, 'data' => []]);
-            } elseif ($request->get('xaction') == 'update') {
+            } elseif (RequestParams::get($request, 'xaction') == 'update') {
                 $address = Tool\Email\Blocklist::getByAddress($data['address']);
                 $address->setValues($data);
                 $address->save();
 
                 return $this->adminJson(['data' => $address->getObjectVars(), 'success' => true]);
-            } elseif ($request->get('xaction') == 'create') {
+            } elseif (RequestParams::get($request, 'xaction') == 'create') {
                 unset($data['id']);
 
                 $address = new Tool\Email\Blocklist();
@@ -438,8 +439,8 @@ class EmailController extends AdminAbstractController
 
             $list = new Tool\Email\Blocklist\Listing();
 
-            $list->setLimit((int)$request->get('limit', 50));
-            $list->setOffset((int)$request->get('start', 0));
+            $list->setLimit((int)RequestParams::get($request, 'limit', 50));
+            $list->setOffset((int)RequestParams::get($request, 'start', 0));
 
             $sortingSettings = QueryParams::extractSortingSettings($request->query->all());
             if ($sortingSettings['orderKey']) {
@@ -449,8 +450,8 @@ class EmailController extends AdminAbstractController
                 $order = $sortingSettings['order'];
             }
 
-            if ($request->get('filter')) {
-                $list->setCondition('`address` LIKE ' . $list->quote('%' . $request->get('filter') . '%'));
+            if (RequestParams::get($request, 'filter')) {
+                $list->setCondition('`address` LIKE ' . $list->quote('%' . RequestParams::get($request, 'filter') . '%'));
             }
 
             $data = $list->load();

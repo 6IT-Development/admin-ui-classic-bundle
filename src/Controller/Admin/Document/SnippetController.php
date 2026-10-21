@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace Pimcore\Bundle\AdminBundle\Controller\Admin\Document;
 
+use Pimcore\Bundle\AdminBundle\Helper\RequestParams;
 use Pimcore\Model\Document;
 use Pimcore\Model\Element;
 use Pimcore\Model\Schedule\Task;
@@ -35,7 +36,7 @@ class SnippetController extends DocumentControllerBase
     #[Route('/get-data-by-id', name: 'getdatabyid', methods: [Request::METHOD_GET])]
     public function getDataByIdAction(Request $request): JsonResponse
     {
-        if (!$snippet = Document\Snippet::getById((int)$request->get('id'))) {
+        if (!$snippet = Document\Snippet::getById((int)$request->query->get('id'))) {
             throw $this->createNotFoundException('Snippet not found');
         }
 
@@ -79,7 +80,7 @@ class SnippetController extends DocumentControllerBase
     #[Route('/save', name: 'save', methods: [Request::METHOD_POST, Request::METHOD_PUT])]
     public function saveAction(Request $request): JsonResponse
     {
-        $snippet = Document\Snippet::getById((int)$request->get('id'));
+        $snippet = Document\Snippet::getById((int)RequestParams::get($request, 'id'));
         if (!$snippet) {
             throw $this->createNotFoundException('Snippet not found');
         }

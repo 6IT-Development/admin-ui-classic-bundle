@@ -18,6 +18,7 @@ declare(strict_types=1);
 namespace Pimcore\Bundle\AdminBundle\Controller\Traits;
 
 use Pimcore\Bundle\AdminBundle\Controller\AdminAbstractController;
+use Pimcore\Bundle\AdminBundle\Helper\RequestParams;
 use Pimcore\Model\Element\ElementInterface;
 use Pimcore\Model\Schedule\Task;
 use Symfony\Component\HttpFoundation\Request;
@@ -32,9 +33,9 @@ trait ApplySchedulerDataTrait
         /** @var AdminAbstractController $this */
 
         // scheduled tasks
-        if ($request->get('scheduler')) {
+        if (RequestParams::get($request, 'scheduler')) {
             $tasks = [];
-            $tasksData = $this->decodeJson($request->get('scheduler'));
+            $tasksData = $this->decodeJson(RequestParams::get($request, 'scheduler'));
 
             if (!empty($tasksData)) {
                 foreach ($tasksData as $taskData) {

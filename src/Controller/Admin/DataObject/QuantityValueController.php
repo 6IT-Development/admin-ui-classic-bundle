@@ -20,6 +20,7 @@ namespace Pimcore\Bundle\AdminBundle\Controller\Admin\DataObject;
 use Exception;
 use Pimcore\Bundle\AdminBundle\Controller\AdminAbstractController;
 use Pimcore\Bundle\AdminBundle\Helper\QueryParams;
+use Pimcore\Bundle\AdminBundle\Helper\RequestParams;
 use Pimcore\Db;
 use Pimcore\Model\DataObject\Data\QuantityValue;
 use Pimcore\Model\DataObject\QuantityValue\Service as QuantityValueService;
@@ -88,12 +89,12 @@ class QuantityValueController extends AdminAbstractController
         $list->setOrder($order);
         $list->setOrderKey($orderKey);
 
-        $list->setLimit((int)$request->get('limit', 25));
-        $list->setOffset((int)$request->get('start', 0));
+        $list->setLimit((int)$request->query->get('limit', 25));
+        $list->setOffset((int)$request->query->get('start', 0));
 
         $condition = '1 = 1';
-        if ($request->get('filter')) {
-            $filterString = $request->get('filter');
+        if ($request->query->get('filter')) {
+            $filterString = $request->query->get('filter');
             $filters = json_decode($filterString);
             $db = Db::get();
             foreach ($filters as $f) {
@@ -120,9 +121,9 @@ class QuantityValueController extends AdminAbstractController
     {
         $this->checkPermission('quantityValueUnits');
 
-        if ($request->get('data')) {
-            if ($request->get('xaction') == 'destroy') {
-                $data = json_decode($request->get('data'), true);
+        if (RequestParams::get($request, 'data')) {
+            if (RequestParams::get($request, 'xaction') == 'destroy') {
+                $data = json_decode(RequestParams::get($request, 'data'), true);
                 $id = $data['id'];
                 $unit = Unit::getById($id);
                 if (!empty($unit)) {
@@ -132,8 +133,8 @@ class QuantityValueController extends AdminAbstractController
                 } else {
                     throw new Exception('Unit with id ' . $id . ' not found.');
                 }
-            } elseif ($request->get('xaction') == 'update') {
-                $data = json_decode($request->get('data'), true);
+            } elseif (RequestParams::get($request, 'xaction') == 'update') {
+                $data = json_decode(RequestParams::get($request, 'data'), true);
                 $unit = Unit::getById($data['id']);
                 if (!empty($unit)) {
                     if (($data['baseunit'] ?? null) == -1) {
@@ -146,8 +147,8 @@ class QuantityValueController extends AdminAbstractController
                 } else {
                     throw new Exception('Unit with id ' . $data['id'] . ' not found.');
                 }
-            } elseif ($request->get('xaction') == 'create') {
-                $data = json_decode($request->get('data'), true);
+            } elseif (RequestParams::get($request, 'xaction') == 'create') {
+                $data = json_decode(RequestParams::get($request, 'data'), true);
                 if (isset($data['baseunit']) && $data['baseunit'] === -1) {
                     $data['baseunit'] = null;
                 }
@@ -189,8 +190,8 @@ class QuantityValueController extends AdminAbstractController
         $list = new Unit\Listing();
         $list->setOrderKey(['baseunit', 'factor', 'abbreviation']);
         $list->setOrder(['ASC', 'ASC', 'ASC']);
-        if ($request->get('filter')) {
-            $array = explode(',', $request->get('filter'));
+        if ($request->query->get('filter')) {
+            $array = explode(',', $request->query->get('filter'));
             $quotedArray = [];
             $db = Db::get();
             foreach ($array as $a) {
@@ -229,8 +230,8 @@ class QuantityValueController extends AdminAbstractController
     {
         $this->checkPermission('objects');
 
-        $fromUnitId = $request->get('fromUnit');
-        $toUnitId = $request->get('toUnit');
+        $fromUnitId = $request->query->get('fromUnit');
+        $toUnitId = $request->query->get('toUnit');
 
         $fromUnit = Unit::getById($fromUnitId);
         $toUnit = Unit::getById($toUnitId);
@@ -239,7 +240,7 @@ class QuantityValueController extends AdminAbstractController
         }
 
         try {
-            $convertedValue = $conversionService->convert(new QuantityValue($request->get('value'), $fromUnit), $toUnit);
+            $convertedValue = $conversionService->convert(new QuantityValue($request->query->get('value'), $fromUnit), $toUnit);
         } catch (Exception) {
             return $this->adminJson(['success' => false]);
         }
@@ -255,7 +256,7 @@ class QuantityValueController extends AdminAbstractController
     {
         $this->checkPermission('objects');
 
-        $unitId = $request->get('unit');
+        $unitId = $request->query->get('unit');
 
         $fromUnit = Unit::getById($unitId);
         if (!$fromUnit instanceof Unit) {
@@ -269,7 +270,7 @@ class QuantityValueController extends AdminAbstractController
         $convertedValues = [];
         foreach ($units->getUnits() as $targetUnit) {
             try {
-                $convertedValue = $conversionService->convert(new QuantityValue($request->get('value'), $fromUnit), $targetUnit);
+                $convertedValue = $conversionService->convert(new QuantityValue($request->query->get('value'), $fromUnit), $targetUnit);
 
                 $convertedValues[] = ['unit' => $targetUnit->getAbbreviation(), 'unitName' => $targetUnit->getLongname(), 'value' => round($convertedValue->getValue(), 4)];
             } catch (Exception $e) {
@@ -277,6 +278,6 @@ class QuantityValueController extends AdminAbstractController
             }
         }
 
-        return $this->adminJson(['value' => $request->get('value'), 'fromUnit' => $fromUnit->getAbbreviation(), 'values' => $convertedValues, 'success' => true]);
+        return $this->adminJson(['value' => $request->query->get('value'), 'fromUnit' => $fromUnit->getAbbreviation(), 'values' => $convertedValues, 'success' => true]);
     }
 }

@@ -20,6 +20,7 @@ namespace Pimcore\Bundle\AdminBundle\Controller\Admin;
 use Exception;
 use InvalidArgumentException;
 use Pimcore\Bundle\AdminBundle\Controller\AdminAbstractController;
+use Pimcore\Bundle\AdminBundle\Helper\RequestParams;
 use Pimcore\Bundle\AdminBundle\Service\Workflow\ActionsButtonService;
 use Pimcore\Controller\KernelControllerEventInterface;
 use Pimcore\Model\Asset;
@@ -63,7 +64,7 @@ class WorkflowController extends AdminAbstractController implements KernelContro
     ): JsonResponse
     {
         try {
-            $workflow = $workflowManager->getWorkflowIfExists($this->element, (string)$request->get('workflowName'));
+            $workflow = $workflowManager->getWorkflowIfExists($this->element, (string)RequestParams::get($request, 'workflowName'));
 
             if (empty($workflow)) {
                 $wfConfig = [
@@ -81,13 +82,13 @@ class WorkflowController extends AdminAbstractController implements KernelContro
                 $enabledTransitions = $workflow->getEnabledTransitions($this->element);
                 $transition = null;
                 foreach ($enabledTransitions as $_transition) {
-                    if ($_transition->getName() === $request->get('transitionName')) {
+                    if ($_transition->getName() === RequestParams::get($request, 'transitionName')) {
                         $transition = $_transition;
                     }
                 }
 
                 if (!$transition instanceof Transition) {
-                    $wfConfig['message'] = sprintf('transition %s currently not allowed', $request->get('transitionName'));
+                    $wfConfig['message'] = sprintf('transition %s currently not allowed', RequestParams::get($request, 'transitionName'));
                 } else {
                     $wfConfig['notes_required'] = $transition->getNotesCommentRequired();
                     $wfConfig['additional_fields'] = [];
@@ -107,12 +108,12 @@ class WorkflowController extends AdminAbstractController implements KernelContro
         Manager  $workflowManager
     ): JsonResponse
     {
-        $workflowOptions = $request->get('workflow', []);
-        $workflow = $workflowRegistry->get($this->element, $request->get('workflowName'));
+        $workflowOptions = RequestParams::get($request, 'workflow', []);
+        $workflow = $workflowRegistry->get($this->element, RequestParams::get($request, 'workflowName'));
 
-        if ($workflow->can($this->element, $request->get('transition'))) {
+        if ($workflow->can($this->element, RequestParams::get($request, 'transition'))) {
             try {
-                $workflowManager->applyWithAdditionalData($workflow, $this->element, $request->get('transition'), $workflowOptions, true);
+                $workflowManager->applyWithAdditionalData($workflow, $this->element, RequestParams::get($request, 'transition'), $workflowOptions, true);
 
                 $data = [
                     'success' => true,
@@ -140,7 +141,7 @@ class WorkflowController extends AdminAbstractController implements KernelContro
                 ];
             }
         } else {
-            $blockTransitionList = $workflow->buildTransitionBlockerList($this->element, $request->get('transition'));
+            $blockTransitionList = $workflow->buildTransitionBlockerList($this->element, RequestParams::get($request, 'transition'));
 
             $reasons = array_map(function ($blockTransitionItem) {
                 return $blockTransitionItem->getMessage();
@@ -163,19 +164,19 @@ class WorkflowController extends AdminAbstractController implements KernelContro
         Manager  $workflowManager
     ): JsonResponse
     {
-        $workflowOptions = $request->get('workflow', []);
-        $workflow = $workflowRegistry->get($this->element, $request->get('workflowName'));
+        $workflowOptions = RequestParams::get($request, 'workflow', []);
+        $workflow = $workflowRegistry->get($this->element, RequestParams::get($request, 'workflowName'));
 
         $globalAction = $workflowManager->getGlobalAction(
-            $request->get('workflowName'),
-            $request->get('transition')
+            RequestParams::get($request, 'workflowName'),
+            RequestParams::get($request, 'transition')
         );
         $saveSubject = !$globalAction || $globalAction->getSaveSubject();
 
         try {
             $workflowManager->applyGlobalAction(
                 $workflow,
-                $this->element, $request->get('transition'),
+                $this->element, RequestParams::get($request, 'transition'),
                 $workflowOptions, $saveSubject
             );
 
@@ -237,8 +238,8 @@ class WorkflowController extends AdminAbstractController implements KernelContro
             $url = $router->generate(
                 'pimcore_admin_workflow_show_graph',
                 [
-                    'cid' => $request->get('cid'),
-                    'ctype' => $request->get('ctype'),
+                    'cid' => RequestParams::get($request, 'cid'),
+                    'ctype' => RequestParams::get($request, 'ctype'),
                     'workflow' => $workflow->getName(),
                 ]
             );
@@ -271,7 +272,7 @@ class WorkflowController extends AdminAbstractController implements KernelContro
         Manager $workflowManager
     ): Response
     {
-        $workflow = $workflowManager->getWorkflowByName($request->get('workflow'));
+        $workflow = $workflowManager->getWorkflowByName(RequestParams::get($request, 'workflow'));
 
         $response = new Response($this->getWorkflowSvg($workflow));
         $response->headers->set('Content-Type', 'image/svg+xml');
@@ -289,18 +290,18 @@ class WorkflowController extends AdminAbstractController implements KernelContro
         Manager  $manager
     ): JsonResponse
     {
-        $workflow = $workflowRegistry->get($this->element, $request->get('workflowName'));
+        $workflow = $workflowRegistry->get($this->element, RequestParams::get($request, 'workflowName'));
 
-        if ($request->get('isGlobalAction') == 'true') {
-            $globalAction = $manager->getGlobalAction($workflow->getName(), $request->get('transition'));
+        if (RequestParams::get($request, 'isGlobalAction') == 'true') {
+            $globalAction = $manager->getGlobalAction($workflow->getName(), RequestParams::get($request, 'transition'));
             if ($globalAction) {
                 return $this->customHtmlResponse($globalAction->getCustomHtmlService());
             }
-        } elseif ($workflow->can($this->element, $request->get('transition'))) {
+        } elseif ($workflow->can($this->element, RequestParams::get($request, 'transition'))) {
             $enabledTransitions = $workflow->getEnabledTransitions($this->element);
             $transition = null;
             foreach ($enabledTransitions as $_transition) {
-                if ($_transition->getName() === $request->get('transition')) {
+                if ($_transition->getName() === RequestParams::get($request, 'transition')) {
                     $transition = $_transition;
                 }
             }
@@ -420,16 +421,16 @@ class WorkflowController extends AdminAbstractController implements KernelContro
 
         $request = $event->getRequest();
 
-        if ($request->get('ctype') === 'document') {
-            $this->element = Document::getById((int)$request->get('cid', 0));
-        } elseif ($request->get('ctype') === 'asset') {
-            $this->element = Asset::getById((int)$request->get('cid', 0));
-        } elseif ($request->get('ctype') === 'object') {
-            $this->element = ConcreteObject::getById((int)$request->get('cid', 0));
+        if (RequestParams::get($request, 'ctype') === 'document') {
+            $this->element = Document::getById((int)RequestParams::get($request, 'cid', 0));
+        } elseif (RequestParams::get($request, 'ctype') === 'asset') {
+            $this->element = Asset::getById((int)RequestParams::get($request, 'cid', 0));
+        } elseif (RequestParams::get($request, 'ctype') === 'object') {
+            $this->element = ConcreteObject::getById((int)RequestParams::get($request, 'cid', 0));
         }
 
         if (!$this->element) {
-            throw new Exception('Cannot load element' . $request->get('cid') . ' of type \'' . $request->get('ctype') . '\'');
+            throw new Exception('Cannot load element' . RequestParams::get($request, 'cid') . ' of type \'' . RequestParams::get($request, 'ctype') . '\'');
         }
 
         //get the latest available version of the element -

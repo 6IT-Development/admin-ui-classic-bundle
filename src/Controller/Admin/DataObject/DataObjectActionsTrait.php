@@ -20,6 +20,7 @@ namespace Pimcore\Bundle\AdminBundle\Controller\Admin\DataObject;
 use Exception;
 use Pimcore\Bundle\AdminBundle\Event\AdminEvents;
 use Pimcore\Bundle\AdminBundle\Helper\GridHelperService;
+use Pimcore\Bundle\AdminBundle\Helper\RequestParams;
 use Pimcore\Bundle\AdminBundle\Service\GridData;
 use Pimcore\Localization\LocaleServiceInterface;
 use Pimcore\Logger;
@@ -126,7 +127,7 @@ trait DataObjectActionsTrait
             $objects = [];
             foreach ($list->getObjects() as $object) {
                 if ($csvMode) {
-                    $o = DataObject\Service::getCsvDataForObject($object, $requestedLanguage, $request->get('fields'), GridData\DataObject::getHelperDefinitions(), $localeService, 'title', false, $allParams['context']);
+                    $o = DataObject\Service::getCsvDataForObject($object, $requestedLanguage, RequestParams::get($request, 'fields'), GridData\DataObject::getHelperDefinitions(), $localeService, 'title', false, $allParams['context']);
                     // Like for treeGetChildrenByIdAction, so we respect isAllowed method which can be extended (object DI) for custom permissions, so relying only users_workspaces_object is insufficient and could lead security breach
                     if ($object->isAllowed('list')) {
                         $objects[] = $o;
