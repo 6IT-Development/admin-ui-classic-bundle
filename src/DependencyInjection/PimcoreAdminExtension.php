@@ -17,8 +17,6 @@ declare(strict_types=1);
 
 namespace Pimcore\Bundle\AdminBundle\DependencyInjection;
 
-use Exception;
-use Pimcore;
 use Pimcore\Bundle\CoreBundle\DependencyInjection\ConfigurationHelper;
 use Pimcore\Config\LocationAwareConfigRepository;
 use Symfony\Component\Config\FileLocator;
@@ -26,7 +24,6 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Extension\Extension;
 use Symfony\Component\DependencyInjection\Extension\PrependExtensionInterface;
 use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
-use Symfony\Component\Yaml\Yaml;
 
 /**
  * @internal
@@ -54,33 +51,6 @@ final class PimcoreAdminExtension extends Extension implements PrependExtensionI
         $loader->load('security_services.yaml');
         $loader->load('event_listeners.yaml');
         $loader->load('export.yaml');
-
-        // Check if PimcoreSimpleBackendSearchBundle is installed and load to replace the search data provider services
-        try {
-            $bundle = Pimcore::getKernel()->getBundle('PimcoreSimpleBackendSearchBundle');
-            $configFile = $bundle->getPath() . '/config/admin-classic.yaml';
-
-            $yaml = Yaml::parseFile($configFile);
-
-            $tmpFile = tempnam(sys_get_temp_dir(), 'services_');
-
-            try {
-                file_put_contents(
-                    $tmpFile,
-                    Yaml::dump(['services' => $yaml['services']])
-                );
-
-                $loader = new YamlFileLoader($container, new FileLocator(dirname($tmpFile)));
-
-                $loader->load(basename($configFile));
-            } finally {
-                if (is_file($tmpFile)) {
-                    unlink($tmpFile);
-                }
-            }
-        } catch (Exception) {
-            // no simple backend search bundle installed
-        }
 
         // Merge
         //Set Config for GDPR data providers to container parameters
