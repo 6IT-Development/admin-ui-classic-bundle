@@ -660,11 +660,11 @@ class DataObjectHelperController extends AdminAbstractController
 
                 $existingKey = $config['fieldConfig']['key'];
                 $calculatedColumnConfig['key'] = $existingKey;
-                $calculatedColumnConfig['position'] = $config['position'];
+                $calculatedColumnConfig['position'] = $config['position'] ?? null;
                 $calculatedColumnConfig['isOperator'] = true;
                 $calculatedColumnConfig['attributes'] = $config['fieldConfig']['attributes'];
-                $calculatedColumnConfig['width'] = $config['width'];
-                $calculatedColumnConfig['locked'] = $config['locked'];
+                $calculatedColumnConfig['width'] = $config['width'] ?? null;
+                $calculatedColumnConfig['locked'] = $config['locked'] ?? false;
 
                 $existingColumns = $session->get('helpercolumns', []);
 
